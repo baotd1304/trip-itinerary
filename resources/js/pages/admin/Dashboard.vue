@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
-import { dashboard } from '@/routes';
+import { dashboard } from '@/routes/admin';
 
 defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Dashboard Home',
+                title: 'Dashboard Admin',
                 href: dashboard(),
             },
         ],
@@ -16,7 +16,7 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Dashboard Home" />
+    <Head title="Dashboard Admin" />
 
     <div
         class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
