@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, Users } from '@lucide/vue';
+import { BookOpen, FolderGit2, LayoutGrid, Users, Car } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -25,8 +25,13 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Users',
-        href: '/admin/users',
+        href: admin.users.index(),
         icon: Users,
+    },
+    {
+        title: 'QL Cars',
+        href: admin.cars.index(),
+        icon: Car,
     },
 ];
 
@@ -67,5 +72,4 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
-    <slot />
 </template>
