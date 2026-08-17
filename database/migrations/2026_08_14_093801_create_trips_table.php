@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('advisor');
             $table->string('driver');
-            $table->integer('car_id')->unsigned();
+            $table->foreignId('car_id')->constrained('cars');            
             $table->date('day');
             $table->string('origin');
             $table->string('destination');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('odo_start')->unsigned();
             $table->integer('odo_end')->unsigned();
             $table->integer('distance')->unsigned();
-            $table->boolean('is_confirm')->default(0);
+            $table->boolean('is_confirm')->default(0);  // 0 = not confirmed, 1 = confirmed
             $table->string('notes')->nullable();
             $table->timestamps();
         });

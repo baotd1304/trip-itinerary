@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('trip_id')->constrained('trips');
-            $table->integer('overtime')->unsigned()->nullable();
-            $table->integer('overnight')->unsigned()->nullable();
-            $table->integer('toll_fee')->unsigned()->nullable();
-            $table->integer('airport_fee')->unsigned()->nullable();
-            $table->integer('holiday')->unsigned()->nullable();
+            $table->integer('overkm_charge')->unsigned()->nullable();
+            $table->integer('overtime_charge')->unsigned()->nullable();
+            $table->integer('overnight_charge')->unsigned()->nullable();
+            $table->integer('holiday_fee')->unsigned()->nullable();
             $table->string('notes')->nullable();
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
         });
     }
