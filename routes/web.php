@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CarController;
+use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\TripController;
 
 Route::inertia('/', 'Welcome')->name('home');
 
@@ -24,6 +26,18 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/cars', [CarController::class, 'store'])->name('admin.cars.store');
     Route::put('/cars/{id}', [CarController::class, 'update'])->name('admin.cars.update');
     Route::delete('/cars/{id}', [CarController::class, 'destroy'])->name('admin.cars.destroy');
+
+    //expense routes
+    Route::get('/expenses', [ExpenseController::class, 'index'])->name('admin.expenses.index');
+    Route::post('/expenses', [ExpenseController::class, 'store'])->name('admin.expenses.store');
+    Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('admin.expenses.update');
+    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
+
+    //trip routes
+    Route::get('/trips', [TripController::class, 'index'])->name('admin.trips.index');
+    Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
+    Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
+    Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
 
 });
 

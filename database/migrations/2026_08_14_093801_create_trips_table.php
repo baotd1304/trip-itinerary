@@ -13,20 +13,20 @@ return new class extends Migration
     {
         Schema::create('trips', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->string('advisor');
             $table->string('driver');
             $table->foreignId('car_id')->constrained('cars');            
             $table->date('day');
             $table->string('origin');
             $table->string('destination');
-            $table->timestamp('departure_time');
-            $table->timestamp('arrival_time');
+            $table->time('departure_time');
+            $table->time('arrival_time');
             $table->integer('odo_start')->unsigned();
             $table->integer('odo_end')->unsigned();
             $table->integer('distance')->unsigned();
-            $table->boolean('is_confirm')->default(0);  // 0 = not confirmed, 1 = confirmed
-            $table->string('notes')->nullable();
+            $table->tinyInteger('status')->default(0);  // 0 = not confirmed, 1 = confirmed, 2 = reject
+            $table->decimal('total_fee',15,0)->nullable();
+            $table->string('note')->nullable();
             $table->timestamps();
         });
     }

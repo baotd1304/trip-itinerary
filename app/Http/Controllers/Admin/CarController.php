@@ -14,7 +14,7 @@ class CarController extends Controller
     {
         $cars = Car::query()
             ->select('id', 'name', 'brand', 'model', 'year', 'license_plate',
-                     'owner', 'status')
+                     'owner', 'is_active')
             ->latest()
             ->paginate(10);
         return Inertia::render('admin/Car', [
@@ -31,7 +31,7 @@ class CarController extends Controller
             'year' => 'integer|min:1900|max:' . date('Y'),
             'license_plate' => 'required|string|max:20|unique:cars,license_plate',
             'owner' => 'string|max:255',
-            'status' => 'in:1,0',
+            'is_active' => 'in:1,0',
         ]);
         Car::create($validated);
 
@@ -47,7 +47,7 @@ class CarController extends Controller
             'year' => 'integer|min:1900|max:' . date('Y'),
             'license_plate' => 'required|string|max:20|unique:cars,license_plate,' . $id,
             'owner' => 'string|max:255',
-            'status' => 'in:1,0',
+            'is_active' => 'in:1,0',
         ]);
         Car::where('id', $id)->update($validated);
 

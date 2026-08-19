@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('year')->unsigned()->nullable();
             $table->string('license_plate', 20)->unique();
             $table->string('owner')->nullable();
-            $table->tinyInteger('status')->default(1); // 1 = active, 0 = inactive
+            $table->tinyInteger('is_active')->default(1); // 1 = active, 0 = inactive
             $table->timestamps();
         });
     }

@@ -10,8 +10,9 @@ class Expense extends Model
     use HasFactory;
     protected $table = 'expenses';
 
-    protected $fillable = [
-                    'overkm_charge', 'overtime_charge','overnight_charge', 
+    protected $fillable = [ 
+                    // 'name', 'type', 'unit_price',
+                    'overkm_rate', 'overtime_rate','overnight_rate', 
                     'holiday_fee', 'note',
                     ];
     protected $attributes= ['is_active'=> 1];
