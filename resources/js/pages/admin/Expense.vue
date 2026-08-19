@@ -11,7 +11,7 @@ import {
         Dialog, DialogContent, DialogHeader, DialogTitle, 
         DialogDescription, DialogFooter, DialogTrigger 
       } from '@/components/ui/dialog';
-import cars from '@/routes/admin/cars';
+import expenses from '@/routes/admin/expenses';
 import { local as storageLocal } from '@/routes/storage';
 import { ref, computed } from 'vue';
 
@@ -20,22 +20,21 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'QL Cars',
-                href: cars.index(),
+                title: 'QL Expenses',
+                href: expenses.index(),
             },
         ],
     },
 });
 
-interface Car {
+interface Expense {
     id: number;
-    name: string;
-    brand: string;
-    model: string;
-    year: number;
-    license_plate: string;
-    owner: string;
-    status: number;
+    overkm_rate: number;
+    overtime_rate: number;
+    overnight_rate: number;
+    holiday_rate: number;
+    notes: string;
+    is_active: number;
     created_at: string;
 }
 
@@ -46,24 +45,30 @@ interface PaginationLink {
 }
 
 interface Props {
-    cars: { data: Car[]; links?: PaginationLink[] };
+    expenses: { data: Expense[]; links?: PaginationLink[] };
 }
 
 const props = defineProps<Props>();
-
-const items = computed(() => props.cars.data ?? []);
+// const breadcrumbs = ref<BreadcrumbItem[]>([
+//     {
+//         title: 'QL users',
+//         href: '/admin/users',
+//     },
+// ]);
+const items = computed(() => props.expenses.data ?? []);
 
 const editOpen = ref(false);
 const deleteOpen = ref(false);
 const createOpen = ref(false);
-const selected = ref<Car | null>(null);
+const selected = ref<Expense | null>(null);
+const newLocation = ref('');
 
-const openEdit = (Car: Car) => {
-    selected.value = Car;
+const openEdit = (Expense: Expense) => {
+    selected.value = Expense;
     editOpen.value = true;
 };
-const openDelete = (Car: Car) => {
-    selected.value = Car;
+const openDelete = (Expense: Expense) => {
+    selected.value = Expense;
     deleteOpen.value = true;
 };
 
@@ -88,13 +93,13 @@ const formatEmbed = (input?: string | null) => {
 </script>
 
 <template>
-    <Head title="QL Cars" />
+    <Head title="QL Expenses" />
 
     <Card class="m-4 overflow-hidden">
       <CardHeader>
         <div class="flex items-center justify-between">
-          <CardTitle>Cars</CardTitle>
-          <Button @click="createOpen = true" size="sm">Create Car</Button>
+          <CardTitle>Expenses</CardTitle>
+          <Button @click="createOpen = true" size="sm">Create Expenses</Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -103,32 +108,30 @@ const formatEmbed = (input?: string | null) => {
             <thead>
               <tr class="bg-gray-100 dark:bg-gray-800">
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">ID</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Name</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Brand</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Model</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Year</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">License Plate</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Owner</th>
-                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Status</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Overkm</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Overtime</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Overnight</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Holiday</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Created at</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Active</th>
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="car in items" :key="car.id" class="hover:bg-gray-50 dark:hover:bg-gray-900">
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.id }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.name }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.brand }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.model }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.year }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.license_plate }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ car.owner }}</td>
+              <tr v-for="expense in items" :key="expense.id" class="hover:bg-gray-50 dark:hover:bg-gray-900">
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.id }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.overkm_rate }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.overtime_rate }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.overnight_rate }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.holiday_rate }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ expense.created_at }}</td>
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  {{ car.status ? 'Active' : 'Inactive' }}
+                  {{ expense.is_active ? 'Active' : 'Inactive' }}
                 </td>
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
                   <!-- Action buttons for edit and delete -->
-                  <Button @click="openEdit(car)" variant="outline" size="sm" class="mr-2">Edit</Button>
-                  <Button @click="openDelete(car)" variant="destructive" size="sm">Delete</Button>
+                  <Button @click="openEdit(expense)" variant="outline" size="sm" class="mr-2">Edit</Button>
+                  <Button @click="openDelete(expense)" variant="destructive" size="sm">Delete</Button>
                 </td>
               </tr>
             </tbody>
@@ -136,11 +139,11 @@ const formatEmbed = (input?: string | null) => {
         </div>
 
         <!-- Pagination Links -->
-        <div v-if="props.cars.links && props.cars.links.length > 0" class="mt-4 flex justify-center gap-2">
+        <div v-if="props.expenses.links && props.expenses.links.length > 0" class="mt-4 flex justify-center gap-2">
           <Link
-            v-for="link in props.cars.links"
+            v-for="link in props.expenses.links"
             :key="link.label"
-            :href="link.url || cars.index().url"
+            :href="link.url || expenses.index().url"
             class="px-3 py-1 rounded-md border border-gray-300 dark:border-gray-700"
             :class="[ 
               link.active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60',
@@ -153,18 +156,18 @@ const formatEmbed = (input?: string | null) => {
       </CardContent>
     </Card>
 
-    <!-- Create Car Modal -->
+    <!-- Create expense Modal -->
     <Dialog v-model:open="createOpen">
       <DialogContent class="sm:max-w-[540px]">
         <DialogHeader>
-          <DialogTitle>Create Car</DialogTitle>
+          <DialogTitle>Create Expense</DialogTitle>
           <DialogDescription>
-            <!-- Create car form -->
-             Fill in the details of the new car below. Make sure to fill in all required fields before saving.
+            <!-- Create expense form -->
+             Fill in the details of the new expense below. Make sure to fill in all required fields before saving.
           </DialogDescription>
         </DialogHeader>
         <Form
-            v-bind="cars.store.form()"
+            v-bind="expenses.store.form()"
             v-slot="{ errors, processing }"
             enctype="multipart/form-data" reset-on-error
             @success="() => { createOpen = false;}"
@@ -177,9 +180,9 @@ const formatEmbed = (input?: string | null) => {
             <InputError :message="errors?.name" class="mt-2" />
           </div>
           <div class="grid gap-2">
-            <Label for="brand">Brand</Label>
-            <Input id="brand" type="text" name="brand" required />
-            <InputError :message="errors?.brand" class="mt-2" />
+            <Label for="overtime_rate">overtime_rate</Label>
+            <Input id="overtime_rate" type="text" name="overtime_rate" required />
+            <InputError :message="errors?.overtime_rate" class="mt-2" />
           </div>
           <div class="grid gap-2">
             <Label for="model">Model</Label>
@@ -187,9 +190,9 @@ const formatEmbed = (input?: string | null) => {
             <InputError :message="errors?.model" class="mt-2" />
           </div>
           <div class="grid gap-2">
-            <Label for="year">Year</Label>
-            <Input id="year" type="number" name="year" min="1900" required />
-            <InputError :message="errors?.year" class="mt-2" />
+            <Label for="holiday_rate">holiday_rate</Label>
+            <Input id="holiday_rate" type="number" name="holiday_rate" min="1900" required />
+            <InputError :message="errors?.holiday_rate" class="mt-2" />
           </div>
           <div class="grid gap-2">
             <Label for="license_plate">License Plate</Label>
@@ -221,40 +224,36 @@ const formatEmbed = (input?: string | null) => {
              Update the details of the car below. Make sure to fill in all required fields before saving changes.
           </DialogDescription>
         </DialogHeader>
-        <Form v-if="selected" v-bind="cars.update.form(selected.id)" 
+        <Form v-if="selected" v-bind="expenses.update.form(selected.id)" 
         enctype="multipart/form-data" reset-on-error
         @success="editOpen = false"
         v-slot="{ errors, processing }" class="space-y-4">
           <!-- Form fields for editing car -->
           <div class="grip gap-2">
-            <Label for="name">Name</Label>
-            <Input id="name" v-model="selected.name" type="text" name="name" required />
-            <InputError :message="errors.name" class="mt-2" />
+            <Label for="overkm_rate">overkm_rate</Label>
+            <Input id="overkm_rate" v-model="selected.overkm_rate" type="text" name="overkm_rate" required />
+            <InputError :message="errors.overkm_rate" class="mt-2" />
           </div>
           <div class="grip gap-2">
-            <Label for="brand">Brand</Label>
-            <Input id="brand" v-model="selected.brand" type="text" name="brand" required />
-            <InputError :message="errors.brand" class="mt-2" />
+            <Label for="overtime_rate">overtime_rate</Label>
+            <Input id="overtime_rate" v-model="selected.overtime_rate" type="text" name="overtime_rate" required />
+            <InputError :message="errors.overtime_rate" class="mt-2" />
           </div>
           <div class="grip gap-2">
-            <Label for="model">Model</Label>
-            <Input id="model" v-model="selected.model" type="text" name="model" required />
-            <InputError :message="errors.model" class="mt-2" />
+            <Label for="overnight_rate">overnight_rate</Label>
+            <Input id="overnight_rate" v-overnight_rate="selected.overnight_rate" type="text" name="overnight_rate" required />
+            <InputError :message="errors.overnight_rate" class="mt-2" />
           </div>
           <div class="grip gap-2">
-            <Label for="year">Year</Label>
-            <Input id="year" v-model="selected.year" type="number" name="year" min="1900" required />
-            <InputError :message="errors.year" class="mt-2" />
+            <Label for="holiday_rate">holiday_rate</Label>
+            <Input id="holiday_rate" v-model="selected.holiday_rate" type="number" name="holiday_rate" min="1900" required />
+            <InputError :message="errors.holiday_rate" class="mt-2" />
           </div>
+         
           <div class="grip gap-2">
-            <Label for="license_plate">License Plate</Label>
-            <Input id="license_plate" v-model="selected.license_plate" type="text" name="license_plate" required />
-            <InputError :message="errors.license_plate" class="mt-2" />
-          </div>
-          <div class="grip gap-2">
-            <Label for="owner">Owner</Label>
-            <Input id="owner" v-model="selected.owner" type="text" name="owner" required />
-            <InputError :message="errors.owner" class="mt-2" />
+            <Label for="is_active">is_active</Label>
+            <Input id="is_active" v-model="selected.is_active" type="text" name="is_active" required />
+            <InputError :message="errors.is_active" class="mt-2" />
           </div>
 
           <DialogFooter>
@@ -264,23 +263,23 @@ const formatEmbed = (input?: string | null) => {
         </Form>
       </DialogContent>
     </Dialog>
-    <!-- End Edit Car Modal -->
+    <!-- End Edit expense Modal -->
 
     <!-- Delete Modal -->
     <Dialog v-model:open="deleteOpen">
       <DialogContent class="sm:max-w-[540px]">
         <DialogHeader>
-          <DialogTitle>Delete Car</DialogTitle>
+          <DialogTitle>Delete expense</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this car? This action cannot be undone.
+            Are you sure you want to delete this expense? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        <Form v-if="selected" v-bind="cars.destroy.form(selected.id)" 
+        <Form v-if="selected" v-bind="expenses.destroy.form(selected.id)" 
         enctype="multipart/form-data" reset-on-error
         @success="deleteOpen = false"
         v-slot="{ processing }" class="space-y-4">
             <p class="text-sm text-muted-foreground mb-4">
-                This action will permanently delete the car with ID: {{ selected.id }} and Name: {{ selected.name }}.
+                This action will permanently delete the expense with ID: {{ selected.id }} and overkm rate {{ selected.overkm_rate }}.
             </p>
           <DialogFooter>
             <Button type="button" variant="outline" @click="deleteOpen = false" :disabled="processing">Cancel</Button>

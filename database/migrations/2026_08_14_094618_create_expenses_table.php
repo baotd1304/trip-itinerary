@@ -13,12 +13,16 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
-            $table->integer('overkm_charge')->unsigned()->nullable();
-            $table->integer('overtime_charge')->unsigned()->nullable();
-            $table->integer('overnight_charge')->unsigned()->nullable();
-            $table->integer('holiday_fee')->unsigned()->nullable();
-            $table->string('notes')->nullable();
+            $table->string('name');
+            $table->string('type');
+            $table->decimal('unit_price');
             $table->boolean('is_active')->default(1);
+            // $table->decimal('overkm_rate', 15, 0)->unsigned()->nullable();
+            // $table->decimal('overtime_rate', 15, 0)->unsigned()->nullable();
+            // $table->decimal('overnight_rate', 15, 0)->unsigned()->nullable();
+            // $table->decimal('holiday_rate', 15, 0)->unsigned()->nullable();
+            // $table->string('note')->nullable();
+            // $table->boolean('is_active')->default(1);
             $table->timestamps();
         });
     }

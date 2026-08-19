@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, Users, Car } from '@lucide/vue';
+import { BookOpen, FolderGit2, LayoutGrid, Users, Car, Tickets, BanknoteArrowDown   } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -32,6 +32,16 @@ const mainNavItems: NavItem[] = [
         title: 'QL Cars',
         href: admin.cars.index(),
         icon: Car,
+    },
+    {
+        title: 'QL Trip Itinerary',
+        href: admin.trips.index(),
+        icon: Tickets,
+    },
+    {
+        title: 'QL Expenses',
+        href: admin.expenses.index(),
+        icon: BanknoteArrowDown ,
     },
 ];
 

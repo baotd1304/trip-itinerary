@@ -14,12 +14,18 @@ return new class extends Migration
         Schema::create('trip_expense', function (Blueprint $table) {
             $table->id();
             $table->foreignId('trip_id')->constrained('trips')->onDelete('cascade');
-            $table->foreignId('expense_id')->constrained('expenses')->onDelete('cascade'); 
-            $table->integer('overtime')->unsigned()->nullable();
-            $table->integer('overnight')->unsigned()->nullable();
-            $table->integer('toll_fee')->unsigned()->nullable();
-            $table->integer('airport_fee')->unsigned()->nullable();
-            $table->integer('holiday')->unsigned()->nullable();
+            $table->foreignId('expense_id')->constrained('expenses')->onDelete('cascade');
+            // $table->integer('quantity')->default(0);         // số lượng từ form
+            // $table->decimal('unit_price', 15, 2)->default(0); // đơn giá từ bảng expenses
+            // $table->decimal('subtotal', 15, 2)->default(0);   // = quantity * unit_price hoặc giá trị nhập trực tiếp
+
+            $table->decimal('overtime', 15,0)->unsigned()->nullable();
+            $table->decimal('overtime_rate', 15,0)->unsigned()->nullable();
+            $table->decimal('overnight', 15,0)->unsigned()->nullable();
+            $table->decimal('overnight_rate', 15,0)->unsigned()->nullable();
+            $table->decimal('toll_fee', 15,0)->unsigned()->nullable();
+            $table->decimal('airport_fee', 15,0)->unsigned()->nullable();
+            $table->decimal('holiday_rate', 15,0)->unsigned()->nullable();
             $table->timestamps();
         });
     }

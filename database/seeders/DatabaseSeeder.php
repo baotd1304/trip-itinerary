@@ -27,13 +27,23 @@ class DatabaseSeeder extends Seeder
         // Tạo role
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $userRole = Role::firstOrCreate(['name' => 'user']);
+        $advisorRole = Role::firstOrCreate(['name' => 'advisor']);
+        $driverRole = Role::firstOrCreate(['name' => 'driver']);
+        $editorRole = Role::firstOrCreate(['name' => 'editor']);
 
         // Tạo permission
         $viewDashboard = Permission::firstOrCreate(['name' => 'view dashboard']);
         $manageUsers = Permission::firstOrCreate(['name' => 'manage users']);
+        $createTrip = Permission::firstOrCreate(['name' => 'create trip']);
+        $confirmTrip = Permission::firstOrCreate(['name' => 'confirm trip']);
+        $editTrip = Permission::firstOrCreate(['name' => 'edit trip']);
 
         // Gán permission cho admin
         $adminRole->syncPermissions([$viewDashboard, $manageUsers]);
+        
+        $driverRole->syncPermissions([$createTrip]);
+        $advisorRole->syncPermissions([$confirmTrip]);
+        $editorRole->syncPermissions([$editTrip]);
 
         // Tạo user admin nếu chưa có
         $adminUser = User::firstWhere('email', 'admin@example.com');
@@ -59,7 +69,8 @@ class DatabaseSeeder extends Seeder
                 'password' => bcrypt('password'),
             ]);
         }
-
         $regularUser->assignRole($userRole);
+
+
     }
 }
