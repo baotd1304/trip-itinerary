@@ -12,7 +12,20 @@ class TripExpense extends Model
     protected $fillable = [
                     'trip_id', 'expense_id', 
                     // 'quantity', 'unit_price', 'subtotal',
-                    'overtime', 'overtime_rate','overnight','overnight_rate', 'toll_fee', 'airport_fee',
-                    'holiday_rate'
+                    'overtime', 'overtime_rate','is_overnight','overnight_rate', 'toll_fee', 'airport_fee',
+                    'is_holiday', 'holiday_rate'
                 ];
+    protected $casts = [
+        'is_overnight' => 'boolean',
+        'is_holiday' => 'boolean',
+    ];
+    protected $attributes= ['is_holiday'=> 0, 'is_overnight'=>0];
+    public function trip()
+    {
+        return $this->belongsTo(Trip::class);
+    }
+    public function expense()
+    {
+        return $this->belongsTo(Expense::class);
+    }
 }

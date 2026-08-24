@@ -16,15 +16,12 @@ class Trip extends Model
                     'note',
                     ];
     protected $attributes= ['status'=> 0, 'distance'=>0];
-    // protected $appends = ['day_at_format'];
-    // protected function casts(): array
-    // {
-    //     return [
-    //         'day' => 'date',
-    //     ];
-    // }
-    // public function getDayAtFormatAttribute()
-    // {
-    //     return $this->day?->format('d/m/Y');
-    // }
+
+   
+    
+    public function tripExpense()
+    {
+        return $this->hasOne(TripExpense::class,'trip_id','id');
+    }
+    
 }
