@@ -17,14 +17,12 @@ class TripController extends Controller
 {
     public function index()
     {
-        $trips = Trip::latest()
+        $trips = Trip::with('tripExpense')->latest()
             ->paginate(10);
         $cars = Car::where('is_active', 1)->get();
         $advisors = User::role('advisor')->get();
         $drivers = User::role('driver')->get();
-
-        // dd($advisors);
-        // $cars = Car::where('is_active', 1)->get();
+        
         return Inertia::render('admin/Trip', [
             'trips' => $trips,
             'cars' => $cars,
@@ -35,7 +33,6 @@ class TripController extends Controller
 
     public function store(Request $request)
     {
-        
         $validatedTrip = $request->validate([
             'driver'=> 'required|string|max:255',
             'advisor'=> 'required|string|max:255',
@@ -46,21 +43,18 @@ class TripController extends Controller
             'departure_time' => ' before:arrival_time',
             'arrival_time' => ' after:departure_time',
             'odo_start' => 'required|integer',
-            'odo_end' => 'required|integer',
+            'odo_end' => 'required|integer|gt:odo_start',
             'note'=> 'string|max:255',
-            
-
         ]);
         $distance = $request->input('odo_end') - $request->input('odo_start');
         $validatedExpense = $request->validate([
                 'overtime' => 'integer',
-                'overnight' => 'integer',
-                'toll_fee' => 'integer',
-                'airport_fee' => 'integer',
-                'holiday'=> 'integer',
+                'is_overnight' => 'boolean',
+                'is_holiday'=> 'boolean',
+                'toll_fee' => 'numeric', 'regex:/^\d{1,15}$/',
+                'airport_fee' => 'numeric', 'regex:/^\d{1,15}$/',
             ]);
         $expense = Expense::where('is_active', 1)->first();
-        // dd($expense);
         
         return DB::transaction(function () use ($validatedTrip, $validatedExpense, $expense, $distance) {
             $trip = Trip::create($validatedTrip);
@@ -68,11 +62,12 @@ class TripController extends Controller
                 'trip_id'=> $trip['id'],
                 'expense_id' => $expense['id'],
                 'overtime' => $validatedExpense['overtime'],
-                'overnight'=> $validatedExpense['overnight'],
                 'overtime_rate'=> $expense['overtime_rate'],
+                'is_overnight'=> $validatedExpense['is_overnight'],
                 'overnight_rate'=> $expense['overnight_rate'],
                 'toll_fee' => $validatedExpense['toll_fee'],
                 'airport_fee' => $validatedExpense['airport_fee'],
+                'is_holiday' => $validatedExpense['is_holiday'],
                 'holiday_rate' => $expense['holiday_rate'],
             ]);
             $total_fee = $trip_expense['overtime']*$trip_expense['overtime_rate']
@@ -90,22 +85,57 @@ class TripController extends Controller
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name' => 'string|max:255',
-            'brand' => 'string|max:255',
-            'model' => 'string|max:255',
-            'year' => 'integer|min:1900|max:' . date('Y'),
-            'license_plate' => 'required|string|max:20|unique:Trips,license_plate,' . $id,
-            'owner' => 'string|max:255',
-            'status' => 'in:1,0',
+        $validatedTrip = $request->validate([
+            'driver'=> 'required|string|max:255',
+            'advisor'=> 'required|string|max:255',
+            'day' => 'required|date',
+            'car_id' => 'required|integer',
+            'origin' => 'required|string|max:255',
+            'destination' => 'required|string|max:255',
+            'departure_time' => ' before:arrival_time',
+            'arrival_time' => ' after:departure_time',
+            'odo_start' => 'required|integer',
+            'odo_end' => 'required|integer|gt:odo_start',
+            'note'=> 'string|max:255',
         ]);
-        Trip::where('id', $id)->update($validated);
-
-        return redirect()->route('admin.Trips.index')->with('success', 'Trip updated successfully');
+        $distance = $request->input('odo_end') - $request->input('odo_start');
+        $validatedExpense = $request->validate([
+                'overtime' => 'integer',
+                'is_overnight' => 'boolean',
+                'is_holiday'=> 'boolean',
+                'toll_fee' => 'numeric', 'regex:/^\d{1,15}$/',
+                'airport_fee' => 'numeric', 'regex:/^\d{1,15}$/',
+            ]);
+        $expense = Expense::where('is_active', 1)->first();
+        return DB::transaction(function () use ($validatedTrip, $validatedExpense, $expense, $distance, $id) {
+            $trip = Trip::where('id', $id)->firstOrFail();
+            $trip->update($validatedTrip);
+            $trip_expense = TripExpense::where('trip_id', $id)->firstOrFail();
+            $trip_expense->update([
+                'expense_id' => $expense['id'],
+                'overtime' => $validatedExpense['overtime'],
+                'overtime_rate'=> $expense['overtime_rate'],
+                'is_overnight'=> $validatedExpense['is_overnight'],
+                'overnight_rate'=> $expense['overnight_rate'],
+                'toll_fee' => $validatedExpense['toll_fee'],
+                'airport_fee' => $validatedExpense['airport_fee'],
+                'is_holiday' => $validatedExpense['is_holiday'],
+                'holiday_rate' => $expense['holiday_rate'],
+            ]);
+            $total_fee = $trip_expense['overtime']      *   $trip_expense['overtime_rate']
+                        + $trip_expense['overnight']    *   $trip_expense['overnight_rate']
+                        + $trip_expense['toll_fee']     +   $trip_expense['airport_fee']    +   $trip_expense['holiday_rate'];
+            $trip->update([
+                'total_fee' => $total_fee,
+                'distance' => $distance,
+            ]);
+            
+            return redirect()->route('admin.trips.index')->with('success', 'Trip updated successfully');
+        });
     }
     public function destroy($id)
     {
         Trip::findOrFail($id)->delete();
-        return redirect()->route('admin.Trips.index')->with('success', 'Car deleted successfully');
+        return redirect()->route('admin.trips.index')->with('success', 'Trip deleted successfully');
     }
 }

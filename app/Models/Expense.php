@@ -16,5 +16,10 @@ class Expense extends Model
                     'holiday_fee', 'note',
                     ];
     protected $attributes= ['is_active'=> 1];
+
+    public function tripExpense()
+    {
+        return $this->hasOne(TripExpense::class, 'expense_id','id');
+    }
     
 }
