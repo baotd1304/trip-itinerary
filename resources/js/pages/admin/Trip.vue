@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import trips from '@/routes/admin/trips';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 
 defineOptions({
     layout: {
@@ -152,7 +151,7 @@ const formatVND = (value: number) => {
 <template>
   <Head title="QL Trip Itinerary" />
 
-  <Card class="m-4 overflow-hidden">
+  <Card class="overflow-hidden">
     <CardHeader>
       <div class="flex items-center justify-between">
         <CardTitle>Trip Itinerary</CardTitle>
@@ -312,7 +311,7 @@ const formatVND = (value: number) => {
           <div class="grid grid-cols-3 gap-4">
             <div class="grid gap-2">
               <Label for="f-ot">Overtime</Label>
-              <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" name="overtime" />
+              <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" max="4" name="overtime" />
               <InputError :message="errors?.overtime" />
             </div>
             <div class="grid gap-2">
@@ -340,7 +339,6 @@ const formatVND = (value: number) => {
               </div>
               <input type="hidden" name="is_overnight" :value="model.is_overnight ? 1 : 0" />
               <InputError :message="errors?.is_overnight" />
-              <pre>{{ model.is_overnight }}</pre>
             </div>
 
             <div class="grid gap-2 rounded-md border p-3">
@@ -354,7 +352,6 @@ const formatVND = (value: number) => {
               </div>
               <input type="hidden" name="is_holiday" :value="model.is_holiday ? 1 : 0" />
               <InputError :message="errors?.is_holiday" />
-              <pre>{{ model.is_holiday }}</pre>
             </div>
           </div>
 
@@ -385,7 +382,7 @@ const formatVND = (value: number) => {
       <Form v-if="selected" v-bind="trips.destroy.form(selected.id)" v-slot="{ processing }"
             class="space-y-4" @success="deleteOpen = false">
         <p class="mb-4 text-sm text-muted-foreground">
-          Xoá vĩnh viễn chuyến ID <b>{{ selected.id }}</b> — ngày {{ formatDate(selected.day) }},
+          Xoá vĩnh viễn chuyến ID <b>{{ selected.id }}</b> — ngày {{ formatDate(selected.day) }}, 
           {{ selected.origin }} → {{ selected.destination }}.
         </p>
         <DialogFooter>
