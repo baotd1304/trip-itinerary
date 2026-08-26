@@ -11,7 +11,6 @@ class TripExpense extends Model
     protected $table = 'trip_expense';
     protected $fillable = [
                     'trip_id', 'expense_id', 
-                    // 'quantity', 'unit_price', 'subtotal',
                     'overtime', 'overtime_rate','is_overnight','overnight_rate', 'toll_fee', 'airport_fee',
                     'is_holiday', 'holiday_rate'
                 ];
@@ -27,5 +26,13 @@ class TripExpense extends Model
     public function expense()
     {
         return $this->belongsTo(Expense::class);
+    }
+    public function getTotalFeeAttribute(): float
+    {
+        return $this->overtime*$this->overtime_rate
+             + $this->is_overnight*$this->overnight_rate
+             + $this->is_holiday*$this->holiday_rate
+             + $this->toll_fee
+             + $this->airport_fee;
     }
 }

@@ -12,6 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import trips from '@/routes/admin/trips';
 import { ref, computed } from 'vue';
+import { Badge } from '@/components/ui/badge'
+import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
+
 
 defineOptions({
     layout: {
@@ -29,7 +32,7 @@ interface Trip {
   day: string; origin: string; destination: string;
   departure_time: string; arrival_time: string;
   odo_start: number; odo_end: number; distance: number;
-  total_fee: number; is_confirm: number; note: string | null;
+  total_fee: number; status: string; note: string | null;
   trip_expense?: TripExpense | null, 
 }
 interface TripExpense {
@@ -183,9 +186,24 @@ const formatVND = (value: number) => {
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.destination }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ formatDate(trip.day) }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.distance }}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.is_confirm ? 'Confirmed' : 'Pending' }}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.trip_expense?.is_overnight}}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.trip_expense?.is_holiday}}</td>
+              <td class="border px-4 py-2 dark:border-gray-700">
+                <Badge class="inline-flex min-w-[80px] justify-center text-white"
+                  :class="{ pending: 'bg-gray-500', confirmed: 'bg-blue-500', rejected: 'bg-red-500' }[trip.status]">
+                  {{ { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected' }[trip.status] }}
+                </Badge>
+              </td>
+              <td class="border px-4 py-2 dark:border-gray-700 ">
+                <div class="flex items-center justify-center">
+                  <CircleCheckBigIcon v-if="trip.trip_expense?.is_overnight" class="text-green-500"> </CircleCheckBigIcon>
+                  <CircleX v-else class="text-gray-500"> </CircleX>
+                </div>
+              </td>
+              <td class="border px-4 py-2 dark:border-gray-700">
+                <div class="flex items-center justify-center">
+                  <CircleCheckBigIcon v-if="trip.trip_expense?.is_holiday" class="text-green-500"> </CircleCheckBigIcon>
+                  <CircleX v-else class="text-gray-500"> </CircleX>
+                </div>
+              </td>
               <td class="border px-4 py-2 dark:border-gray-700 text-right">{{ formatVND(trip.total_fee)}}</td>
               <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
                 <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button>

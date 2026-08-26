@@ -12,6 +12,9 @@ use App\Models\Expense;
 use App\Models\TripExpense;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Exports\TripsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class TripController extends Controller
 {
