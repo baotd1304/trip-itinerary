@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
+use App\Http\Controllers\TripExportController;
 
 Route::inertia('/', 'Welcome')->name('home');
 
@@ -38,7 +39,11 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
     Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
     Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
-
+    
 });
 
+    Route::get('/trips/export', [TripExportController::class, 'index'])->name('trips.export.index');
+    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('trips.export.download');
+
+    
 require __DIR__.'/settings.php';

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,10 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import trips from '@/routes/admin/trips';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
+import { Badge } from '@/components/ui/badge'
+import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
+
 
 defineOptions({
     layout: {
@@ -30,7 +32,7 @@ interface Trip {
   day: string; origin: string; destination: string;
   departure_time: string; arrival_time: string;
   odo_start: number; odo_end: number; distance: number;
-  total_fee: number; is_confirm: number; note: string | null;
+  total_fee: number; status: string; note: string | null;
   trip_expense?: TripExpense | null, 
 }
 interface TripExpense {
@@ -152,7 +154,7 @@ const formatVND = (value: number) => {
 <template>
   <Head title="QL Trip Itinerary" />
 
-  <Card class="m-4 overflow-hidden">
+  <Card class="overflow-hidden">
     <CardHeader>
       <div class="flex items-center justify-between">
         <CardTitle>Trip Itinerary</CardTitle>
@@ -184,9 +186,24 @@ const formatVND = (value: number) => {
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.destination }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ formatDate(trip.day) }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.distance }}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.is_confirm ? 'Confirmed' : 'Pending' }}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.trip_expense?.is_overnight}}</td>
-              <td class="border px-4 py-2 dark:border-gray-700">{{ trip.trip_expense?.is_holiday}}</td>
+              <td class="border px-4 py-2 dark:border-gray-700">
+                <Badge class="inline-flex min-w-[80px] justify-center text-white"
+                  :class="{ pending: 'bg-gray-500', confirmed: 'bg-blue-500', rejected: 'bg-red-500' }[trip.status]">
+                  {{ { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected' }[trip.status] }}
+                </Badge>
+              </td>
+              <td class="border px-4 py-2 dark:border-gray-700 ">
+                <div class="flex items-center justify-center">
+                  <CircleCheckBigIcon v-if="trip.trip_expense?.is_overnight" class="text-green-500"> </CircleCheckBigIcon>
+                  <CircleX v-else class="text-gray-500"> </CircleX>
+                </div>
+              </td>
+              <td class="border px-4 py-2 dark:border-gray-700">
+                <div class="flex items-center justify-center">
+                  <CircleCheckBigIcon v-if="trip.trip_expense?.is_holiday" class="text-green-500"> </CircleCheckBigIcon>
+                  <CircleX v-else class="text-gray-500"> </CircleX>
+                </div>
+              </td>
               <td class="border px-4 py-2 dark:border-gray-700 text-right">{{ formatVND(trip.total_fee)}}</td>
               <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
                 <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button>
@@ -312,7 +329,7 @@ const formatVND = (value: number) => {
           <div class="grid grid-cols-3 gap-4">
             <div class="grid gap-2">
               <Label for="f-ot">Overtime</Label>
-              <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" name="overtime" />
+              <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" max="4" name="overtime" />
               <InputError :message="errors?.overtime" />
             </div>
             <div class="grid gap-2">
@@ -340,7 +357,6 @@ const formatVND = (value: number) => {
               </div>
               <input type="hidden" name="is_overnight" :value="model.is_overnight ? 1 : 0" />
               <InputError :message="errors?.is_overnight" />
-              <pre>{{ model.is_overnight }}</pre>
             </div>
 
             <div class="grid gap-2 rounded-md border p-3">
@@ -354,7 +370,6 @@ const formatVND = (value: number) => {
               </div>
               <input type="hidden" name="is_holiday" :value="model.is_holiday ? 1 : 0" />
               <InputError :message="errors?.is_holiday" />
-              <pre>{{ model.is_holiday }}</pre>
             </div>
           </div>
 
@@ -385,7 +400,7 @@ const formatVND = (value: number) => {
       <Form v-if="selected" v-bind="trips.destroy.form(selected.id)" v-slot="{ processing }"
             class="space-y-4" @success="deleteOpen = false">
         <p class="mb-4 text-sm text-muted-foreground">
-          Xoá vĩnh viễn chuyến ID <b>{{ selected.id }}</b> — ngày {{ formatDate(selected.day) }},
+          Xoá vĩnh viễn chuyến ID <b>{{ selected.id }}</b> — ngày {{ formatDate(selected.day) }}, 
           {{ selected.origin }} → {{ selected.destination }}.
         </p>
         <DialogFooter>

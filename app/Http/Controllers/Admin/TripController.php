@@ -12,6 +12,9 @@ use App\Models\Expense;
 use App\Models\TripExpense;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Exports\TripsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class TripController extends Controller
 {
@@ -130,12 +133,12 @@ class TripController extends Controller
                 'distance' => $distance,
             ]);
             
-            return redirect()->route('admin.trips.index')->with('success', 'Trip updated successfully');
+            return redirect()->back()->with('success', 'Trip updated successfully ID: '. $id);
         });
     }
     public function destroy($id)
     {
         Trip::findOrFail($id)->delete();
-        return redirect()->route('admin.trips.index')->with('success', 'Trip deleted successfully');
+        return redirect()->back()->with('success', 'Trip deleted successfully ID: ' . $id);
     }
 }
