@@ -6,13 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  } from '@/components/ui/select'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  } from '@/components/ui/table'
 import { Download, Loader2, FileSpreadsheet } from 'lucide-vue-next'
-import AppLayout from '@/layouts/AppLayout.vue'
 
 interface CarOption { id: number; label: string }
 interface TripRow {
@@ -67,7 +66,7 @@ const fmt = (n: number) => (n ? nf.format(n) : '-')
 
 /* Tải lại preview (partial reload) khi đổi bộ lọc */
 function reload() {
-  router.get('/trips/export',
+  router.get('/admin/trips/export',
     { month: month.value, car_id: carId.value ?? '' },
     { only: ['trips', 'filters'], preserveState: true, preserveScroll: true, replace: true },
   )
@@ -80,16 +79,13 @@ function downloadExcel() {
   if (!canExport.value) return
   downloading.value = true
   const query = new URLSearchParams({ month: month.value, car_id: String(carId.value) })
-  window.location.href = `/trips/export/download?${query.toString()}`
+  window.location.href = `/admin/trips/export/download?${query.toString()}`
   setTimeout(() => (downloading.value = false), 1500)
 }
 </script>
 
 <template>
   <Head title="Xuất Excel chuyến đi" />
-
-  <AppLayout>
-    <div class="flex flex-col gap-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
@@ -194,6 +190,5 @@ function downloadExcel() {
           </Table>
         </CardContent>
       </Card>
-    </div>
-  </AppLayout>
+   
 </template>

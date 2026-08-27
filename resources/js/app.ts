@@ -30,4 +30,4 @@ createInertiaApp({
 initializeTheme();
 
 // This will listen for flash toast data from the server...
-initializeFlashToast();
+// initializeFlashToast();

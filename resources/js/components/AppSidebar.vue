@@ -37,6 +37,18 @@ const mainNavItems: NavItem[] = [
         title: 'QL Trip Itinerary',
         href: admin.trips.index(),
         icon: Tickets,
+        children: [
+            {
+                title: 'List trips',
+                href: admin.trips.index(),
+                icon: Tickets,
+            },
+            {
+                title: 'Export trip',
+                href: admin.trips.export.index(),
+                icon: Tickets,
+            },
+        ]
     },
     {
         title: 'QL Expenses',

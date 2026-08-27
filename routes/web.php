@@ -5,13 +5,14 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
-use App\Http\Controllers\TripExportController;
+use App\Http\Controllers\Admin\TripExportController;
 
-Route::inertia('/', 'Welcome')->name('home');
+// Route::inertia('/', 'client/Home')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('/', 'client/Home')->name('home');
 });
+
 
 Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');
@@ -39,11 +40,13 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
     Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
     Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
+    Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
+    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
     
+
 });
 
-    Route::get('/trips/export', [TripExportController::class, 'index'])->name('trips.export.index');
-    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('trips.export.download');
+
 
     
 require __DIR__.'/settings.php';
