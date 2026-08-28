@@ -7,10 +7,17 @@ use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\TripExportController;
 
-// Route::inertia('/', 'client/Home')->name('home');
+use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\ClientTripController;
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('/', 'client/Home')->name('home');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    // Route::get('/my-trips', [ClientTripController::class, 'index'])->name('client.trips.index');
+    // Route::get('/my-expenses', [ExpenseController::class, 'index'])->name('client.expenses.index');
+    // Route::get('/my-cars', [CarController::class, 'index'])->name('client.cars.index');
+
+    
 });
 
 
