@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\TripExportController;
 
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\ClientTripController;
+use App\Http\Controllers\Admin\CloudinaryUploadController;
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -43,6 +44,12 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
 
     //trip routes
+    Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
+        ->name('admin.trips.cloudinary-signature');
+
+    Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
+        ->name('admin.trips.uploaded-image.discard');
+
     Route::get('/trips', [TripController::class, 'index'])->name('admin.trips.index');
     Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
     Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
@@ -53,6 +60,14 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
 
 });
 
+// Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+//     Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
+//         ->name('trips.cloudinary-signature');
+
+//     Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
+//         ->name('trips.uploaded-image.discard');
+
+// });
 
 
     

@@ -15,6 +15,6 @@ useFlashToast();
     <AppLayout :breadcrumbs="breadcrumbs">
         <slot />
     </AppLayout>
-    <Toaster rich-colors position="top-right" :duration="4000" :visible-toasts="3"/>
+    <Toaster rich-colors position="top-right" :duration="4000" close-button :visible-toasts="3"/>
 
 </template>

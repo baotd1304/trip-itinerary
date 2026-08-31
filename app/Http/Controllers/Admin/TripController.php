@@ -3,142 +3,290 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\Trip;
 use App\Models\Car;
-use App\Models\User;
 use App\Models\Expense;
+use App\Models\Trip;
 use App\Models\TripExpense;
+use App\Models\User;
+use App\Services\CloudinaryService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use App\Exports\TripsExport;
-use Maatwebsite\Excel\Facades\Excel;
-
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class TripController extends Controller
 {
+    public function __construct(
+        private readonly CloudinaryService $cloudinary,
+    ) {}
+
     public function index()
     {
-        $trips = Trip::with('tripExpense')->latest()
-            ->paginate(10);
-        $cars = Car::where('is_active', 1)->get();
-        $advisors = User::role('advisor')->get();
-        $drivers = User::role('driver')->get();
-        
+        $trips = Trip::with(['tripExpense', 'images'])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('admin/Trip', [
-            'trips' => $trips,
-            'cars' => $cars,
-            'advisors' => $advisors,
-            'drivers' => $drivers,
+            'trips'    => $trips,
+            'cars'     => Car::where('is_active', 1)->get(),
+            'advisors' => User::role('advisor')->get(['id', 'name']),
+            'drivers'  => User::role('driver')->get(['id', 'name']),
         ]);
     }
 
     public function store(Request $request)
     {
-        $validatedTrip = $request->validate([
-            'driver'=> 'required|string|max:255',
-            'advisor'=> 'required|string|max:255',
-            'day' => 'required|date',
-            'car_id' => 'required|integer',
-            'origin' => 'required|string|max:255',
-            'destination' => 'required|string|max:255',
-            'departure_time' => ' before:arrival_time',
-            'arrival_time' => ' after:departure_time',
-            'odo_start' => 'required|integer',
-            'odo_end' => 'required|integer|gt:odo_start',
-            'note'=> 'string|max:255',
-        ]);
-        $distance = $request->input('odo_end') - $request->input('odo_start');
-        $validatedExpense = $request->validate([
-                'overtime' => 'integer',
-                'is_overnight' => 'boolean',
-                'is_holiday'=> 'boolean',
-                'toll_fee' => 'numeric', 'regex:/^\d{1,15}$/',
-                'airport_fee' => 'numeric', 'regex:/^\d{1,15}$/',
+        $data    = $this->validateData($request);
+        $expense = $this->activeExpense();
+
+        $trip = DB::transaction(function () use ($data, $expense) {
+            $trip = Trip::create([
+                ...$data['trip'],
+                'distance' => $data['distance'],
+                'status'   => 'pending',
             ]);
-        $expense = Expense::where('is_active', 1)->first();
-        
-        return DB::transaction(function () use ($validatedTrip, $validatedExpense, $expense, $distance) {
-            $trip = Trip::create($validatedTrip);
-            $trip_expense = TripExpense::create([
-                'trip_id'=> $trip['id'],
-                'expense_id' => $expense['id'],
-                'overtime' => $validatedExpense['overtime'],
-                'overtime_rate'=> $expense['overtime_rate'],
-                'is_overnight'=> $validatedExpense['is_overnight'],
-                'overnight_rate'=> $expense['overnight_rate'],
-                'toll_fee' => $validatedExpense['toll_fee'],
-                'airport_fee' => $validatedExpense['airport_fee'],
-                'is_holiday' => $validatedExpense['is_holiday'],
-                'holiday_rate' => $expense['holiday_rate'],
-            ]);
-            $total_fee = $trip_expense['overtime']*$trip_expense['overtime_rate']
-                        + $trip_expense['overnight']*$trip_expense['overnight_rate']
-                        + $trip_expense['toll_fee']+$trip_expense['airport_fee']+$trip_expense['holiday_rate'];
+
+            $tripExpense = TripExpense::create(
+                $this->expensePayload($trip->id, $data['expense'], $expense)
+            );
+
             $trip->update([
-                'total_fee' => $total_fee,
-                'distance' => $distance,
+                'total_fee' => $this->calculateTotalFee($tripExpense),
             ]);
-            
-            return redirect()->route('admin.trips.index')->with('success', 'Trip created successfully');
+
+            $this->syncImages($trip, $data['images']);
+
+            return $trip;
         });
 
+        return redirect()
+            ->route('admin.trips.index')
+            ->with('success', "Tạo chuyến thành công (ID: {$trip->id}).");
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
-        $validatedTrip = $request->validate([
-            'driver'=> 'required|string|max:255',
-            'advisor'=> 'required|string|max:255',
-            'day' => 'required|date',
-            'car_id' => 'required|integer',
-            'origin' => 'required|string|max:255',
-            'destination' => 'required|string|max:255',
-            'departure_time' => ' before:arrival_time',
-            'arrival_time' => ' after:departure_time',
-            'odo_start' => 'required|integer',
-            'odo_end' => 'required|integer|gt:odo_start',
-            'note'=> 'string|max:255',
-        ]);
-        $distance = $request->input('odo_end') - $request->input('odo_start');
-        $validatedExpense = $request->validate([
-                'overtime' => 'integer',
-                'is_overnight' => 'boolean',
-                'is_holiday'=> 'boolean',
-                'toll_fee' => 'numeric', 'regex:/^\d{1,15}$/',
-                'airport_fee' => 'numeric', 'regex:/^\d{1,15}$/',
-            ]);
-        $expense = Expense::where('is_active', 1)->first();
-        return DB::transaction(function () use ($validatedTrip, $validatedExpense, $expense, $distance, $id) {
-            $trip = Trip::where('id', $id)->firstOrFail();
-            $trip->update($validatedTrip);
-            $trip_expense = TripExpense::where('trip_id', $id)->firstOrFail();
-            $trip_expense->update([
-                'expense_id' => $expense['id'],
-                'overtime' => $validatedExpense['overtime'],
-                'overtime_rate'=> $expense['overtime_rate'],
-                'is_overnight'=> $validatedExpense['is_overnight'],
-                'overnight_rate'=> $expense['overnight_rate'],
-                'toll_fee' => $validatedExpense['toll_fee'],
-                'airport_fee' => $validatedExpense['airport_fee'],
-                'is_holiday' => $validatedExpense['is_holiday'],
-                'holiday_rate' => $expense['holiday_rate'],
-            ]);
-            $total_fee = $trip_expense['overtime']      *   $trip_expense['overtime_rate']
-                        + $trip_expense['overnight']    *   $trip_expense['overnight_rate']
-                        + $trip_expense['toll_fee']     +   $trip_expense['airport_fee']    +   $trip_expense['holiday_rate'];
+        $trip    = Trip::with('images')->findOrFail($id);
+        $data    = $this->validateData($request, $trip);
+        $expense = $this->activeExpense();
+
+        DB::transaction(function () use ($trip, $data, $expense) {
             $trip->update([
-                'total_fee' => $total_fee,
-                'distance' => $distance,
+                ...$data['trip'],
+                'distance' => $data['distance'],
             ]);
-            
-            return redirect()->back()->with('success', 'Trip updated successfully ID: '. $id);
+
+            $tripExpense = TripExpense::updateOrCreate(
+                ['trip_id' => $trip->id],
+                $this->expensePayload($trip->id, $data['expense'], $expense)
+            );
+
+            $trip->update([
+                'total_fee' => $this->calculateTotalFee($tripExpense),
+            ]);
+
+            $this->deleteImages($trip, $data['removed_image_ids']);
+            $this->syncImages($trip, $data['images']);
         });
+
+        return redirect()
+            ->back()
+            ->with('success', "Cập nhật chuyến thành công (ID: {$trip->id}).");
     }
-    public function destroy($id)
+
+    public function destroy(int $id)
     {
-        Trip::findOrFail($id)->delete();
-        return redirect()->back()->with('success', 'Trip deleted successfully ID: ' . $id);
+        $trip = Trip::with('images')->findOrFail($id);
+
+        $publicIds = $trip->images->pluck('public_id')->all();
+
+        DB::transaction(function () use ($trip) {
+            $trip->images()->delete();
+            TripExpense::where('trip_id', $trip->id)->delete();
+            $trip->delete();
+        });
+
+        // Xoá file trên Cloudinary sau khi DB đã commit
+        foreach ($publicIds as $publicId) {
+            $this->cloudinary->destroy($publicId);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', "Đã xoá chuyến (ID: {$id}).");
+    }
+
+    /* ===================== Helpers ===================== */
+
+    /**
+     * Validate toàn bộ payload (trip + expense + images) và trả về mảng đã chuẩn hoá.
+     */
+    private function validateData(Request $request, ?Trip $trip = null): array
+    {
+        $request->merge([
+            'is_overnight' => $request->boolean('is_overnight'),
+            'is_holiday'   => $request->boolean('is_holiday'),
+        ]);
+
+        $validated = $request->validate([
+            /* ----- Trip ----- */
+            'advisor'        => ['required', 'string', 'max:255'],
+            'driver'         => ['required', 'string', 'max:255'],
+            'day'            => ['required', 'date'],
+            'car_id'         => ['required', Rule::exists('cars', 'id')->where('is_active', 1)],
+            'origin'         => ['required', 'string', 'max:255'],
+            'destination'    => ['required', 'string', 'max:255'],
+            'departure_time' => ['required', 'date_format:H:i'],
+            'arrival_time'   => [
+                'required',
+                'date_format:H:i',
+                // Chuyến nghỉ đêm thì giờ đến có thể nhỏ hơn giờ đi (qua ngày hôm sau)
+                Rule::when(! $request->boolean('is_overnight'), ['after:departure_time']),
+            ],
+            'odo_start'      => ['required', 'integer', 'min:0'],
+            'odo_end'        => ['required', 'integer', 'gt:odo_start'],
+            'note'           => ['nullable', 'string', 'max:255'],
+
+            /* ----- Expense ----- */
+            'overtime'     => ['nullable', 'integer', 'min:0', 'max:4'],
+            'toll_fee'     => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'airport_fee'  => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'is_overnight' => ['boolean'],
+            'is_holiday'   => ['boolean'],
+
+            /* ----- Images (Cloudinary) ----- */
+            'images'             => ['nullable', 'array', 'max:10'],
+            'images.*.public_id' => ['required', 'string', 'max:255'],
+            'images.*.url'       => [
+                'required', 'url', 'max:500',
+                'starts_with:https://res.cloudinary.com/',
+            ],
+            'images.*.format' => ['nullable', 'string', 'max:20'],
+            'images.*.width'  => ['nullable', 'integer', 'min:0'],
+            'images.*.height' => ['nullable', 'integer', 'min:0'],
+            'images.*.bytes'  => ['nullable', 'integer', 'min:0'],
+
+            'removed_image_ids'   => ['nullable', 'array'],
+            'removed_image_ids.*' => ['integer'],
+        ], [
+            'odo_end.gt'          => 'Odo kết thúc phải lớn hơn odo bắt đầu.',
+            'arrival_time.after'  => 'Giờ đến phải sau giờ đi (trừ chuyến nghỉ đêm).',
+            'images.max'          => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến.',
+            'images.*.url.starts_with' => 'Đường dẫn ảnh không hợp lệ.',
+        ]);
+
+        return [
+            'trip' => [
+                'advisor'        => $validated['advisor'],
+                'driver'         => $validated['driver'],
+                'day'            => $validated['day'],
+                'car_id'         => $validated['car_id'],
+                'origin'         => $validated['origin'],
+                'destination'    => $validated['destination'],
+                'departure_time' => $validated['departure_time'],
+                'arrival_time'   => $validated['arrival_time'],
+                'odo_start'      => $validated['odo_start'],
+                'odo_end'        => $validated['odo_end'],
+                'note'           => $validated['note'] ?? null,
+            ],
+            'expense' => [
+                'overtime'     => (int)   ($validated['overtime'] ?? 0),
+                'toll_fee'     => (float) ($validated['toll_fee'] ?? 0),
+                'airport_fee'  => (float) ($validated['airport_fee'] ?? 0),
+                'is_overnight' => (bool)  ($validated['is_overnight'] ?? false),
+                'is_holiday'   => (bool)  ($validated['is_holiday'] ?? false),
+            ],
+            'distance'          => $validated['odo_end'] - $validated['odo_start'],
+            'images'            => $validated['images'] ?? [],
+            'removed_image_ids' => $validated['removed_image_ids'] ?? [],
+        ];
+    }
+
+    private function activeExpense(): Expense
+    {
+        $expense = Expense::where('is_active', 1)->first();
+
+        if (! $expense) {
+            throw ValidationException::withMessages([
+                'overtime' => 'Chưa cấu hình bảng giá đang hoạt động. Vui lòng kiểm tra mục Expense.',
+            ]);
+        }
+
+        return $expense;
+    }
+
+    /**
+     * Snapshot đơn giá tại thời điểm ghi nhận, tránh việc đổi bảng giá làm sai số liệu cũ.
+     */
+    private function expensePayload(int $tripId, array $input, Expense $expense): array
+    {
+        return [
+            'trip_id'        => $tripId,
+            'expense_id'     => $expense->id,
+            'overtime'       => $input['overtime'],
+            'overtime_rate'  => $expense->overtime_rate,
+            'is_overnight'   => $input['is_overnight'],
+            'overnight_rate' => $expense->overnight_rate,
+            'is_holiday'     => $input['is_holiday'],
+            'holiday_rate'   => $expense->holiday_rate,
+            'toll_fee'       => $input['toll_fee'],
+            'airport_fee'    => $input['airport_fee'],
+        ];
+    }
+
+    private function calculateTotalFee(TripExpense $e): float
+    {
+        return (float) (
+            $e->overtime * $e->overtime_rate
+            + ($e->is_overnight ? $e->overnight_rate : 0)
+            + ($e->is_holiday   ? $e->holiday_rate   : 0)
+            + $e->toll_fee
+            + $e->airport_fee
+        );
+    }
+
+    /**
+     * Lưu metadata ảnh đã upload trực tiếp lên Cloudinary từ phía client.
+     */
+    private function syncImages(Trip $trip, array $images): void
+    {
+        if (! $images) {
+            return;
+        }
+
+        $order = (int) $trip->images()->max('sort_order');
+
+        foreach (array_values($images) as $i => $img) {
+            $trip->images()->firstOrCreate(
+                ['public_id' => $img['public_id']],
+                [
+                    'url'        => $img['url'],
+                    'format'     => $img['format'] ?? null,
+                    'width'      => $img['width']  ?? null,
+                    'height'     => $img['height'] ?? null,
+                    'bytes'      => $img['bytes']  ?? null,
+                    'sort_order' => $order + $i + 1,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Chỉ xoá ảnh thuộc đúng chuyến này (tránh IDOR).
+     */
+    private function deleteImages(Trip $trip, array $ids): void
+    {
+        if (! $ids) {
+            return;
+        }
+
+        $images = $trip->images()->whereIn('id', $ids)->get();
+
+        foreach ($images as $image) {
+            $this->cloudinary->destroy($image->public_id);
+            $image->delete();
+        }
     }
 }
