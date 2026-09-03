@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Menu, Moon, Sun } from '@lucide/vue';
+import { Menu, Moon, Sun, Tickets } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +27,23 @@ const mobileOpen = ref(false);
 
 const mainNavItems: NavItem[] = [
     { title: 'Trang chủ', href: '/' },
+    {
+        title: 'QL Trip Itinerary',
+        href: '/',
+        icon: Tickets,
+        children: [
+            {
+                title: 'List trips',
+                href: admin.trips.index(),
+                icon: Tickets,
+            },
+            {
+                title: 'Export trip',
+                href: admin.trips.export.index(),
+                icon: Tickets,
+            },
+        ]
+    },
     { title: 'Chuyến đi', href: '/trips' },       // client.trips.index()
     { title: 'Chi phí', href: '/expenses' },      // client.expenses.index()
     { title: 'Liên hệ', href: '/contact' },

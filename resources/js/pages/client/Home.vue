@@ -70,7 +70,7 @@ const formatCurrency = (value: number | null) =>
                         
                     </p>
 
-                    <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <!-- <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <Button as-child size="lg">
                             <Link :href="register()">
                                 Bắt đầu ngay
@@ -80,7 +80,7 @@ const formatCurrency = (value: number | null) =>
                         <Button as-child size="lg" variant="outline">
                             <Link :href="login()">Đăng nhập</Link>
                         </Button>
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Stats -->
@@ -188,23 +188,4 @@ const formatCurrency = (value: number | null) =>
             </div>
         </section>
 
-        <!-- CTA -->
-        <section class="mx-auto w-full max-w-7xl px-4 py-16 md:px-6 md:py-20">
-            <Card class="border-dashed">
-                <CardContent class="flex flex-col items-center gap-5 py-12 text-center">
-                    <h2 class="text-2xl font-semibold tracking-tight text-balance">
-                        Sẵn sàng cho chuyến đi tiếp theo?
-                    </h2>
-                    <p class="max-w-xl text-muted-foreground text-pretty">
-                        Tạo tài khoản miễn phí và bắt đầu quản lý lịch trình, phương tiện, chi phí chỉ trong vài phút.
-                    </p>
-                    <Button as-child size="lg">
-                        <Link :href="register()">
-                            Tạo tài khoản
-                            <ArrowRight class="ml-1 size-4" />
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </section>
 </template>

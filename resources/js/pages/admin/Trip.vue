@@ -103,8 +103,6 @@ const openCreate = () => {
   is_holiday.value = false;
   resetUploads();
   existingImages.value = [];
-  removedImageIds.value = [];
-
   dialogOpen.value = true;
 };
 
@@ -126,7 +124,6 @@ const openEdit = (trip: Trip) => {
   };
   resetUploads();
   existingImages.value = [...(trip.images ?? [])];
-  removedImageIds.value = [];
   dialogOpen.value = true;
 };
 
@@ -175,7 +172,6 @@ const {
 } = useCloudinaryUpload();
 
 const existingImages = ref<TripImage[]>([]);
-const removedImageIds = ref<number[]>([]);
 const previewImage = ref<string | null>(null);
 
 const totalImages = computed(() => existingImages.value.length + uploadItems.value.length);
@@ -188,8 +184,8 @@ const onPickFiles = async (e: Event) => {
   if (files.length) await addFiles(files, remainingSlots.value);
 };
 
+/** Chỉ cần bỏ khỏi danh sách giữ lại; server sẽ tự xoá phần còn thiếu */
 const removeExisting = (img: TripImage) => {
-  removedImageIds.value.push(img.id);
   existingImages.value = existingImages.value.filter((i) => i.id !== img.id);
 };
 
@@ -197,7 +193,6 @@ const closeDialog = async (discard = false) => {
   if (discard) await discardOrphans();
   else resetUploads();
   existingImages.value = [];
-  removedImageIds.value = [];
   dialogOpen.value = false;
 };
 
@@ -503,7 +498,7 @@ const thumb = (url: string) =>
                 </button>
               </div>
 
-              <!-- Hidden inputs: gửi kèm <Form> của Inertia -->
+              <!-- Ảnh mới vừa upload lên Cloudinary -->
               <template v-for="(img, i) in uploadedImages" :key="'up-' + img.public_id">
                 <input type="hidden" :name="`images[${i}][public_id]`" :value="img.public_id" />
                 <input type="hidden" :name="`images[${i}][url]`"       :value="img.url" />
@@ -513,8 +508,12 @@ const thumb = (url: string) =>
                 <input type="hidden" :name="`images[${i}][bytes]`"     :value="img.bytes ?? ''" />
               </template>
 
-              <input v-for="(id, i) in removedImageIds" :key="'rm-' + id"
-                    type="hidden" :name="`removed_image_ids[${i}]`" :value="id" />
+              <!-- Cờ báo form có quản lý ảnh: BẮT BUỘC, để server biết được ý định "xoá hết" -->
+              <input type="hidden" name="images_synced" value="1" />
+
+              <!-- Danh sách ảnh cũ được GIỮ LẠI; rỗng = xoá tất cả -->
+              <input v-for="img in existingImages" :key="'keep-' + img.id"
+                type="hidden" name="kept_image_ids[]" :value="img.id"/>
 
               <InputError :message="errors?.images" />
             </div>
@@ -527,7 +526,7 @@ const thumb = (url: string) =>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" :disabled="processing" @click="closeDialog(true)">
+            <Button type="button" variant="outline" :disabled="processing" @click="closeDialog(false)">
               Cancel
             </Button>
             <Button type="submit" :disabled="processing || isUploading">

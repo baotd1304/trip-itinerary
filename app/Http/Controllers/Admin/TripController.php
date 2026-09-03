@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Models\TripImage;
 
 class TripController extends Controller
 {
@@ -72,34 +73,36 @@ class TripController extends Controller
         $data    = $this->validateData($request, $trip);
         $expense = $this->activeExpense();
 
-        DB::transaction(function () use ($trip, $data, $expense) {
-            $trip->update([
-                ...$data['trip'],
-                'distance' => $data['distance'],
-            ]);
+        $orphans = [];
+
+        DB::transaction(function () use ($trip, $data, $expense, &$orphans) {
+            $trip->update([...$data['trip'], 'distance' => $data['distance']]);
 
             $tripExpense = TripExpense::updateOrCreate(
                 ['trip_id' => $trip->id],
                 $this->expensePayload($trip->id, $data['expense'], $expense)
             );
 
-            $trip->update([
-                'total_fee' => $this->calculateTotalFee($tripExpense),
-            ]);
+            $trip->update(['total_fee' => $this->calculateTotalFee($tripExpense)]);
 
-            $this->deleteImages($trip, $data['removed_image_ids']);
+            // 1) Xoá bản ghi DB của những ảnh không còn được giữ
+            $orphans = $this->pruneImages($trip, $data);
+
+            // 2) Thêm ảnh mới
             $this->syncImages($trip, $data['images']);
         });
 
-        return redirect()
-            ->back()
-            ->with('success', "Cập nhật chuyến thành công (ID: {$trip->id}).");
+        // 3) Chỉ gọi Cloudinary SAU KHI transaction đã commit
+        foreach ($orphans as $publicId) {
+            $this->cloudinary->destroy($publicId);
+        }
+
+        return redirect()->back()->with('success', "Cập nhật chuyến thành công (ID: {$trip->id}).");
     }
 
     public function destroy(int $id)
     {
-        $trip = Trip::with('images')->findOrFail($id);
-
+        $trip      = Trip::with('images')->findOrFail($id);
         $publicIds = $trip->images->pluck('public_id')->all();
 
         DB::transaction(function () use ($trip) {
@@ -108,14 +111,11 @@ class TripController extends Controller
             $trip->delete();
         });
 
-        // Xoá file trên Cloudinary sau khi DB đã commit
         foreach ($publicIds as $publicId) {
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()
-            ->back()
-            ->with('success', "Đã xoá chuyến (ID: {$id}).");
+        return redirect()->back()->with('success', "Đã xoá chuyến (ID: {$id}).");
     }
 
     /* ===================== Helpers ===================== */
@@ -126,8 +126,9 @@ class TripController extends Controller
     private function validateData(Request $request, ?Trip $trip = null): array
     {
         $request->merge([
-            'is_overnight' => $request->boolean('is_overnight'),
-            'is_holiday'   => $request->boolean('is_holiday'),
+            'is_overnight'  => $request->boolean('is_overnight'),
+            'is_holiday'    => $request->boolean('is_holiday'),
+            'images_synced' => $request->boolean('images_synced'),
         ]);
 
         $validated = $request->validate([
@@ -168,8 +169,10 @@ class TripController extends Controller
             'images.*.height' => ['nullable', 'integer', 'min:0'],
             'images.*.bytes'  => ['nullable', 'integer', 'min:0'],
 
-            'removed_image_ids'   => ['nullable', 'array'],
-            'removed_image_ids.*' => ['integer'],
+            // Danh sách ảnh GIỮ LẠI (thay cho removed_image_ids)
+            'images_synced'    => ['nullable', 'boolean'],
+            'kept_image_ids'   => ['nullable', 'array'],
+            'kept_image_ids.*' => ['integer'],
         ], [
             'odo_end.gt'          => 'Odo kết thúc phải lớn hơn odo bắt đầu.',
             'arrival_time.after'  => 'Giờ đến phải sau giờ đi (trừ chuyến nghỉ đêm).',
@@ -199,8 +202,9 @@ class TripController extends Controller
                 'is_holiday'   => (bool)  ($validated['is_holiday'] ?? false),
             ],
             'distance'          => $validated['odo_end'] - $validated['odo_start'],
-            'images'            => $validated['images'] ?? [],
-            'removed_image_ids' => $validated['removed_image_ids'] ?? [],
+            'images'         => $validated['images'] ?? [],
+            'images_synced'  => (bool) ($validated['images_synced'] ?? false),
+            'kept_image_ids' => array_map('intval', $validated['kept_image_ids'] ?? []),
         ];
     }
 
@@ -276,17 +280,30 @@ class TripController extends Controller
     /**
      * Chỉ xoá ảnh thuộc đúng chuyến này (tránh IDOR).
      */
-    private function deleteImages(Trip $trip, array $ids): void
+    /**
+     * Xoá mọi ảnh KHÔNG nằm trong danh sách giữ lại.
+     * kept_image_ids rỗng  => xoá toàn bộ ảnh của chuyến.
+     * Trả về danh sách public_id cần dọn trên Cloudinary.
+     */
+    private function pruneImages(Trip $trip, array $data): array
     {
-        if (! $ids) {
-            return;
+        // Form không quản lý ảnh => không đụng tới
+        if (! $data['images_synced']) {
+            return [];
         }
 
-        $images = $trip->images()->whereIn('id', $ids)->get();
+        // whereNotIn với mảng rỗng => Laravel sinh "1 = 1" => lấy tất cả. Đúng ý đồ.
+        $stale = $trip->images()
+            ->whereNotIn('id', $data['kept_image_ids'])
+            ->get();
 
-        foreach ($images as $image) {
-            $this->cloudinary->destroy($image->public_id);
-            $image->delete();
+        if ($stale->isEmpty()) {
+            return [];
         }
+
+        TripImage::whereIn('id', $stale->pluck('id'))->delete();
+
+        return $stale->pluck('public_id')->all();
     }
+
 }

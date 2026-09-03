@@ -14,6 +14,8 @@ import {
 import users from '@/routes/admin/users';
 import { local as storageLocal } from '@/routes/storage';
 import { ref, computed } from 'vue';
+import { Badge } from '@/components/ui/badge'
+import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
 
 
 defineOptions({
@@ -31,7 +33,10 @@ interface User {
     id: number;
     name: string;
     email: string;
+    phone?: string;
+    is_active: boolean;
     created_at: string;
+    role?: string;
 }
 
 interface PaginationLink {
@@ -86,6 +91,14 @@ const formatEmbed = (input?: string | null) => {
                   .replace(/height\s*=\s*["']\d+["']/gi, 'height="100"');
 };
 
+const formatDate = (date?: string | null) => {
+  if (!date) return '—';
+  const d = new Date(date);
+  return Number.isNaN(d.getTime())
+    ? '—'
+    : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+};
+
 </script>
 
 <template>
@@ -106,6 +119,9 @@ const formatEmbed = (input?: string | null) => {
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">ID</th>
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Name</th>
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Email</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Role</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Phone</th>
+                <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Active</th>
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Created At</th>
                 <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Actions</th>
               </tr>
@@ -115,7 +131,15 @@ const formatEmbed = (input?: string | null) => {
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.id }}</td>
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.name }}</td>
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.email }}</td>
-                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.created_at }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.role }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ user.phone }}</td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+                  <div class="flex items-center justify-center">
+                  <CircleCheckBigIcon v-if="user?.is_active" class="text-green-500"> </CircleCheckBigIcon>
+                  <CircleX v-else class="text-gray-500"> </CircleX>
+                </div>
+                </td>
+                <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{{ formatDate(user.created_at) }}</td>
                 <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
                   <!-- Action buttons for edit and delete -->
                   <Button @click="openEdit(user)" variant="outline" size="sm" class="mr-2">Edit</Button>

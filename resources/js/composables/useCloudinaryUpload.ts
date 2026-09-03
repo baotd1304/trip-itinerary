@@ -8,6 +8,7 @@ export interface UploadedImage {
   width?: number;
   height?: number;
   bytes?: number;
+  original_name?: string;
 }
 
 export interface UploadItem {
@@ -20,13 +21,22 @@ export interface UploadItem {
   result?: UploadedImage;
 }
 
-interface Signature {
+/** Một "suất" upload do server cấp: folder theo ngày + tên file duy nhất + chữ ký riêng */
+interface UploadSlot {
+  folder: string;
+  public_id: string;
+  overwrite: string;
+  unique_filename: string;
+  use_filename: string;
+  timestamp: number;
+  signature: string;
+}
+
+interface SignatureResponse {
   cloud_name: string;
   api_key: string;
-  timestamp: number;
-  folder: string;
-  signature: string;
   upload_url: string;
+  slots: UploadSlot[];
 }
 
 const SIGNATURE_URL = '/admin/trips/cloudinary-signature';
@@ -34,7 +44,6 @@ const DISCARD_URL = '/admin/trips/uploaded-image';
 const MAX_SIZE = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 
-/** crypto.randomUUID chỉ tồn tại ở secure context (https/localhost) */
 function makeUid(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -50,18 +59,10 @@ export function useCloudinaryUpload() {
     items.value.filter((i) => i.status === 'done' && i.result).map((i) => i.result!),
   );
 
-  /**
-   * Thay thế TOÀN BỘ mảng bằng mảng mới.
-   * Cách này luôn kích hoạt re-render, kể cả khi ref bị shallow
-   * hoặc khi có tham chiếu object thô lẫn vào.
-   */
   function patch(uid: string, partial: Partial<UploadItem>) {
-    items.value = items.value.map((it) =>
-      it.uid === uid ? { ...it, ...partial } : it,
-    );
+    items.value = items.value.map((it) => (it.uid === uid ? { ...it, ...partial } : it));
   }
 
-  /** Lưới an toàn: ép mọi item còn kẹt 'uploading' về trạng thái cuối */
   function finalizeStuck() {
     if (!items.value.some((i) => i.status === 'uploading')) return;
 
@@ -72,16 +73,20 @@ export function useCloudinaryUpload() {
     );
   }
 
-  async function getSignature(): Promise<Signature> {
-    const res = await fetch(SIGNATURE_URL, {
+  /** Xin đúng số suất upload cần dùng */
+  async function getSlots(count: number): Promise<SignatureResponse> {
+    const res = await fetch(`${SIGNATURE_URL}?count=${count}`, {
       headers: { Accept: 'application/json' },
       credentials: 'same-origin',
     });
     if (!res.ok) throw new Error('Không lấy được chữ ký tải lên.');
-    return res.json();
+
+    const data: SignatureResponse = await res.json();
+    if (!data?.slots?.length) throw new Error('Không lấy được chữ ký tải lên.');
+    return data;
   }
 
-  function putFile(file: File, sig: Signature, uid: string) {
+  function putFile(file: File, cfg: SignatureResponse, slot: UploadSlot, uid: string) {
     return new Promise<UploadedImage>((resolve, reject) => {
       let settled = false;
       const done = (fn: () => void) => {
@@ -92,18 +97,22 @@ export function useCloudinaryUpload() {
 
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('api_key', sig.api_key);
-      fd.append('timestamp', String(sig.timestamp));
-      fd.append('folder', sig.folder);
-      fd.append('signature', sig.signature);
+      fd.append('api_key', cfg.api_key);
+      // Mọi field dưới đây PHẢI khớp tuyệt đối với chuỗi đã ký ở server
+      fd.append('folder', slot.folder);
+      fd.append('public_id', slot.public_id);
+      fd.append('overwrite', slot.overwrite);
+      fd.append('unique_filename', slot.unique_filename);
+      fd.append('use_filename', slot.use_filename);
+      fd.append('timestamp', String(slot.timestamp));
+      fd.append('signature', slot.signature);
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', sig.upload_url, true);
+      xhr.open('POST', cfg.upload_url, true);
       xhr.timeout = 120_000;
 
       xhr.upload.onprogress = (e) => {
         if (!e.lengthComputable) return;
-        // giữ tối đa 99% vì còn chờ Cloudinary xử lý và trả response
         patch(uid, { progress: Math.min(99, Math.round((e.loaded / e.total) * 100)) });
       };
 
@@ -111,10 +120,6 @@ export function useCloudinaryUpload() {
       xhr.ontimeout = () => done(() => reject(new Error('Quá thời gian tải ảnh.')));
       xhr.onabort = () => done(() => reject(new Error('Đã huỷ tải ảnh.')));
 
-      /**
-       * Dùng onloadend thay cho onload: sự kiện này LUÔN bắn ra
-       * dù thành công, lỗi, timeout hay bị huỷ => không bao giờ treo.
-       */
       xhr.onloadend = () => {
         done(() => {
           if (xhr.status < 200 || xhr.status >= 300) {
@@ -134,12 +139,13 @@ export function useCloudinaryUpload() {
               return reject(new Error('Phản hồi tải lên không hợp lệ.'));
             }
             resolve({
-              public_id: r.public_id,
+              public_id: r.public_id,          // đã bao gồm folder theo ngày
               url: r.secure_url,
               format: r.format,
               width: r.width,
               height: r.height,
               bytes: r.bytes,
+              original_name: file.name,
             });
           } catch {
             reject(new Error('Phản hồi tải lên không hợp lệ.'));
@@ -151,11 +157,10 @@ export function useCloudinaryUpload() {
     });
   }
 
-  async function addFiles(files: File[], remainingSlots = 10) {
-    const list = files.slice(0, Math.max(0, remainingSlots));
+  async function addFiles(files: File[], limit = 10) {
+    const list = files.slice(0, Math.max(0, limit));
     if (!list.length) return;
 
-    // Hiển thị ngay, kể cả khi còn đang chờ chữ ký
     const queued = list.map((file) => {
       const uid = makeUid();
       items.value = [
@@ -171,33 +176,42 @@ export function useCloudinaryUpload() {
       return { uid, file };
     });
 
-    let sig: Signature;
+    // Chỉ xin suất cho file hợp lệ
+    const valid = queued.filter(({ uid, file }) => {
+      if (!ACCEPTED.includes(file.type)) {
+        patch(uid, { status: 'error', error: 'Định dạng không hỗ trợ (JPG, PNG, WEBP, HEIC).' });
+        return false;
+      }
+      if (file.size > MAX_SIZE) {
+        patch(uid, { status: 'error', error: 'Ảnh vượt quá 5MB.' });
+        return false;
+      }
+      return true;
+    });
+
+    if (!valid.length) return finalizeStuck();
+
+    let cfg: SignatureResponse;
     try {
-      sig = await getSignature();
+      cfg = await getSlots(valid.length);
     } catch {
-      queued.forEach(({ uid }) =>
+      valid.forEach(({ uid }) =>
         patch(uid, { status: 'error', error: 'Không khởi tạo được phiên tải lên.' }),
       );
-      return;
+      return finalizeStuck();
     }
 
     try {
       await Promise.all(
-        queued.map(async ({ uid, file }) => {
-          if (!ACCEPTED.includes(file.type)) {
-            patch(uid, {
-              status: 'error',
-              error: 'Định dạng không hỗ trợ (JPG, PNG, WEBP, HEIC).',
-            });
-            return;
-          }
-          if (file.size > MAX_SIZE) {
-            patch(uid, { status: 'error', error: 'Ảnh vượt quá 5MB.' });
+        valid.map(async ({ uid, file }, index) => {
+          const slot = cfg.slots[index];
+          if (!slot) {
+            patch(uid, { status: 'error', error: 'Thiếu chữ ký cho tệp này.' });
             return;
           }
 
           try {
-            const result = await putFile(file, sig, uid);
+            const result = await putFile(file, cfg, slot, uid);
             patch(uid, { status: 'done', progress: 100, result });
           } catch (e: any) {
             patch(uid, {
@@ -209,7 +223,6 @@ export function useCloudinaryUpload() {
         }),
       );
     } finally {
-      // Không item nào được phép còn 'uploading' sau khi hàng đợi kết thúc
       finalizeStuck();
     }
   }

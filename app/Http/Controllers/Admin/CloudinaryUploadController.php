@@ -9,9 +9,15 @@ use Illuminate\Http\Request;
 
 class CloudinaryUploadController extends Controller
 {
-    public function signature(CloudinaryService $cloudinary)
+    public function signature(Request $request, CloudinaryService $cloudinary)
     {
-        return response()->json($cloudinary->uploadSignature());
+        $validated = $request->validate([
+            'count' => ['nullable', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        return response()->json(
+            $cloudinary->uploadSlots((int) ($validated['count'] ?? 1))
+        );
     }
 
     /** Xoá ảnh đã upload nhưng user bấm Cancel (ảnh mồ côi) */
