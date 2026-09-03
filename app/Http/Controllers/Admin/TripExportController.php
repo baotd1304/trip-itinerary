@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Exports\TripsExport;
 use App\Http\Requests\ExportTripRequest;
 use App\Models\Car;
 use App\Models\Trip;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -58,7 +59,7 @@ class TripExportController extends Controller
                 ->values();
         }
 
-        return Inertia::render('trips/Export', [
+        return Inertia::render('admin/trips/Export', [
             'cars'    => $cars,
             'filters' => ['month' => $month, 'car_id' => $carId],
             'trips'   => $preview,

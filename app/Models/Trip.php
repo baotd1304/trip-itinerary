@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class Trip extends Model
 {
@@ -15,7 +17,7 @@ class Trip extends Model
                     'advisor','car_id', 'driver', 'day', 'origin', 'destination',
                     'departure_time', 'arrival_time', 'odo_start', 'odo_end', 'distance',
                     'status', 'total_fee', 'note',
-                    ];
+                ];
     protected $attributes= ['status'=> 'pending', 'distance'=>0];
     
     protected function casts(): array
@@ -24,6 +26,11 @@ class Trip extends Model
             'day'       => 'date',
             'total_fee' => 'decimal:0',
         ];
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(TripImage::class)->orderBy('sort_order');
     }
     public function car()
     {

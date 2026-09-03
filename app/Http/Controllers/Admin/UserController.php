@@ -12,11 +12,19 @@ class UserController extends Controller
 {
     public function index()
     {
-        // Logic to retrieve users and pass them to the view
         $users = User::query()
-            ->select('id', 'name', 'email', 'created_at')
-            ->latest()
-            ->paginate(10);
+            ->with('roles:id,name')
+            ->latest('id')
+            ->paginate(10)
+            ->through(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_active' => $user->is_active,
+                'phone' => $user->phone,
+                'created_at' => $user->created_at,
+                'role' => $user->roles->first()?->name,
+            ]);
         return Inertia::render('admin/User', [
             'users' => $users,
         ]);

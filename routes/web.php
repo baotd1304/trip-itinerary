@@ -5,13 +5,22 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
-use App\Http\Controllers\TripExportController;
+use App\Http\Controllers\Admin\TripExportController;
 
-Route::inertia('/', 'Welcome')->name('home');
+use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\ClientTripController;
+use App\Http\Controllers\Admin\CloudinaryUploadController;
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    // Route::get('/my-trips', [ClientTripController::class, 'index'])->name('client.trips.index');
+    // Route::get('/my-expenses', [ExpenseController::class, 'index'])->name('client.expenses.index');
+    // Route::get('/my-cars', [CarController::class, 'index'])->name('client.cars.index');
+
+    
 });
+
 
 Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');
@@ -35,15 +44,31 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
 
     //trip routes
+    Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
+        ->name('admin.trips.cloudinary-signature');
+
+    Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
+        ->name('admin.trips.uploaded-image.discard');
+
     Route::get('/trips', [TripController::class, 'index'])->name('admin.trips.index');
     Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
     Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
     Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
+    Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
+    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
     
+
 });
 
-    Route::get('/trips/export', [TripExportController::class, 'index'])->name('trips.export.index');
-    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('trips.export.download');
+// Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+//     Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
+//         ->name('trips.cloudinary-signature');
+
+//     Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
+//         ->name('trips.uploaded-image.discard');
+
+// });
+
 
     
 require __DIR__.'/settings.php';

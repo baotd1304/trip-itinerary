@@ -14,6 +14,8 @@ import trips from '@/routes/admin/trips';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge'
 import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
+import { useCloudinaryUpload } from '@/composables/useCloudinaryUpload';
+import { X, ImagePlus, Loader2 } from 'lucide-vue-next';
 
 
 defineOptions({
@@ -33,7 +35,8 @@ interface Trip {
   departure_time: string; arrival_time: string;
   odo_start: number; odo_end: number; distance: number;
   total_fee: number; status: string; note: string | null;
-  trip_expense?: TripExpense | null, 
+  trip_expense?: TripExpense | null,
+  images?: TripImage[];
 }
 interface TripExpense {
   id:number, trip_id: number, overtime: number; toll_fee: number, airport_fee: number,
@@ -98,6 +101,8 @@ const openCreate = () => {
   model.value = emptyForm();
   is_overnight.value = false;
   is_holiday.value = false;
+  resetUploads();
+  existingImages.value = [];
   dialogOpen.value = true;
 };
 
@@ -110,13 +115,15 @@ const openEdit = (trip: Trip) => {
     day: toDateInput(trip.day),
     departure_time: toTimeInput(trip.departure_time),
     arrival_time: toTimeInput(trip.arrival_time),
-    overtime: Number(trip.trip_expense?.overtime),
-    toll_fee: Number(trip.trip_expense?.toll_fee),
-    airport_fee: Number(trip.trip_expense?.airport_fee),
+    overtime: Number(trip.trip_expense?.overtime ?? 0),
+    toll_fee: Number(trip.trip_expense?.toll_fee ?? 0),
+    airport_fee: Number(trip.trip_expense?.airport_fee ?? 0),
     is_overnight: Boolean(trip.trip_expense?.is_overnight),
     is_holiday: Boolean(trip.trip_expense?.is_holiday),
     note: trip.note ?? '',
   };
+  resetUploads();
+  existingImages.value = [...(trip.images ?? [])];
   dialogOpen.value = true;
 };
 
@@ -149,6 +156,49 @@ const formatVND = (value: number) => {
   }).format(value)
 };
 
+/* ===== Upload ảnh Cloudinary ===== */
+const MAX_IMAGES = 10;
+
+interface TripImage { id: number; url: string; public_id: string }
+
+const {
+  items: uploadItems,
+  uploading: isUploading,
+  uploaded: uploadedImages,
+  addFiles,
+  remove: removeUpload,
+  reset: resetUploads,
+  discardOrphans,
+} = useCloudinaryUpload();
+
+const existingImages = ref<TripImage[]>([]);
+const previewImage = ref<string | null>(null);
+
+const totalImages = computed(() => existingImages.value.length + uploadItems.value.length);
+const remainingSlots = computed(() => Math.max(0, MAX_IMAGES - totalImages.value));
+
+const onPickFiles = async (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = '';
+  if (files.length) await addFiles(files, remainingSlots.value);
+};
+
+/** Chỉ cần bỏ khỏi danh sách giữ lại; server sẽ tự xoá phần còn thiếu */
+const removeExisting = (img: TripImage) => {
+  existingImages.value = existingImages.value.filter((i) => i.id !== img.id);
+};
+
+const closeDialog = async (discard = false) => {
+  if (discard) await discardOrphans();
+  else resetUploads();
+  existingImages.value = [];
+  dialogOpen.value = false;
+};
+
+const thumb = (url: string) =>
+  url.replace('/upload/', '/upload/c_fill,w_240,h_240,q_auto,f_auto/');
+
 </script>
 
 <template>
@@ -176,7 +226,7 @@ const formatVND = (value: number) => {
           </thead>
           <tbody>
             <tr v-if="!items.length">
-              <td colspan="9" class="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu.</td>
+              <td colspan="12" class="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu.</td>
             </tr>
             <tr v-for="trip in items" :key="trip.id" class="hover:bg-gray-50 dark:hover:bg-gray-900">
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.id }}</td>
@@ -243,7 +293,7 @@ const formatVND = (value: number) => {
           v-bind="formProps"
           v-slot="{ errors, processing }"
           class="space-y-4"
-          @success="dialogOpen = false"
+          @success="closeDialog(false)"
         >
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
@@ -373,6 +423,102 @@ const formatVND = (value: number) => {
             </div>
           </div>
 
+          <!-- ===== Hình ảnh chuyến đi ===== -->
+          <div class="grid gap-3 rounded-md border p-3">
+            <div class="flex items-center justify-between">
+              <Label class="font-medium">Hình ảnh chuyến đi</Label>
+              <span class="text-xs text-muted-foreground">{{ totalImages }}/{{ MAX_IMAGES }} ảnh</span>
+            </div>
+
+            <!-- Vùng chọn file -->
+            <label
+              class="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed
+                    px-4 py-6 text-sm text-muted-foreground transition hover:bg-muted/50"
+              :class="remainingSlots === 0 ? 'pointer-events-none opacity-50' : ''"
+            >
+              <ImagePlus class="h-5 w-5" />
+              <span>Nhấn để chọn ảnh (JPG, PNG, WEBP · tối đa 5MB/ảnh)</span>
+              <input
+                type="file"
+                class="hidden"
+                accept="image/jpeg,image/png,image/webp,image/heic"
+                multiple
+                :disabled="remainingSlots === 0"
+                @change="onPickFiles"
+              />
+            </label>
+
+            <!-- Lưới ảnh -->
+            <div v-if="totalImages" class="grid grid-cols-4 gap-3 sm:grid-cols-5">
+              <!-- Ảnh đã lưu (chế độ edit) -->
+              <div
+                v-for="img in existingImages"
+                :key="'old-' + img.id"
+                class="group relative aspect-square overflow-hidden rounded-md border"
+              >
+                <img :src="thumb(img.url)" :alt="'Ảnh ' + img.id"
+                    class="h-full w-full cursor-zoom-in object-cover"
+                    @click="previewImage = img.url" />
+                <button type="button"
+                        class="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0
+                              transition group-hover:opacity-100"
+                        @click="removeExisting(img)">
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <!-- Ảnh mới upload -->
+              <div
+                v-for="item in uploadItems"
+                :key="item.uid"
+                class="group relative aspect-square overflow-hidden rounded-md border"
+                :class="item.status === 'error' ? 'border-red-500' : ''"
+              >
+                <img :src="item.result ? thumb(item.result.url) : item.preview" :alt="item.name"
+                    class="h-full w-full object-cover"
+                    :class="item.status !== 'done' ? 'opacity-50' : 'cursor-zoom-in'"
+                    @click="item.result && (previewImage = item.result.url)" />
+
+                <div v-if="item.status === 'uploading'"
+                    class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 text-white">
+                  <Loader2 class="h-4 w-4 animate-spin" />
+                  <span class="text-xs font-medium">{{ item.progress }}%</span>
+                </div>
+
+                <div v-if="item.status === 'error'"
+                    class="absolute inset-x-0 bottom-0 bg-red-600/90 px-1 py-0.5 text-[10px] leading-tight text-white">
+                  {{ item.error }}
+                </div>
+
+                <button type="button"
+                        class="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0
+                              transition group-hover:opacity-100"
+                        @click="removeUpload(item.uid)">
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <!-- Ảnh mới vừa upload lên Cloudinary -->
+              <template v-for="(img, i) in uploadedImages" :key="'up-' + img.public_id">
+                <input type="hidden" :name="`images[${i}][public_id]`" :value="img.public_id" />
+                <input type="hidden" :name="`images[${i}][url]`"       :value="img.url" />
+                <input type="hidden" :name="`images[${i}][format]`"    :value="img.format ?? ''" />
+                <input type="hidden" :name="`images[${i}][width]`"     :value="img.width ?? ''" />
+                <input type="hidden" :name="`images[${i}][height]`"    :value="img.height ?? ''" />
+                <input type="hidden" :name="`images[${i}][bytes]`"     :value="img.bytes ?? ''" />
+              </template>
+
+              <!-- Cờ báo form có quản lý ảnh: BẮT BUỘC, để server biết được ý định "xoá hết" -->
+              <input type="hidden" name="images_synced" value="1" />
+
+              <!-- Danh sách ảnh cũ được GIỮ LẠI; rỗng = xoá tất cả -->
+              <input v-for="img in existingImages" :key="'keep-' + img.id"
+                type="hidden" name="kept_image_ids[]" :value="img.id"/>
+
+              <InputError :message="errors?.images" />
+            </div>
+          </div>
+
           <div class="grid gap-2">
             <Label for="f-note">Note</Label>
             <Input id="f-note" v-model="model.note" name="note" />
@@ -380,9 +526,12 @@ const formatVND = (value: number) => {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" :disabled="processing" @click="dialogOpen = false">Cancel</Button>
-            <Button type="submit" :disabled="processing">
-              {{ mode === 'create' ? 'Create' : 'Save Changes' }}
+            <Button type="button" variant="outline" :disabled="processing" @click="closeDialog(false)">
+              Cancel
+            </Button>
+            <Button type="submit" :disabled="processing || isUploading">
+              <Loader2 v-if="isUploading" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isUploading ? 'Đang tải ảnh...' : (mode === 'create' ? 'Create' : 'Save Changes') }}
             </Button>
           </DialogFooter>
         </Form>
@@ -410,4 +559,16 @@ const formatVND = (value: number) => {
       </Form>
     </DialogContent>
   </Dialog>
+
+  <!-- Lightbox xem anh -->
+  <Dialog :open="!!previewImage" @update:open="(v) => !v && (previewImage = null)">
+    <DialogContent class="sm:max-w-[860px]">
+      <DialogHeader>
+        <DialogTitle>Xem ảnh</DialogTitle>
+      </DialogHeader>
+      <img v-if="previewImage" :src="previewImage" alt="Ảnh chuyến đi"
+          class="max-h-[70vh] w-full rounded-md object-contain" />
+    </DialogContent>
+  </Dialog>
+
 </template>
