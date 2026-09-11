@@ -36,6 +36,14 @@ class Trip extends Model
     {
         return $this->belongsTo(Car::class);
     }
+    public function advisor()
+    {
+        return $this->belongsTo(User::class, 'advisor_id');
+    }
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_id');
+    }
     public function tripExpense()
     {
         return $this->hasOne(TripExpense::class,'trip_id','id');

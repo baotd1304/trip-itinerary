@@ -39,7 +39,19 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    // Share tất cả roles dưới dạng mảng tên
+                    'roles' => $request->user()->getRoleNames(),
+                    // Share tất cả permissions dưới dạng mảng tên
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    // Hoặc share cả hai dạng
+                    'can' => $request->user()->getAllPermissions()->pluck('name')
+                        ->mapWithKeys(fn($p) => [$p => true])
+                        ->toArray(),
+                ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             

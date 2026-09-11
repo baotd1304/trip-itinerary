@@ -4,34 +4,34 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Trip;
+use App\Models\Car;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function index(Request $request): Response
+   public function index()
     {
-        return Inertia::render('client/Home', [
-            // 'latestTrips' => Trip::query()
-            //     ->latest()
-            //     ->take(6)
-            //     ->get()
-            //     ->map(fn (Trip $trip) => [
-            //         'id'            => $trip->id,
-            //         'name'          => $trip->name,
-            //         'destination'   => $trip->destination,
-            //         'start_date'    => $trip->start_date,
-            //         'end_date'      => $trip->end_date,
-            //         'status'        => $trip->status,
-            //         'total_expense' => $trip->expenses()->sum('amount'),
-            //     ]),
+        $user = auth()->user();
+        $query = Trip::with(['tripExpense', 'images']);
+        // Lấy trip mà user là driver HOẶC advisor
+        if ($user) {
+            $query->where(function($q) use ($user) {
+                $q->where('driver', $user->name)
+                ->orWhere('advisor', $user->name);
+            });
+        }
+        
+        $trips = $query->latest()
+            ->limit(5);
 
-            // 'stats' => [
-            //     'trips'   => Trip::count(),
-            //     'cars'    => Car::count(),
-            //     'members' => User::count(),
-            // ],
+        return Inertia::render('client/Home', [
+            'trips'    => $trips,
+            'cars'     => Car::where('is_active', 1)->get(),
+            'advisors' => User::role('advisor')->get(['id', 'name']),
+            'drivers'  => User::role('driver')->get(['id', 'name']),
         ]);
     }
 }
