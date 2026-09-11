@@ -6,6 +6,8 @@ import ClientSimpleLayout from '@/layouts/client/ClientSimpleLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { createApp, h } from 'vue'
+import { vCan } from './directives/can'
 import 'vue-sonner/style.css';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -42,6 +44,20 @@ createInertiaApp({
     },
     progress: {
         color: '#4B5563',
+    },
+
+    setup({ el, App, props, plugin }) {
+        const app = createApp({ render: () => h(App, props) })
+            .use(plugin)
+
+        // Đăng ký directive toàn cục
+        app.directive('can', vCan)
+
+        // (Optional) Đăng ký như global property để dùng trong template
+        app.config.globalProperties.$can = vCan.check
+        app.config.globalProperties.$cannot = (value: any) => !vCan.check(value)
+
+        app.mount(el!)
     },
 });
 

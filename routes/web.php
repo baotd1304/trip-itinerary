@@ -14,11 +14,8 @@ use App\Http\Controllers\Admin\CloudinaryUploadController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
-    // Route::get('/my-trips', [ClientTripController::class, 'index'])->name('client.trips.index');
-    // Route::get('/my-expenses', [ExpenseController::class, 'index'])->name('client.expenses.index');
-    // Route::get('/my-cars', [CarController::class, 'index'])->name('client.cars.index');
-
     
+    Route::get('/trips', [ClientTripController::class, 'index'])->name('client.trips.index');
 });
 
 
@@ -60,14 +57,6 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
 
 });
 
-// Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-//     Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
-//         ->name('trips.cloudinary-signature');
-
-//     Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
-//         ->name('trips.uploaded-image.discard');
-
-// });
 
 
     

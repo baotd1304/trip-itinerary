@@ -63,24 +63,24 @@ const formatCurrency = (value: number | null) =>
                     <Badge variant="secondary" class="mb-4">Trip Itinerary</Badge>
 
                     <h1 class="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
-                        Quản lý chuyến đi, xe và chi phí trong một nơi duy nhất
+                        Quản lý hành trình chuyến đi, xe và chi phí
                     </h1>
 
                     <p class="mt-5 text-lg text-muted-foreground text-pretty">
                         
                     </p>
 
-                    <!-- <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <Button as-child size="lg">
                             <Link :href="register()">
-                                Bắt đầu ngay
+                                Thêm chuyến đi mới
                                 <ArrowRight class="ml-1 size-4" />
                             </Link>
                         </Button>
                         <Button as-child size="lg" variant="outline">
                             <Link :href="login()">Đăng nhập</Link>
                         </Button>
-                    </div> -->
+                    </div>
                 </div>
 
                 <!-- Stats -->
@@ -136,7 +136,7 @@ const formatCurrency = (value: number | null) =>
                 <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
                         <h2 class="text-3xl font-semibold tracking-tight">Chuyến đi mới nhất</h2>
-                        <p class="mt-2 text-muted-foreground">Các lịch trình vừa được cập nhật gần đây.</p>
+                        <p class="mt-2 text-muted-foreground">Lịch trình các chuyến đi vừa được cập nhật gần đây.</p>
                     </div>
                     <Button as-child variant="ghost">
                         <Link href="/trips">
