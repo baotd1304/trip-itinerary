@@ -9,15 +9,29 @@ use App\Http\Controllers\Admin\TripExportController;
 
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\ClientTripController;
+use App\Http\Controllers\Client\ClientCloudinaryUploadController;
 use App\Http\Controllers\Admin\CloudinaryUploadController;
 
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     
-    Route::get('/trips', [ClientTripController::class, 'index'])->name('client.trips.index');
+    Route::get('trips', [ClientTripController::class, 'index'])->name('client.trips.index');
+    Route::post('trips', [ClientTripController::class, 'store'])->name('client.trips.store');
+    Route::put('trips/{id}', [ClientTripController::class, 'update'])->name('client.trips.update');
+    Route::delete('trips/{id}', [ClientTripController::class, 'destroy'])->name('client.trips.destroy');
+
+    Route::get('trips/cloudinary-signature', [ClientCloudinaryUploadController::class, 'signature'])
+        ->name('client.trips.cloudinary-signature');
+    Route::delete('trips/uploaded-image', [ClientCloudinaryUploadController::class, 'discard'])
+        ->name('client.trips.uploaded-image.discard');
+
+    
 });
 
+Route::middleware(['auth', 'role:driver|admin'])->group(function () {
+    
+});
 
 Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');

@@ -43,13 +43,12 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    // Share tất cả roles dưới dạng mảng tên
-                    'roles' => $request->user()->getRoleNames(),
-                    // Share tất cả permissions dưới dạng mảng tên
-                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    // 👇 Ép về array để đảm bảo bên Vue nhận được mảng thuần
+                    'roles'       => $request->user()->getRoleNames()->values()->toArray(),
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name')->values()->toArray(),
                     // Hoặc share cả hai dạng
                     'can' => $request->user()->getAllPermissions()->pluck('name')
-                        ->mapWithKeys(fn($p) => [$p => true])
+                        ->mapWithKeys(fn($permission) => [$permission => true])
                         ->toArray(),
                 ] : null,
             ],

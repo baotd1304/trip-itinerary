@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import trips from '@/routes/admin/trips';
+import trips from '@/routes/client/trips';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge'
 import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
-import { useCloudinaryUpload } from '@/composables/useCloudinaryUpload';
+import { useClientCloudinaryUpload } from '@/composables/useClientCloudinaryUpload';
 import { X, ImagePlus, Loader2 } from 'lucide-vue-next';
-
+import { can } from '@/directives/can';
 
 defineOptions({
     layout: {
@@ -30,14 +30,16 @@ defineOptions({
 });
 
 interface Trip {
-  id: number; advisor: Advisor | null; car_id: number; driver: Driver | null;
+  id: number; advisor?: Advisor | null; car_id: number; driver?: Driver | null;
   day: string; origin: string; destination: string;
   departure_time: string; arrival_time: string;
   odo_start: number; odo_end: number; distance: number;
   total_fee: number; status: string; note: string | null;
   trip_expense?: TripExpense | null,
   images?: TripImage[];
+  can?: TripPermissions;
 }
+interface TripPermissions { update: boolean; delete: boolean }
 interface TripExpense {
   id:number, trip_id: number, overtime: number; toll_fee: number, airport_fee: number,
   is_overnight: boolean, is_holiday: boolean
@@ -53,6 +55,7 @@ const props = defineProps<{
   advisors: { data: Advisor[] };
   drivers: { data: Driver[] };
   trip_expenses: { data: TripExpense[]}
+  can?: { create: boolean }
 }>();
 
 /* Nhận: [...] | {data:[...]} | {data:{...}} | {0:{},1:{}} | null | undefined */
@@ -82,6 +85,59 @@ const mode = ref<'create' | 'edit'>('create');
 const is_overnight = ref(false);
 const is_holiday   = ref(false);
 
+// check quyền user hiện tại
+const page = usePage();
+const authUser = computed(() => (page.props.auth as any)?.user);
+const auth = computed(() => usePage().props.auth);
+/** User hiện tại có role "driver" không? */
+const isDriver = computed(() => {
+  const roles: string[] = authUser.value?.roles ?? [];
+  return roles.includes('driver');
+});
+
+/** User hiện tại có role "advisor" không? */
+const isAdvisor = computed(() => {
+  const roles: string[] = authUser.value?.roles ?? [];
+  return roles.includes('advisor');
+});
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pending',
+  editting: 'Editting',
+  confirmed: 'Confirmed',
+  rejected: 'Rejected',
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  pending: 'bg-gray-500',
+  editting: 'bg-amber-500',
+  confirmed: 'bg-blue-500',
+  rejected: 'bg-red-500',
+};
+
+const canUpdate = (trip: Trip) => trip.can?.update === true;
+const canDelete = (trip: Trip) => trip.can?.delete === true;
+
+const updateHint = (trip: Trip) =>
+  canUpdate(trip)
+    ? 'Chỉnh sửa chuyến'
+    : trip.status === 'confirmed'
+      ? 'Chuyến đã xác nhận — không thể chỉnh sửa'
+      : 'Chỉ chỉnh sửa được khi trạng thái là "editting"';
+
+const deleteHint = (trip: Trip) =>
+  canDelete(trip)
+    ? 'Xoá chuyến'
+    : trip.status === 'confirmed'
+      ? 'Chuyến đã xác nhận — không thể xoá'
+      : 'Chỉ xoá được khi trạng thái là "pending"';
+
+//Debug
+console.log('Auth user:', auth.value?.user)
+console.log('Roles:', auth.value?.user?.roles)       // ['driver'] hoặc ['advisor']
+console.log('Permissions:', auth.value?.user?.permissions)
+console.log('Can:', auth.value?.user?.can)
+
 /* ---------- State form (1 dialog cho cả create & edit) ---------- */
 const emptyForm = () => ({
   id: 0, advisor_id: '' as number | '', driver_id: '' as number | '', car_id: '' as number | '',
@@ -99,6 +155,15 @@ const selected = ref<Trip | null>(null);
 const openCreate = () => {
   mode.value = 'create';
   model.value = emptyForm();
+  // Tự động set advisor/driver khi mở dialog
+  // Nếu user là driver → auto set driver_id = user.id
+  if (isDriver.value && authUser.value?.id) {
+    model.value.driver_id = authUser.value.id;
+  }
+  // Nếu user là advisor → auto set advisor_id = user.id
+  if (isAdvisor.value && authUser.value?.id) {
+    model.value.advisor_id = authUser.value.id;
+  }
   is_overnight.value = false;
   is_holiday.value = false;
   resetUploads();
@@ -107,6 +172,10 @@ const openCreate = () => {
 };
 
 const openEdit = (trip: Trip) => {
+  if (!canUpdate(trip)) {
+    alert('Bạn không có quyền chỉnh sửa chuyến này.');
+    return;
+  }
   mode.value = 'edit';
   model.value = {
     ...emptyForm(),
@@ -127,7 +196,14 @@ const openEdit = (trip: Trip) => {
   dialogOpen.value = true;
 };
 
-const openDelete = (trip: Trip) => { selected.value = trip; deleteOpen.value = true; };
+const openDelete = (trip: Trip) => {
+  if (!canDelete(trip)) {
+    alert('Bạn không có quyền xoá chuyến này.');
+    return;
+  }
+  selected.value = trip; 
+  deleteOpen.value = true; 
+};
 
 /* distance tính tự động */
 const distance = computed(() =>
@@ -169,7 +245,7 @@ const {
   remove: removeUpload,
   reset: resetUploads,
   discardOrphans,
-} = useCloudinaryUpload();
+} = useClientCloudinaryUpload();
 
 const existingImages = ref<TripImage[]>([]);
 const previewImage = ref<string | null>(null);
@@ -208,7 +284,9 @@ const thumb = (url: string) =>
     <CardHeader>
       <div class="flex items-center justify-between">
         <CardTitle>Trip Itinerary</CardTitle>
-        <Button v-can="'driver'" size="sm" @click="openCreate">Create Trip Itinerary</Button>
+        <!-- <Button v-can="'driver'" size="sm" @click="openCreate">Create Trip Itinerary</Button> -->
+        <!-- Nút tạo mới: dựa trên quyền từ server -->
+        <Button v-if="props.can?.create" size="sm" @click="openCreate">Create Trip Itinerary</Button>
       </div>
     </CardHeader>
 
@@ -237,9 +315,13 @@ const thumb = (url: string) =>
               <td class="border px-4 py-2 dark:border-gray-700">{{ formatDate(trip.day) }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.distance }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">
-                <Badge class="inline-flex min-w-[80px] justify-center text-white"
+                <!-- <Badge class="inline-flex min-w-[80px] justify-center text-white"
                   :class="{ pending: 'bg-gray-500', confirmed: 'bg-blue-500', rejected: 'bg-red-500' }[trip.status]">
                   {{ { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected' }[trip.status] }}
+                </Badge> -->
+                <Badge class="inline-flex min-w-[80px] justify-center text-white"
+                      :class="STATUS_CLASS[trip.status] ?? 'bg-gray-500'">
+                  {{ STATUS_LABEL[trip.status] ?? trip.status }}
                 </Badge>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 ">
@@ -256,8 +338,25 @@ const thumb = (url: string) =>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 text-right">{{ formatVND(trip.total_fee)}}</td>
               <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
-                <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button>
-                <Button variant="destructive" size="sm" @click="openDelete(trip)">Delete</Button>
+                <!-- <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button> -->
+                <!-- <Button variant="destructive" size="sm" @click="openDelete(trip)">Delete</Button> -->
+                <Button
+                  variant="outline" size="sm" class="mr-2"
+                  :disabled="!canUpdate(trip)"
+                  :title="updateHint(trip)"
+                  @click="openEdit(trip)"
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  variant="destructive" size="sm"
+                  :disabled="!canDelete(trip)"
+                  :title="deleteHint(trip)"
+                  @click="openDelete(trip)"
+                >
+                  Delete
+                </Button>
               </td>
             </tr>
           </tbody>
@@ -297,16 +396,25 @@ const thumb = (url: string) =>
         >
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label for="advisor">Advisor</Label>
-              <select id="advisor" v-model="model.advisor_id" name="advisor" required class="w-full rounded border p-2">
+              <Label for="advisor_id">Advisor</Label>
+              <select id="advisor_id" v-model="model.advisor_id" name="advisor_id" required class="w-full rounded border p-2">
                 <option selected value="" disabled>-- Select Advisor --</option>
                 <option v-for="a in advisors" :key="a.id" :value="a.id">{{ a.id }} - {{ a.name }}</option>
               </select>
               <InputError :message="errors?.advisor_id" />
             </div>
+            <!-- Driver -->
             <div class="grid gap-2">
-              <Label for="driver">Driver</Label>
-              <select id="driver" v-model="model.driver_id" name="driver" required class="w-full rounded border p-2">
+              <Label for="driver_id">Driver</Label>
+              <!-- Nếu là driver: hiện text + input hidden -->
+              <div v-if="isDriver" class="flex items-center rounded border bg-gray-100 p-2 text-sm">
+                {{ authUser?.id }} - {{ authUser?.name }}
+                <input type="hidden" name="driver_id" :value="authUser?.id" />
+              </div>
+              <!-- Không phải driver: hiện select -->
+              <select v-else
+                id="driver_id" v-model="model.driver_id" name="driver_id" required 
+                class="w-full rounded border p-2">
                 <option value="" disabled>-- Select Driver --</option>
                 <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.id }} - {{ d.name }}</option>
               </select>
@@ -510,13 +618,15 @@ const thumb = (url: string) =>
 
               <!-- Cờ báo form có quản lý ảnh: BẮT BUỘC, để server biết được ý định "xoá hết" -->
               <input type="hidden" name="images_synced" value="1" />
-
               <!-- Danh sách ảnh cũ được GIỮ LẠI; rỗng = xoá tất cả -->
               <input v-for="img in existingImages" :key="'keep-' + img.id"
                 type="hidden" name="kept_image_ids[]" :value="img.id"/>
-
               <InputError :message="errors?.images" />
             </div>
+            <input type="hidden" name="images_synced" value="1" />
+            <input v-for="img in existingImages" :key="'keep-' + img.id"
+                  type="hidden" name="kept_image_ids[]" :value="img.id" />
+            <InputError :message="errors?.images" />
           </div>
 
           <div class="grid gap-2">
