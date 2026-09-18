@@ -30,7 +30,7 @@ class ClientTripController extends Controller
     {
         $user = auth()->user();
         Gate::authorize('viewAny', Trip::class);
-        $query = Trip::with(['tripExpense', 'images', 'car', 'advisor', 'driver']);
+        $query = Trip::with(['tripExpense', 'images', 'car', 'advisor', 'driver', 'reopener:id,name']);
         // Lấy trip mà user chinh là driver HOẶC advisor
         if ($user) {
             $query->where(function($q) use ($user) {
@@ -46,6 +46,7 @@ class ClientTripController extends Controller
             $trip->setAttribute('can', [
                 'update' => $user->can('update', $trip),
                 'delete' => $user->can('delete', $trip),
+                'reopen' => $user->can('reopen', $trip),
             ]);
             return $trip;
         });

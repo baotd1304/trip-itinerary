@@ -6,11 +6,13 @@ use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\TripExportController;
+use App\Http\Controllers\Admin\CloudinaryUploadController;
 
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\ClientTripController;
 use App\Http\Controllers\Client\ClientCloudinaryUploadController;
-use App\Http\Controllers\Admin\CloudinaryUploadController;
+use App\Http\Controllers\TripReopenController;
+
 
 
 Route::middleware('auth')->group(function () {
@@ -20,6 +22,11 @@ Route::middleware('auth')->group(function () {
     Route::post('trips', [ClientTripController::class, 'store'])->name('client.trips.store');
     Route::put('trips/{id}', [ClientTripController::class, 'update'])->name('client.trips.update');
     Route::delete('trips/{id}', [ClientTripController::class, 'destroy'])->name('client.trips.destroy');
+
+    Route::patch('trips/{trip}/reopen', TripReopenController::class)
+        ->middleware('can:reopen,trip')
+        ->name('client.trips.reopen');
+
 
     Route::get('trips/cloudinary-signature', [ClientCloudinaryUploadController::class, 'signature'])
         ->name('client.trips.cloudinary-signature');
@@ -67,6 +74,9 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
     Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
     Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
+    Route::patch('/trips/{trip}/reopen', TripReopenController::class)
+        ->middleware('can:reopen,trip')
+        ->name('admin.trips.reopen');
     
 
 });

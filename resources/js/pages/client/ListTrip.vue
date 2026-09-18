@@ -38,8 +38,11 @@ interface Trip {
   trip_expense?: TripExpense | null,
   images?: TripImage[];
   can?: TripPermissions;
+  reopen_reason?: string | null;
+  reopened_at?: string | null;
+  reopener?: { id: number; name: string } | null;
 }
-interface TripPermissions { update: boolean; delete: boolean }
+interface TripPermissions { update: boolean; delete: boolean; reopen: boolean }
 interface TripExpense {
   id:number, trip_id: number, overtime: number; toll_fee: number, airport_fee: number,
   is_overnight: boolean, is_holiday: boolean
@@ -117,7 +120,6 @@ const STATUS_CLASS: Record<string, string> = {
 
 const canUpdate = (trip: Trip) => trip.can?.update === true;
 const canDelete = (trip: Trip) => trip.can?.delete === true;
-
 const updateHint = (trip: Trip) =>
   canUpdate(trip)
     ? 'Chỉnh sửa chuyến'
@@ -131,6 +133,20 @@ const deleteHint = (trip: Trip) =>
     : trip.status === 'confirmed'
       ? 'Chuyến đã xác nhận — không thể xoá'
       : 'Chỉ xoá được khi trạng thái là "pending"';
+
+
+//state + handler reopen
+const reopenOpen = ref(false);
+const reopenTarget = ref<Trip | null>(null);
+
+const canReopen = (trip: Trip) => trip.can?.reopen === true;
+
+const openReopen = (trip: Trip) => {
+  if (!canReopen(trip)) return;
+  reopenTarget.value = trip;
+  reopenOpen.value = true;
+};
+
 
 //Debug
 console.log('Auth user:', auth.value?.user)
@@ -323,6 +339,11 @@ const thumb = (url: string) =>
                       :class="STATUS_CLASS[trip.status] ?? 'bg-gray-500'">
                   {{ STATUS_LABEL[trip.status] ?? trip.status }}
                 </Badge>
+                <p v-if="trip.status === 'editting' && trip.reopen_reason"
+                  class="mt-1 max-w-[200px] text-xs text-amber-600 dark:text-amber-400"
+                  :title="trip.reopen_reason">
+                  {{ trip.reopener?.name ?? 'Quản trị' }}: {{ trip.reopen_reason }}
+                </p>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 ">
                 <div class="flex items-center justify-center">
@@ -337,9 +358,9 @@ const thumb = (url: string) =>
                 </div>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 text-right">{{ formatVND(trip.total_fee)}}</td>
-              <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
-                <!-- <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button> -->
-                <!-- <Button variant="destructive" size="sm" @click="openDelete(trip)">Delete</Button> -->
+              <!-- <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
+                <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button>
+                <Button variant="destructive" size="sm" @click="openDelete(trip)">Delete</Button>
                 <Button
                   variant="outline" size="sm" class="mr-2"
                   :disabled="!canUpdate(trip)"
@@ -355,6 +376,25 @@ const thumb = (url: string) =>
                   :title="deleteHint(trip)"
                   @click="openDelete(trip)"
                 >
+                  Delete
+                </Button>
+              </td> -->
+              <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
+                <Button variant="outline" size="sm" class="mr-2"
+                        :disabled="!canUpdate(trip)" :title="updateHint(trip)"
+                        @click="openEdit(trip)">
+                  Edit
+                </Button>
+
+                <Button v-if="canReopen(trip)" variant="secondary" size="sm" class="mr-2"
+                        title="Mở khoá để tài xế chỉnh sửa lại"
+                        @click="openReopen(trip)">
+                  Reopen
+                </Button>
+
+                <Button variant="destructive" size="sm"
+                        :disabled="!canDelete(trip)" :title="deleteHint(trip)"
+                        @click="openDelete(trip)">
                   Delete
                 </Button>
               </td>
@@ -680,5 +720,44 @@ const thumb = (url: string) =>
           class="max-h-[70vh] w-full rounded-md object-contain" />
     </DialogContent>
   </Dialog>
+
+
+  <!-- Diablog Reopen -->
+  <Dialog v-model:open="reopenOpen">
+    <DialogContent class="sm:max-w-[560px]">
+      <DialogHeader>
+        <DialogTitle>Mở khoá chỉnh sửa chuyến</DialogTitle>
+        <DialogDescription>
+          Chuyến sẽ chuyển sang trạng thái <b>editting</b> và tài xế có thể cập nhật lại.
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form v-if="reopenTarget"
+            v-bind="trips.reopen.form(reopenTarget.id)"
+            v-slot="{ errors, processing }"
+            class="space-y-4"
+            @success="reopenOpen = false">
+        <p class="text-sm text-muted-foreground">
+          Chuyến ID <b>{{ reopenTarget.id }}</b> — {{ formatDate(reopenTarget.day) }},
+          {{ reopenTarget.origin }} → {{ reopenTarget.destination }}
+        </p>
+
+        <div class="grid gap-2">
+          <Label for="reopen_reason">Lý do yêu cầu sửa lại <span class="text-red-500">*</span></Label>
+          <Textarea id="reopen_reason" name="reopen_reason" rows="3" required
+                    placeholder="VD: Sai số odo kết thúc, thiếu ảnh hoá đơn phí cầu đường..." />
+          <InputError :message="errors?.reopen_reason" />
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" :disabled="processing" @click="reopenOpen = false">
+            Cancel
+          </Button>
+          <Button type="submit" :disabled="processing">Xác nhận mở khoá</Button>
+        </DialogFooter>
+      </Form>
+    </DialogContent>
+  </Dialog>
+
 
 </template>
