@@ -13,8 +13,6 @@ return new class extends Migration
     {
         Schema::create('trips', function (Blueprint $table) {
             $table->id();
-            $table->string('advisor');
-            $table->string('driver');
             $table->foreignId('car_id')->constrained('cars');            
             $table->date('day');
             $table->string('origin');
