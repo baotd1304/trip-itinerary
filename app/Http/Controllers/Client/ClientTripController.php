@@ -30,23 +30,27 @@ class ClientTripController extends Controller
     {
         $user = auth()->user();
         Gate::authorize('viewAny', Trip::class);
-        $query = Trip::with(['tripExpense', 'images', 'car', 'advisor', 'driver', 'reopener:id,name']);
-        // Lấy trip mà user chinh là driver HOẶC advisor
-        if ($user) {
-            $query->where(function($q) use ($user) {
-                $q->where('driver_id', $user->id)
-                ->orWhere('advisor_id', $user->id);
-            });
-        }
-        $trips = $query->latest()
+
+        $trips = Trip::with([
+                'tripExpense', 'images', 'car', 'advisor', 'driver',
+                'reviewer:id,name',
+                'pendingReopenRequest.requester:id,name',
+            ])
+            ->where(fn ($q) => $q->where('driver_id', $user->id)
+                                 ->orWhere('advisor_id', $user->id))
+            ->latest()
             ->paginate(10)
             ->withQueryString();
+
         // Gắn cờ quyền cho từng chuyến để UI tự ẩn/khoá nút
         $trips->getCollection()->transform(function (Trip $trip) use ($user) {
             $trip->setAttribute('can', [
-                'update' => $user->can('update', $trip),
-                'delete' => $user->can('delete', $trip),
-                'reopen' => $user->can('reopen', $trip),
+                'update'        => $user->can('update', $trip),
+                'delete'        => $user->can('delete', $trip),
+                'requestReopen' => $user->can('requestReopen', $trip),
+                'review'        => $user->can('review', $trip),
+                'reviewReopen'  => $trip->pendingReopenRequest
+                                    && $user->can('review', $trip->pendingReopenRequest),
             ]);
             return $trip;
         });
@@ -64,31 +68,29 @@ class ClientTripController extends Controller
 
     public function store(Request $request)
     {
-        Gate::authorize('create', Trip::class); //kiem tra quyen tao trip
+        Gate::authorize('create', Trip::class);
 
         $data    = $this->validateData($request);
         $expense = $this->activeExpense();
-        $user = auth()->user();
+        $user    = auth()->user();
 
         if ($user->hasRole('driver') && ! $user->hasRole('admin')) {
-            $data['trip']['driver_id'] = $user->id;     // driver không được tạo chuyến cho người khác
+            $data['trip']['driver_id'] = $user->id;
         }
 
         $trip = DB::transaction(function () use ($data, $expense) {
             $trip = Trip::create([
                 ...$data['trip'],
-                'distance' => $data['distance'],
-                'status'   => 'pending',
+                'distance'     => $data['distance'],
+                'status'       => Trip::STATUS_PENDING,
+                'submitted_at' => now(),
             ]);
 
             $tripExpense = TripExpense::create(
                 $this->expensePayload($trip->id, $data['expense'], $expense)
             );
 
-            $trip->update([
-                'total_fee' => $this->calculateTotalFee($tripExpense),
-            ]);
-
+            $trip->update(['total_fee' => $this->calculateTotalFee($tripExpense)]);
             $this->syncImages($trip, $data['images']);
 
             return $trip;
@@ -96,26 +98,31 @@ class ClientTripController extends Controller
 
         return redirect()
             ->route('client.trips.index')
-            ->with('success', "Tạo chuyến thành công (ID: {$trip->id}).");
+            ->with('success', "Tạo chuyến thành công (ID: {$trip->id}, ngày: {$trip->day->format('d/m/Y')}). 
+                Chuyến đi đang chờ cố vấn duyệt.");
     }
 
-    public function update(Request $request, int $id)
+    public function update(Request $request, Trip $trip)
     {
-        $trip    = Trip::with('images')->findOrFail($id);
+        // $trip    = Trip::with('images')->findOrFail($id);
+        Gate::authorize('update', $trip);   // chỉ editting | rejected (driver)
+        
+        $trip->load('images');
 
-        Gate::authorize('update', $trip);   // ⟵ chặn confirmed / sai role / sai chủ sở hữu
-            
         $data    = $this->validateData($request, $trip);
         $expense = $this->activeExpense();
         $user    = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+        
         // Driver không được đổi driver_id sang người khác
         if ($user->hasRole('driver') && ! $user->hasRole('admin')) {
             $data['trip']['driver_id'] = $trip->driver_id;
         }
 
+        $previousStatus = $trip->status;
         $orphans = [];
 
-        DB::transaction(function () use ($trip, $data, $expense, &$orphans) {
+        DB::transaction(function () use ($trip, $data, $expense, $isAdmin, &$orphans) {
             $trip->update([...$data['trip'], 'distance' => $data['distance']]);
 
             $tripExpense = TripExpense::updateOrCreate(
@@ -127,9 +134,13 @@ class ClientTripController extends Controller
 
             // 1) Xoá bản ghi DB của những ảnh không còn được giữ
             $orphans = $this->pruneImages($trip, $data);
-
             // 2) Thêm ảnh mới
             $this->syncImages($trip, $data['images']);
+            
+            //driver submit lai -> quay ve pending cho duyet
+            if (! $isAdmin) {
+                $trip->markSubmitted();
+            }
         });
 
         // 3) Chỉ gọi Cloudinary SAU KHI transaction đã commit
@@ -137,19 +148,27 @@ class ClientTripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()->back()->with('success', "Cập nhật chuyến thành công (ID: {$trip->id}).");
+        $message = $isAdmin
+                ? "Cập nhật chuyến đi thành công (ID: {$trip->id})." 
+                : sprintf(
+                    'Đã cập nhật chuyến #%d%s. Chuyến chuyển sang trạng thái "chờ duyệt".',
+                    $trip->id,
+                    $previousStatus === Trip::STATUS_REJECTED ? ' sau khi bị từ chối' : ''
+                );
+
+        return redirect()->back()->with('success', $message);
     }
 
-    public function destroy(int $id)
+    public function destroy(Trip $trip)
     {
-        $trip      = Trip::with('images')->findOrFail($id);
-        
-       Gate::authorize('delete', $trip);   // chỉ pending mới xoá được
-
+        // $trip      = Trip::with('images')->findOrFail($id);
+        Gate::authorize('delete', $trip);   // chỉ pending mới xoá được
+        $trip->load('images');
         $publicIds = $trip->images->pluck('public_id')->all();
 
         DB::transaction(function () use ($trip) {
             $trip->images()->delete();
+            $trip->reopenRequests()->delete();
             TripExpense::where('trip_id', $trip->id)->delete();
             $trip->delete();
         });
@@ -158,11 +177,10 @@ class ClientTripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()->back()->with('success', "Đã xoá chuyến (ID: {$id}).");
+        return redirect()->back(303)->with('success', "Đã xoá chuyến (ID: {$trip->id}).");
     }
 
     /* ===================== Helpers ===================== */
-
     /**
      * Validate toàn bộ payload (trip + expense + images) và trả về mảng đã chuẩn hoá.
      */

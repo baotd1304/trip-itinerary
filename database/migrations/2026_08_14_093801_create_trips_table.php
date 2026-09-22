@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('odo_start')->unsigned();
             $table->integer('odo_end')->unsigned();
             $table->integer('distance')->unsigned();
-            $table->string('status')->default('pending');  // pending, confirmed, rejected
+            $table->string('status')->default('pending');  // pending, confirmed, rejected, editting
             $table->decimal('total_fee',15,0)->nullable();
             $table->string('note')->nullable();
             $table->timestamps();
