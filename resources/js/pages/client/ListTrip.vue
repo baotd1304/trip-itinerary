@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge'
 import { CircleCheckBigIcon, CircleX } from '@lucide/vue'
 import { useClientCloudinaryUpload } from '@/composables/useClientCloudinaryUpload';
 import { X, ImagePlus, Loader2 } from 'lucide-vue-next';
-import { can } from '@/directives/can';
 
 defineOptions({
     layout: {
@@ -34,15 +33,26 @@ interface Trip {
   day: string; origin: string; destination: string;
   departure_time: string; arrival_time: string;
   odo_start: number; odo_end: number; distance: number;
-  total_fee: number; status: string; note: string | null;
+  total_fee: number; note: string | null;
   trip_expense?: TripExpense | null,
   images?: TripImage[];
   can?: TripPermissions;
-  reopen_reason?: string | null;
-  reopened_at?: string | null;
-  reopener?: { id: number; name: string } | null;
+  status: 'pending' | 'editing' | 'confirmed' | 'rejected';
+  reject_reason?: string | null;
+  pending_reopen_request?: ReopenRequest | null;
 }
-interface TripPermissions { update: boolean; delete: boolean; reopen: boolean }
+interface ReopenRequest {
+  id: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  review_note: string | null;
+  requester?: { id: number; name: string } | null;
+  created_at: string;
+}
+interface TripPermissions { 
+  update: boolean; delete: boolean;
+  requestReopen: boolean; review: boolean; reviewReopen: boolean;
+}
 interface TripExpense {
   id:number, trip_id: number, overtime: number; toll_fee: number, airport_fee: number,
   is_overnight: boolean, is_holiday: boolean
@@ -104,48 +114,85 @@ const isAdvisor = computed(() => {
   return roles.includes('advisor');
 });
 
+//helpers: status label + class
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pending',
-  editting: 'Editting',
+  editing: 'Editing',
   confirmed: 'Confirmed',
   rejected: 'Rejected',
 };
 
 const STATUS_CLASS: Record<string, string> = {
-  pending: 'bg-gray-500',
-  editting: 'bg-amber-500',
-  confirmed: 'bg-blue-500',
-  rejected: 'bg-red-500',
+  pending:   'bg-amber-500',
+  editing:  'bg-indigo-500',
+  confirmed: 'bg-emerald-600',
+  rejected:  'bg-red-500',
 };
 
-const canUpdate = (trip: Trip) => trip.can?.update === true;
-const canDelete = (trip: Trip) => trip.can?.delete === true;
-const updateHint = (trip: Trip) =>
-  canUpdate(trip)
-    ? 'Chỉnh sửa chuyến'
-    : trip.status === 'confirmed'
-      ? 'Chuyến đã xác nhận — không thể chỉnh sửa'
-      : 'Chỉ chỉnh sửa được khi trạng thái là "editting"';
+const canUpdate        = (t: Trip) => t.can?.update === true;
+const canDelete        = (t: Trip) => t.can?.delete === true;
+const canRequestReopen = (t: Trip) => t.can?.requestReopen === true;
+const canReview        = (t: Trip) => t.can?.review === true;
+const canReviewReopen  = (t: Trip) => t.can?.reviewReopen === true && !!t.pending_reopen_request;
 
-const deleteHint = (trip: Trip) =>
-  canDelete(trip)
-    ? 'Xoá chuyến'
-    : trip.status === 'confirmed'
-      ? 'Chuyến đã xác nhận — không thể xoá'
-      : 'Chỉ xoá được khi trạng thái là "pending"';
-
-
-//state + handler reopen
-const reopenOpen = ref(false);
-const reopenTarget = ref<Trip | null>(null);
-
-const canReopen = (trip: Trip) => trip.can?.reopen === true;
-
-const openReopen = (trip: Trip) => {
-  if (!canReopen(trip)) return;
-  reopenTarget.value = trip;
-  reopenOpen.value = true;
+const updateHint = (t: Trip) => {
+  if (!canUpdate(t)) {
+    return t.status === 'confirmed'
+      ? 'Chuyến đã xác nhận — hãy gửi yêu cầu mở khoá để chỉnh sửa'
+      : 'Không thể chỉnh sửa ở trạng thái hiện tại';
+  }
+  switch (t.status) {
+    case 'pending':   return 'Chỉnh sửa — chuyến vẫn giữ trạng thái "Chờ duyệt"';
+    case 'editing':   return 'Chỉnh sửa — sau khi lưu sẽ chuyển sang "Chờ duyệt"';
+    case 'rejected':  return 'Sửa lại chuyến bị từ chối — sau khi lưu sẽ gửi duyệt lại';
+    default:          return 'Chỉnh sửa chuyến';
+  }
 };
+
+
+const deleteHint = (t: Trip) =>
+  canDelete(t) ? 'Xoá chuyến đi' : 'Chỉ xoá được khi chuyến đi ở trạng thái "Chờ duyệt"';
+
+//state + handler dialog
+const reopenRequestOpen = ref(false);   // driver gửi yêu cầu
+const reopenReviewOpen  = ref(false);   // advisor duyệt yêu cầu
+const rejectTripOpen    = ref(false);   // advisor từ chối chuyến đi
+const target = ref<Trip | null>(null);
+const reviewAction = ref<'approve' | 'reject'>('approve');
+
+const openReopenRequest = (t: Trip) => {
+  if (!canRequestReopen(t)) return;
+  target.value = t;
+  reopenRequestOpen.value = true;
+};
+
+const openReopenReview = (t: Trip, action: 'approve' | 'reject') => {
+  if (!canReviewReopen(t)) return;
+  target.value = t;
+  reviewAction.value = action;
+  reopenReviewOpen.value = true;
+};
+
+const openRejectTrip = (t: Trip) => {
+  if (!canReview(t)) return;
+  target.value = t;
+  rejectTripOpen.value = true;
+};
+
+const editingStatus = computed(() => model.value.status);
+const submitWarning = computed<string | null>(() => {
+  if (mode.value !== 'edit' || !isDriver.value) return null;
+  switch (editingStatus.value) {
+    case 'pending':
+      return 'Chuyến đang chờ cố vấn duyệt. Nếu cố vấn xử lý trước khi bạn lưu, thay đổi có thể không được ghi nhận.';
+    case 'editing':
+      return 'Sau khi lưu, chuyến sẽ chuyển sang "Chờ duyệt" và bạn không thể sửa tiếp cho tới khi cố vấn phản hồi.';
+    case 'rejected':
+      return 'Sau khi lưu, chuyến sẽ được gửi lại cho cố vấn duyệt.';
+    default:
+      return null;
+  }
+});
 
 
 //Debug
@@ -163,6 +210,8 @@ const emptyForm = () => ({
   toll_fee: 0, airport_fee: 0,
   is_overnight: false, is_holiday: false,
   note: '',
+  status: 'pending' as Trip['status'],
+  reject_reason: '' as string | null,
 });
 
 const model = ref(emptyForm());
@@ -206,6 +255,8 @@ const openEdit = (trip: Trip) => {
     is_overnight: Boolean(trip.trip_expense?.is_overnight),
     is_holiday: Boolean(trip.trip_expense?.is_holiday),
     note: trip.note ?? '',
+    status: trip.status,
+    reject_reason: trip.reject_reason ?? '',
   };
   resetUploads();
   existingImages.value = [...(trip.images ?? [])];
@@ -300,7 +351,6 @@ const thumb = (url: string) =>
     <CardHeader>
       <div class="flex items-center justify-between">
         <CardTitle>Trip Itinerary</CardTitle>
-        <!-- <Button v-can="'driver'" size="sm" @click="openCreate">Create Trip Itinerary</Button> -->
         <!-- Nút tạo mới: dựa trên quyền từ server -->
         <Button v-if="props.can?.create" size="sm" @click="openCreate">Create Trip Itinerary</Button>
       </div>
@@ -331,18 +381,19 @@ const thumb = (url: string) =>
               <td class="border px-4 py-2 dark:border-gray-700">{{ formatDate(trip.day) }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">{{ trip.distance }}</td>
               <td class="border px-4 py-2 dark:border-gray-700">
-                <!-- <Badge class="inline-flex min-w-[80px] justify-center text-white"
-                  :class="{ pending: 'bg-gray-500', confirmed: 'bg-blue-500', rejected: 'bg-red-500' }[trip.status]">
-                  {{ { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected' }[trip.status] }}
-                </Badge> -->
                 <Badge class="inline-flex min-w-[80px] justify-center text-white"
                       :class="STATUS_CLASS[trip.status] ?? 'bg-gray-500'">
                   {{ STATUS_LABEL[trip.status] ?? trip.status }}
                 </Badge>
-                <p v-if="trip.status === 'editting' && trip.reopen_reason"
-                  class="mt-1 max-w-[200px] text-xs text-amber-600 dark:text-amber-400"
-                  :title="trip.reopen_reason">
-                  {{ trip.reopener?.name ?? 'Quản trị' }}: {{ trip.reopen_reason }}
+                <!-- Lý do bị từ chối -->
+                <p v-if="trip.status === 'rejected' && trip.reject_reason"
+                  class="mt-1 max-w-[220px] text-xs text-red-600 dark:text-red-400">
+                  ✕ {{ trip.reject_reason }}
+                </p>
+                <!-- Đang chờ duyệt yêu cầu mở khoá -->
+                <p v-if="trip.pending_reopen_request"
+                  class="mt-1 max-w-[220px] text-xs text-indigo-600 dark:text-indigo-400">
+                  Chờ duyệt mở khoá: {{ trip.pending_reopen_request.reason }}
                 </p>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 ">
@@ -358,45 +409,49 @@ const thumb = (url: string) =>
                 </div>
               </td>
               <td class="border px-4 py-2 dark:border-gray-700 text-right">{{ formatVND(trip.total_fee)}}</td>
-              <!-- <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
-                <Button variant="outline" size="sm" class="mr-2" @click="openEdit(trip)">Edit</Button>
-                <Button variant="destructive" size="sm" @click="openDelete(trip)">Delete</Button>
-                <Button
-                  variant="outline" size="sm" class="mr-2"
-                  :disabled="!canUpdate(trip)"
-                  :title="updateHint(trip)"
-                  @click="openEdit(trip)"
-                >
-                  Edit
-                </Button>
-
-                <Button
-                  variant="destructive" size="sm"
-                  :disabled="!canDelete(trip)"
-                  :title="deleteHint(trip)"
-                  @click="openDelete(trip)"
-                >
-                  Delete
-                </Button>
-              </td> -->
               <td class="border px-4 py-2 dark:border-gray-700 whitespace-nowrap">
-                <Button variant="outline" size="sm" class="mr-2"
-                        :disabled="!canUpdate(trip)" :title="updateHint(trip)"
-                        @click="openEdit(trip)">
-                  Edit
-                </Button>
+                <div class="flex flex-wrap gap-2">
+                  <!-- Driver -->
+                  <Button variant="outline" size="sm"
+                          :disabled="!canUpdate(trip)" :title="updateHint(trip)"
+                          @click="openEdit(trip)">
+                    {{ trip.status === 'rejected' ? 'Sửa & gửi lại' : 'Sửa' }}
+                  </Button>
+                  <Button v-if="canRequestReopen(trip)" variant="secondary" size="sm"
+                          title="Gửi yêu cầu mở khoá cho cố vấn duyệt"
+                          @click="openReopenRequest(trip)">
+                    Edit (Request Reopen)
+                  </Button>
+                  <Button variant="destructive" size="sm"
+                          :disabled="!canDelete(trip)" :title="deleteHint(trip)"
+                          @click="openDelete(trip)">
+                    Delete
+                  </Button>
 
-                <Button v-if="canReopen(trip)" variant="secondary" size="sm" class="mr-2"
-                        title="Mở khoá để tài xế chỉnh sửa lại"
-                        @click="openReopen(trip)">
-                  Reopen
-                </Button>
+                  <!-- Advisor / Admin: duyệt yêu cầu mở khoá -->
+                  <template v-if="canReviewReopen(trip)">
+                    <Button variant="default" size="sm" @click="openReopenReview(trip, 'approve')">
+                      Duyệt mở khoá
+                    </Button>
+                    <Button variant="outline" size="sm" @click="openReopenReview(trip, 'reject')">
+                      Từ chối
+                    </Button>
+                  </template>
 
-                <Button variant="destructive" size="sm"
-                        :disabled="!canDelete(trip)" :title="deleteHint(trip)"
-                        @click="openDelete(trip)">
-                  Delete
-                </Button>
+                   <!-- Advisor / Admin: confirm / reject chuyến -->
+                  <template v-if="canReview(trip)">
+                    <Form :action="`/trips/${trip.id}/confirm`" method="patch" class="inline"
+                          v-slot="{ processing }">
+                      <Button type="submit" size="sm" variant="default" :disabled="processing">
+                        Xác nhận
+                      </Button>
+                    </Form>
+
+                    <Button variant="destructive" size="sm" @click="openRejectTrip(trip)">
+                      Từ chối
+                    </Button>
+                  </template>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -434,6 +489,11 @@ const thumb = (url: string) =>
           class="space-y-4"
           @success="closeDialog(false)"
         >
+          <div v-if="mode === 'edit' && model.reject_reason"
+              class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm
+                      text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+            <b>Cố vấn từ chối:</b> {{ model.reject_reason }}
+          </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
               <Label for="advisor_id">Advisor</Label>
@@ -674,7 +734,13 @@ const thumb = (url: string) =>
             <Input id="f-note" v-model="model.note" name="note" />
             <InputError :message="errors?.note" />
           </div>
-
+          <div v-if="submitWarning"
+              class="rounded-md border px-3 py-2 text-sm"
+              :class="editingStatus === 'pending'
+                ? 'border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-200'
+                : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200'">
+              {{ submitWarning }}
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" :disabled="processing" @click="closeDialog(false)">
               Cancel
@@ -721,39 +787,123 @@ const thumb = (url: string) =>
     </DialogContent>
   </Dialog>
 
-
-  <!-- Diablog Reopen -->
-  <Dialog v-model:open="reopenOpen">
+  <!-- Dialog driver gửi yêu cầu mở khoá chỉnh sửa -->
+  <Dialog v-model:open="reopenRequestOpen">
     <DialogContent class="sm:max-w-[560px]">
       <DialogHeader>
-        <DialogTitle>Mở khoá chỉnh sửa chuyến</DialogTitle>
+        <DialogTitle>Yêu cầu mở khoá chỉnh sửa</DialogTitle>
         <DialogDescription>
-          Chuyến sẽ chuyển sang trạng thái <b>editting</b> và tài xế có thể cập nhật lại.
+          Yêu cầu sẽ được gửi tới cố vấn phụ trách. Sau khi được duyệt, chuyến chuyển sang
+          trạng thái <b>Đang sửa</b> và bạn có thể cập nhật lại.
         </DialogDescription>
       </DialogHeader>
 
-      <Form v-if="reopenTarget"
-            v-bind="trips.reopen.form(reopenTarget.id)"
-            v-slot="{ errors, processing }"
-            class="space-y-4"
-            @success="reopenOpen = false">
+      <Form v-if="target"
+            :action="`/trips/${target.id}/reopen-requests`" method="post"
+            v-slot="{ errors, processing }" class="space-y-4"
+            @success="reopenRequestOpen = false">
         <p class="text-sm text-muted-foreground">
-          Chuyến ID <b>{{ reopenTarget.id }}</b> — {{ formatDate(reopenTarget.day) }},
-          {{ reopenTarget.origin }} → {{ reopenTarget.destination }}
+          Chuyến <b>#{{ target.id }}</b> — {{ formatDate(target.day) }},
+          {{ target.origin }} → {{ target.destination }}
         </p>
 
         <div class="grid gap-2">
-          <Label for="reopen_reason">Lý do yêu cầu sửa lại <span class="text-red-500">*</span></Label>
-          <Textarea id="reopen_reason" name="reopen_reason" rows="3" required
-                    placeholder="VD: Sai số odo kết thúc, thiếu ảnh hoá đơn phí cầu đường..." />
-          <InputError :message="errors?.reopen_reason" />
+          <Label for="reason">Lý do cần chỉnh sửa <span class="text-red-500">*</span></Label>
+          <Textarea id="reason" name="reason" rows="3" required minlength="10"
+                    placeholder="VD: Nhập sai odo kết thúc (đúng là 45.320 km), thiếu ảnh hoá đơn phí cầu đường." />
+          <InputError :message="errors?.reason" />
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" :disabled="processing" @click="reopenOpen = false">
-            Cancel
+          <Button type="button" variant="outline" :disabled="processing"
+                  @click="reopenRequestOpen = false">Huỷ</Button>
+          <Button type="submit" :disabled="processing">Gửi yêu cầu</Button>
+        </DialogFooter>
+      </Form>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Dialog: advisor duyệt/từ chối yêu cầu -->
+  <Dialog v-model:open="reopenReviewOpen">
+    <DialogContent class="sm:max-w-[600px]">
+      <DialogHeader>
+        <DialogTitle>
+          {{ reviewAction === 'approve' ? 'Duyệt yêu cầu mở khoá' : 'Từ chối yêu cầu mở khoá' }}
+        </DialogTitle>
+        <DialogDescription>
+          {{ reviewAction === 'approve'
+              ? 'Chuyến sẽ chuyển sang "Đang sửa" để tài xế cập nhật.'
+              : 'Chuyến giữ nguyên trạng thái "Đã xác nhận".' }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form v-if="target?.pending_reopen_request"
+            :action="`/reopen-requests/${target.pending_reopen_request.id}/${reviewAction}`"
+            method="patch"
+            v-slot="{ errors, processing }" class="space-y-4"
+            @success="reopenReviewOpen = false">
+
+        <div class="rounded-md border bg-muted/40 p-3 text-sm">
+          <p class="font-medium">
+            Chuyến #{{ target.id }} · {{ target.origin }} → {{ target.destination }}
+          </p>
+          <p class="mt-2 text-muted-foreground">
+            <b>{{ target.pending_reopen_request.requester?.name ?? 'Tài xế' }}</b> yêu cầu:
+          </p>
+          <p class="mt-1 italic">"{{ target.pending_reopen_request.reason }}"</p>
+        </div>
+
+        <div class="grid gap-2">
+          <Label for="review_note">
+            Ghi chú phản hồi
+            <span v-if="reviewAction === 'reject'" class="text-red-500">*</span>
+          </Label>
+          <Textarea id="review_note" name="review_note" rows="3"
+                    :required="reviewAction === 'reject'"
+                    :placeholder="reviewAction === 'approve'
+                      ? 'Tuỳ chọn — VD: Nhớ đính kèm ảnh hoá đơn.'
+                      : 'Bắt buộc — nêu rõ lý do từ chối.'" />
+          <InputError :message="errors?.review_note" />
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" :disabled="processing"
+                  @click="reopenReviewOpen = false">Huỷ</Button>
+          <Button type="submit" :disabled="processing"
+                  :variant="reviewAction === 'approve' ? 'default' : 'destructive'">
+            {{ reviewAction === 'approve' ? 'Duyệt mở khoá' : 'Từ chối yêu cầu' }}
           </Button>
-          <Button type="submit" :disabled="processing">Xác nhận mở khoá</Button>
+        </DialogFooter>
+      </Form>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Dialog: advisor từ chối chuyến đi -->
+  <Dialog v-model:open="rejectTripOpen">
+    <DialogContent class="sm:max-w-[560px]">
+      <DialogHeader>
+        <DialogTitle>Từ chối chuyến</DialogTitle>
+        <DialogDescription>
+          Chuyến chuyển sang <b>Bị từ chối</b>. Tài xế có thể sửa lại và gửi duyệt lần nữa.
+        </DialogDescription>
+      </DialogHeader>
+
+      <Form v-if="target" :action="`/trips/${target.id}/reject`" method="patch"
+            v-slot="{ errors, processing }" class="space-y-4"
+            @success="rejectTripOpen = false">
+        <div class="grid gap-2">
+          <Label for="reject_reason">Lý do từ chối <span class="text-red-500">*</span></Label>
+          <Textarea id="reject_reason" name="reject_reason" rows="3" required minlength="5"
+                    placeholder="VD: Odo kết thúc không khớp ảnh chụp đồng hồ." />
+          <InputError :message="errors?.reject_reason" />
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" :disabled="processing"
+                  @click="rejectTripOpen = false">Huỷ</Button>
+          <Button type="submit" variant="destructive" :disabled="processing">
+            Từ chối chuyến
+          </Button>
         </DialogFooter>
       </Form>
     </DialogContent>

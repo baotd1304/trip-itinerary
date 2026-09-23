@@ -38,11 +38,11 @@ class ClientTripController extends Controller
             ])
             ->where(fn ($q) => $q->where('driver_id', $user->id)
                                  ->orWhere('advisor_id', $user->id))
-            ->latest()
+            ->orderByDesc('day')
             ->paginate(10)
             ->withQueryString();
 
-        // Gắn cờ quyền cho từng chuyến để UI tự ẩn/khoá nút
+        // Gắn cờ quyền cho từng chuyến đi để UI tự ẩn/khoá nút
         $trips->getCollection()->transform(function (Trip $trip) use ($user) {
             $trip->setAttribute('can', [
                 'update'        => $user->can('update', $trip),
@@ -98,14 +98,13 @@ class ClientTripController extends Controller
 
         return redirect()
             ->route('client.trips.index')
-            ->with('success', "Tạo chuyến thành công (ID: {$trip->id}, ngày: {$trip->day->format('d/m/Y')}). 
+            ->with('success', "Tạo chuyến đi thành công (ID: {$trip->id}, ngày: {$trip->day->format('d/m/Y')}). 
                 Chuyến đi đang chờ cố vấn duyệt.");
     }
 
     public function update(Request $request, Trip $trip)
     {
-        // $trip    = Trip::with('images')->findOrFail($id);
-        Gate::authorize('update', $trip);   // chỉ editting | rejected (driver)
+        Gate::authorize('update', $trip);   // chỉ editing | rejected (driver)
         
         $trip->load('images');
 
@@ -123,6 +122,12 @@ class ClientTripController extends Controller
         $orphans = [];
 
         DB::transaction(function () use ($trip, $data, $expense, $isAdmin, &$orphans) {
+            // Khóa dòng và kiểm tra lại: tránh ghi đè khi advisor vừa confirm/reject trong lúc driver đang sửa
+            $fresh = Trip::whereKey($trip->id)->lockForUpdate()->firstOrFail();
+            if (! $isAdmin && $fresh->isLockedForDriver()) {
+                abort(409, 'Cố vấn vừa xác nhận chuyến đi này. Vui lòng tải lại trang.');
+            }
+            
             $trip->update([...$data['trip'], 'distance' => $data['distance']]);
 
             $tripExpense = TripExpense::updateOrCreate(
@@ -148,15 +153,8 @@ class ClientTripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        $message = $isAdmin
-                ? "Cập nhật chuyến đi thành công (ID: {$trip->id})." 
-                : sprintf(
-                    'Đã cập nhật chuyến #%d%s. Chuyến chuyển sang trạng thái "chờ duyệt".',
-                    $trip->id,
-                    $previousStatus === Trip::STATUS_REJECTED ? ' sau khi bị từ chối' : ''
-                );
-
-        return redirect()->back()->with('success', $message);
+        return redirect()->back()
+            ->with('success', $this->updateMessage($trip, $previousStatus, $isAdmin));
     }
 
     public function destroy(Trip $trip)
@@ -177,7 +175,7 @@ class ClientTripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()->back(303)->with('success', "Đã xoá chuyến (ID: {$trip->id}).");
+        return redirect()->back(303)->with('success', "Đã xoá chuyến đi (ID: {$trip->id}).");
     }
 
     /* ===================== Helpers ===================== */
@@ -237,7 +235,7 @@ class ClientTripController extends Controller
         ], [
             'odo_end.gt'          => 'Odo kết thúc phải lớn hơn odo bắt đầu.',
             'arrival_time.after'  => 'Giờ đến phải sau giờ đi (trừ chuyến nghỉ đêm).',
-            'images.max'          => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến.',
+            'images.max'          => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến đi.',
             'images.*.url.starts_with' => 'Đường dẫn ảnh không hợp lệ.',
         ]);
 
@@ -382,6 +380,26 @@ class ClientTripController extends Controller
         TripImage::whereIn('id', $stale->pluck('id'))->delete();
 
         return $stale->pluck('public_id')->all();
+    }
+
+    /** Thông báo phù hợp với trạng thái trước khi sửa */
+    private function updateMessage(Trip $trip, string $previousStatus, bool $isAdmin): string
+    {
+        if ($isAdmin) {
+            return "Cập nhật chuyến đi thành công (ID: {$trip->id}).";
+        }
+
+        return match ($previousStatus) {
+            Trip::STATUS_PENDING => "Đã cập nhật chuyến đi #{$trip->id}. Chuyến đi vẫn đang chờ cố vấn duyệt.",
+
+            Trip::STATUS_REJECTED => "Đã cập nhật chuyến đi #{$trip->id} sau khi bị từ chối. "
+                . 'Chuyến đi đã được gửi lại để cố vấn duyệt.',
+
+            Trip::STATUS_EDITING => "Đã cập nhật chuyến đi #{$trip->id}. "
+                . 'Chuyến đi chuyển sang trạng thái "Chờ duyệt".',
+
+            default => "Cập nhật chuyến đi thành công (ID: {$trip->id}).",
+        };
     }
 
 }

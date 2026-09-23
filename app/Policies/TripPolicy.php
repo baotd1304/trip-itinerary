@@ -34,7 +34,7 @@ class TripPolicy
         return $user->hasAnyRole(['driver', 'editor']);
     }
 
-    /* ---------- Driver sửa: chỉ khi editting hoặc rejected ---------- */
+    /* ---------- Driver sửa: chỉ khi editing hoặc rejected ---------- */
     public function update(User $user, Trip $trip): Response
     {
         if (! $user->hasRole('driver')) {
@@ -44,14 +44,10 @@ class TripPolicy
             return Response::deny('Bạn không phải tài xế của chuyến đi này.');
         }
         return match ($trip->status) {
-            Trip::STATUS_EDITTING, Trip::STATUS_REJECTED => Response::allow(),
+            Trip::STATUS_PENDING, Trip::STATUS_EDITING, Trip::STATUS_REJECTED => Response::allow(),
 
             Trip::STATUS_CONFIRMED => Response::deny(
                 'Chuyến đã được xác nhận. Vui lòng gửi yêu cầu mở khoá để được chỉnh sửa.'
-            ),
-
-            Trip::STATUS_PENDING => Response::deny(
-                'Chuyến đang chờ cố vấn duyệt, không thể chỉnh sửa lúc này.'
             ),
 
             default => Response::deny('Không thể chỉnh sửa chuyến ở trạng thái hiện tại.'),

@@ -20,10 +20,16 @@ class Trip extends Model
     protected $table = 'trips';
 
     public const STATUS_PENDING   = 'pending';
-    public const STATUS_EDITTING  = 'editting';
+    public const STATUS_EDITING  = 'editing';
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_REJECTED  = 'rejected';
 
+    /** Driver được SỬA khi ở các trạng thái này */
+    public const DRIVER_EDITABLE_STATUSES = [ 
+        self::STATUS_PENDING,
+        self::STATUS_EDITING,
+        self::STATUS_REJECTED,
+    ];
     /** Driver được XOÁ khi ở các trạng thái này */
     public const DRIVER_DELETABLE_STATUSES = [self::STATUS_PENDING];
 
@@ -32,6 +38,9 @@ class Trip extends Model
 
     /** Advisor được DUYỆT (confirm/reject) khi ở các trạng thái này */
     public const REVIEWABLE_STATUSES = [self::STATUS_PENDING];
+    
+    /** Trạng thái khoá cứng với driver */
+    public const DRIVER_LOCKED_STATUSES = [self::STATUS_CONFIRMED];
 
     protected $fillable = [
                     'advisor_id', 'driver_id', 'car_id', 'day', 'origin', 'destination',
@@ -52,9 +61,29 @@ class Trip extends Model
     }
 
     /* ============ Trạng thái ============ */
+    public function isDriverEditable(): bool
+    {
+        return in_array($this->status, self::DRIVER_EDITABLE_STATUSES, true);
+    }
+
+    public function isDriverDeletable(): bool
+    {
+        return in_array($this->status, self::DRIVER_DELETABLE_STATUSES, true);
+    }
+
+    public function canRequestReopen(): bool
+    {
+        return in_array($this->status, self::REOPEN_REQUESTABLE_STATUSES, true);
+    }
+
     public function isReviewable(): bool
     {
         return in_array($this->status, self::REVIEWABLE_STATUSES, true);
+    }
+
+    public function isLockedForDriver(): bool
+    {
+        return in_array($this->status, self::DRIVER_LOCKED_STATUSES, true);
     }
 
     /* ============ Chuyển trạng thái ============ */
@@ -72,9 +101,9 @@ class Trip extends Model
     }
 
     /** Advisor/Admin duyệt yêu cầu reopen -> cho phép driver sửa */
-    public function markEditting(): void
+    public function markEditing(): void
     {
-        $this->forceFill(['status' => self::STATUS_EDITTING])->save();
+        $this->forceFill(['status' => self::STATUS_EDITING])->save();
     }
 
     public function markConfirmed(User $reviewer): void

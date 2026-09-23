@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 
 class TripReopenReviewController extends Controller
 {
-    /** Advisor/Admin DUYỆT -> trip chuyển sang editting */
+    /** Advisor/Admin DUYỆT -> trip chuyển sang editing */
     public function approve(Request $request, TripReopenRequest $reopenRequest)
     {
         Gate::authorize('review', $reopenRequest);
@@ -30,7 +30,7 @@ class TripReopenReviewController extends Controller
             );
 
             $reopenRequest->approve($request->user(), $data['review_note'] ?? null);
-            $trip->markEditting();
+            $trip->markEditing();
         });
 
         $reopenRequest->requester?->notify(new ReopenRequestReviewed($reopenRequest->refresh()));

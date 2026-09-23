@@ -9,10 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE `trips`
-            MODIFY `status` ENUM('pending','editting','confirmed','rejected')
-            NOT NULL DEFAULT 'pending'");
-
         Schema::table('trips', function (Blueprint $table) {
             $table->text('reject_reason')->nullable()->after('note');
             $table->timestamp('submitted_at')->nullable()->after('reject_reason');
@@ -30,8 +26,5 @@ return new class extends Migration
         });
 
         DB::statement("UPDATE `trips` SET `status` = 'pending' WHERE `status` = 'editting'");
-        DB::statement("ALTER TABLE `trips`
-            MODIFY `status` ENUM('pending','confirmed','rejected')
-            NOT NULL DEFAULT 'pending'");
     }
 };

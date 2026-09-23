@@ -6,13 +6,16 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Trip;
+use App\Models\TripReopenRequest;
 
-class TripReopened extends Notification
+class ReopenRequestSubmitted extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly Trip $trip) {}
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct(private readonly TripReopenRequest $request) {}
 
     /**
      * Get the notification's delivery channels.
@@ -21,8 +24,9 @@ class TripReopened extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
+
     /**
      * Get the mail representation of the notification.
      */
@@ -42,10 +46,12 @@ class TripReopened extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'trip_id' => $this->trip->id,
-            'title'   => "Chuyến #{$this->trip->id} cần chỉnh sửa lại",
-            'reason'  => $this->trip->reopen_reason,
-            'url'     => route('client.trips.index'),
+            'type'       => 'reopen_request_submitted',
+            'trip_id'    => $this->request->trip_id,
+            'request_id' => $this->request->id,
+            'title'      => "Tài xế xin mở khoá chuyến #{$this->request->trip_id}",
+            'reason'     => $this->request->reason,
+            'url'        => route('client.trips.index'),
         ];
     }
 }
