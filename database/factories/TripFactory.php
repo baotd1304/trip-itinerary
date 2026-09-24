@@ -19,7 +19,7 @@ class TripFactory extends Factory
     public function definition(): array
     {
         $car_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        $status = [Trip::STATUS_PENDING, Trip::STATUS_CONFIRMED, Trip::STATUS_EDITTING, Trip::STATUS_REJECTED];
+        $status = [Trip::STATUS_PENDING, Trip::STATUS_CONFIRMED, Trip::STATUS_EDITING, Trip::STATUS_REJECTED];
         return [
             'advisor_id' => User::factory()->create()->assignRole('advisor')->id,
             'driver_id' => User::factory()->create()->assignRole('driver')->id,

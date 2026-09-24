@@ -39,7 +39,7 @@ class RolePermissionSeeder extends Seeder
             'trip.confirm'
         ]);
         Role::findByName('driver')->syncPermissions([
-            'trip.view',    
+            'trip.view',
             'trip.create',
             'trip.update',
         ]);

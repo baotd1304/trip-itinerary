@@ -17,51 +17,59 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Tạo role
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $userRole = Role::firstOrCreate(['name' => 'user']);
-        $advisorRole = Role::firstOrCreate(['name' => 'advisor']);
-        $driverRole = Role::firstOrCreate(['name' => 'driver']);
-        $editorRole = Role::firstOrCreate(['name' => 'editor']);
+        $this->call([
+            CarSeeder::class,
+            ExpenseSeeder::class,
+            RolePermissionSeeder::class,
+            UserSeeder::class,
+            TripSeeder::class,
+        ]);
 
-        // Tạo permission
-        $viewDashboard = Permission::firstOrCreate(['name' => 'view dashboard']);
-        $manageUsers = Permission::firstOrCreate(['name' => 'manage users']);
-        $createTrip = Permission::firstOrCreate(['name' => 'create trip']);
-        $confirmTrip = Permission::firstOrCreate(['name' => 'confirm trip']);
-        $editTrip = Permission::firstOrCreate(['name' => 'edit trip']);
+        // // Tạo role
+        // $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        // $userRole = Role::firstOrCreate(['name' => 'user']);
+        // $advisorRole = Role::firstOrCreate(['name' => 'advisor']);
+        // $driverRole = Role::firstOrCreate(['name' => 'driver']);
+        // $editorRole = Role::firstOrCreate(['name' => 'editor']);
 
-        // Gán permission cho admin
-        $adminRole->syncPermissions([$viewDashboard, $manageUsers]);
+        // // Tạo permission
+        // $viewDashboard = Permission::firstOrCreate(['name' => 'view dashboard']);
+        // $manageUsers = Permission::firstOrCreate(['name' => 'manage users']);
+        // $createTrip = Permission::firstOrCreate(['name' => 'create trip']);
+        // $confirmTrip = Permission::firstOrCreate(['name' => 'confirm trip']);
+        // $editTrip = Permission::firstOrCreate(['name' => 'edit trip']);
+
+        // // Gán permission cho admin
+        // $adminRole->syncPermissions([$viewDashboard, $manageUsers]);
         
-        $driverRole->syncPermissions([$createTrip]);
-        $advisorRole->syncPermissions([$confirmTrip]);
-        $editorRole->syncPermissions([$editTrip]);
+        // $driverRole->syncPermissions([$createTrip]);
+        // $advisorRole->syncPermissions([$confirmTrip]);
+        // $editorRole->syncPermissions([$editTrip]);
 
-        // Tạo user admin nếu chưa có
-        $adminUser = User::firstWhere('email', 'admin@example.com');
+        // // Tạo user admin nếu chưa có
+        // $adminUser = User::firstWhere('email', 'admin@example.com');
 
-        if (! $adminUser) {
-            $adminUser = User::factory()->create([
-                'name' => 'Admin User',
-                'email' => 'admin@example.com',
-                'password' => bcrypt('password'),
-            ]);
-        }
+        // if (! $adminUser) {
+        //     $adminUser = User::factory()->create([
+        //         'name' => 'Admin User',
+        //         'email' => 'admin@example.com',
+        //         'password' => bcrypt('password'),
+        //     ]);
+        // }
 
-        // Gán role admin
-        $adminUser->assignRole($adminRole);
+        // // Gán role admin
+        // $adminUser->assignRole($adminRole);
 
-        // Nếu muốn tạo user thường
-        $regularUser = User::firstWhere('email', 'user@example.com');
+        // // Nếu muốn tạo user thường
+        // $regularUser = User::firstWhere('email', 'user@example.com');
 
-        if (! $regularUser) {
-            $regularUser = User::factory()->create([
-                'name' => 'Regular User',
-                'email' => 'user@example.com',
-                'password' => bcrypt('password'),
-            ]);
-        }
-        $regularUser->assignRole($userRole);
+        // if (! $regularUser) {
+        //     $regularUser = User::factory()->create([
+        //         'name' => 'Regular User',
+        //         'email' => 'user@example.com',
+        //         'password' => bcrypt('password'),
+        //     ]);
+        // }
+        // $regularUser->assignRole($userRole);
     }
 }

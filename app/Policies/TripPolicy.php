@@ -25,7 +25,7 @@ class TripPolicy
 
     public function view(User $user, Trip $trip): bool
     {
-        return $this->isParticipant($user, $trip);      //chi các user là driver hoặc advisor của chuyến đi mới được xem
+        return $trip->driver_id === $user->id || $trip->advisor_id === $user->id;      //chi các user là driver hoặc advisor của chuyến đi mới được xem
     }
 
     // create: driver, editor được phép tạo chuyến đi
@@ -34,104 +34,90 @@ class TripPolicy
         return $user->hasAnyRole(['driver', 'editor']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     * driver: chỉ edit được chuyến đi của mình khi status = 'pending', 'editting'
-     * admin, editor: edit được trừ khi status = 'confirmed'
-     */
+    /* ---------- Driver sửa: chỉ khi editing hoặc rejected ---------- */
     public function update(User $user, Trip $trip): Response
     {
-        if (! $user->hasRole('driver')) {
+        if (! $user->hasAnyRole(['driver','editor'])) {
             return Response::deny('Chỉ tài xế hoặc quản trị viên mới được chỉnh sửa chuyến đi.');
         }
         if ($trip->driver_id !== $user->id) {
             return Response::deny('Bạn không phải tài xế của chuyến đi này.');
         }
-        if ($trip->isLocked()) {
-            return Response::deny('Chuyến đi đã được xác nhận (confirmed), không thể chỉnh sửa.');
-        }
-        return in_array($trip->status, Trip::EDITABLE_STATUSES, true)
-            ? Response::allow()
-            : Response::deny('Chỉ có thể chỉnh sửa khi chuyến đi ở trạng thái "pending, editting".');
+        return match ($trip->status) {
+            Trip::STATUS_PENDING, Trip::STATUS_EDITING, Trip::STATUS_REJECTED => Response::allow(),
+
+            Trip::STATUS_CONFIRMED => Response::deny(
+                'Chuyến đã được xác nhận. Vui lòng gửi yêu cầu mở khoá để được chỉnh sửa.'
+            ),
+
+            default => Response::deny('Không thể chỉnh sửa chuyến ở trạng thái hiện tại.'),
+        };
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     * driver: chỉ delete được chuyến đi của mình khi status = 'pending'
-     * admin, editor: chi xoa duoc khi status = 'pending'
-     */
+    /* ---------- Driver xoá: chỉ khi pending ---------- */
     public function delete(User $user, Trip $trip): Response
     {
         if (! $user->hasRole('driver')) {
-            return Response::deny('Chỉ tài xế hoặc quản trị viên mới được xoá chuyến đi.');
+            return Response::deny('Chỉ tài xế hoặc quản trị viên mới được xoá chuyến.');
         }
 
         if ($trip->driver_id !== $user->id) {
-            return Response::deny('Bạn không phải tài xế của chuyến đi này.');
+            return Response::deny('Bạn không phải tài xế của chuyến này.');
         }
 
-        if ($trip->isLocked()) {
-            return Response::deny('Chuyến đi đã được xác nhận (confirmed), không thể xoá.');
+        if ($trip->status === Trip::STATUS_CONFIRMED) {
+            return Response::deny('Chuyến đã được xác nhận, không thể xoá.');
         }
 
-        return in_array($trip->status, Trip::DELETABLE_STATUSES, true)
+        return $trip->isDriverDeletable()
             ? Response::allow()
-            : Response::deny('Chỉ có thể xoá khi chuyến đi ở trạng thái "pending".');
+            : Response::deny('Chỉ có thể xoá khi chuyến ở trạng thái "pending".');
     }
 
-    public function restore(User $user, Trip $trip): bool
+    /* ---------- Driver GỬI yêu cầu mở khoá ---------- */
+    public function requestReopen(User $user, Trip $trip): Response
     {
-        return $user->hasRole('admin');
+        if (! $user->hasRole('driver') || $trip->driver_id !== $user->id) {
+            return Response::deny('Chỉ tài xế của chuyến mới được gửi yêu cầu mở khoá.');
+        }
+
+        if (! $trip->canRequestReopen()) {
+            return Response::deny('Chỉ gửi yêu cầu mở khoá cho chuyến đã được xác nhận.');
+        }
+
+        if ($trip->pendingReopenRequest) {
+            return Response::deny('Đã có một yêu cầu mở khoá đang chờ duyệt cho chuyến này.');
+        }
+
+        return Response::allow();
     }
 
-    public function forceDelete(User $user, Trip $trip): bool
-    {
-        return $user->hasRole('admin');
-    }
-
-    /**
-     * Mở khoá chuyến đi để driver sửa lại (confirmed|rejected -> editting).
-     * Admin: luôn được (qua before()).
-     * Advisor: chỉ với chuyến đi mình phụ trách.
-     * Driver: KHÔNG được tự mở khoá.
-     */
-    public function reopen(User $user, Trip $trip): Response
+    /* ---------- Advisor/Admin DUYỆT yêu cầu mở khoá ---------- */
+    public function reviewReopen(User $user, Trip $trip): Response
     {
         if (! $user->hasRole('advisor')) {
-            return Response::deny('Chỉ cố vấn phụ trách hoặc quản trị viên mới được mở khoá chỉnh sửa.');
+            return Response::deny('Chỉ cố vấn phụ trách hoặc quản trị viên mới được duyệt yêu cầu.');
+        }
+
+        return $trip->advisor_id === $user->id
+            ? Response::allow()
+            : Response::deny('Bạn không phải cố vấn phụ trách chuyến này.');
+    }
+
+    /* ---------- Advisor confirm / reject chuyến ---------- */
+    public function review(User $user, Trip $trip): Response
+    {
+        if (! $user->hasRole('advisor')) {
+            return Response::deny('Chỉ cố vấn phụ trách hoặc quản trị viên mới được duyệt chuyến.');
         }
 
         if ($trip->advisor_id !== $user->id) {
-            return Response::deny('Bạn không phải cố vấn phụ trách chuyến đi này.');
+            return Response::deny('Bạn không phải cố vấn phụ trách chuyến này.');
         }
 
-        if ($trip->status === Trip::STATUS_EDITTING) {
-            return Response::deny('Chuyến đi đang ở trạng thái "editting", tài xế đã có thể chỉnh sửa.');
-        }
-
-        return $trip->isReopenable()
+        return $trip->isReviewable()
             ? Response::allow()
-            : Response::deny('Chỉ mở khoá được chuyến đi đã "confirmed" hoặc "rejected".');
+            : Response::deny('Chuyến này không ở trạng thái chờ duyệt.');
     }
-
-    /**
-     * (Tuỳ chọn) Advisor xác nhận chuyến đi: editting|pending -> confirmed.
-     */
-    public function confirm(User $user, Trip $trip): Response
-    {
-        if (! $user->hasRole('advisor') || $trip->advisor_id !== $user->id) {
-            return Response::deny('Bạn không có quyền xác nhận chuyến đi này.');
-        }
-
-        return in_array($trip->status, [Trip::STATUS_PENDING, Trip::STATUS_EDITTING], true)
-            ? Response::allow()
-            : Response::deny('Chuyến đi này không ở trạng thái chờ xác nhận.');
-    }
-
-    private function isParticipant(User $user, Trip $trip): bool
-    {
-        return $trip->driver_id === $user->id || $trip->advisor_id === $user->id;
-    }
-
 
 }

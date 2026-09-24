@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\Trip;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Car;
 
-class CarSeeder extends Seeder
+class TripSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        Car::factory()->count(10)->create();
+        Trip::factory()->count(100)->create();
     }
 }
