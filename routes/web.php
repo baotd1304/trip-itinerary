@@ -19,7 +19,7 @@ use App\Http\Controllers\TripReviewController;
 
 
 
-Route::middleware(['auth', 'role:driver|advisor|admin'])->group(function () {
+Route::middleware(['auth', 'role:driver|advisor|admin|editor'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     
     Route::get('trips', [ClientTripController::class, 'index'])

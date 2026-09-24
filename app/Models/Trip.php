@@ -140,6 +140,11 @@ class Trip extends Model
             ->where('status', TripReopenRequest::STATUS_PENDING)
             ->latestOfMany();
     }
+    /** Yêu cầu mở khoá MỚI NHẤT (mọi trạng thái) — dùng để hiển thị phản hồi của cố vấn */
+    public function latestReopenRequest(): HasOne
+    {
+        return $this->hasOne(TripReopenRequest::class)->latestOfMany();
+    }
 
     public function reviewer(): BelongsTo
     {

@@ -30,15 +30,34 @@ class ClientTripController extends Controller
     {
         $user = auth()->user();
         Gate::authorize('viewAny', Trip::class);
+        
+        $query = Trip::with([
+            'tripExpense', 'images', 'car', 'advisor', 'driver',
+            'reviewer:id,name',
+            'pendingReopenRequest.requester:id,name',
+            'latestReopenRequest.requester:id,name',
+            'latestReopenRequest.reviewer:id,name',
+        ])
+        ->when(
+            ! $user->hasAnyRole(['admin', 'editor']),
+            function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    if ($user->hasRole('driver')) {
+                        $q->where('driver_id', $user->id);
+                    }
+                    if ($user->hasRole('advisor')) {
+                        $q->orWhere('advisor_id', $user->id);
+                    }
+                    // Không có driver/advisor thì không trả về dữ liệu
+                    if (! $user->hasAnyRole(['driver', 'advisor'])) {
+                        $q->whereRaw('1 = 0');
+                    }
+                });
+            }
+        )
+        ->orderByDesc('id');
 
-        $trips = Trip::with([
-                'tripExpense', 'images', 'car', 'advisor', 'driver',
-                'reviewer:id,name',
-                'pendingReopenRequest.requester:id,name',
-            ])
-            ->where(fn ($q) => $q->where('driver_id', $user->id)
-                                 ->orWhere('advisor_id', $user->id))
-            ->orderByDesc('day')
+        $trips = $query
             ->paginate(10)
             ->withQueryString();
 

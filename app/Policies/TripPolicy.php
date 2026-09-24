@@ -37,7 +37,7 @@ class TripPolicy
     /* ---------- Driver sửa: chỉ khi editing hoặc rejected ---------- */
     public function update(User $user, Trip $trip): Response
     {
-        if (! $user->hasRole('driver')) {
+        if (! $user->hasAnyRole(['driver','editor'])) {
             return Response::deny('Chỉ tài xế hoặc quản trị viên mới được chỉnh sửa chuyến đi.');
         }
         if ($trip->driver_id !== $user->id) {
