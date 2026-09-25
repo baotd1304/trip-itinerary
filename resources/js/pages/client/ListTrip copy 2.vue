@@ -199,8 +199,6 @@ const carLabel = (id?: number | '' | null) => {
   const c = cars.value.find((x) => x.id === Number(id));
   return c ? `${c.id} - ${c.license_plate}` : '—';
 };
-const truncate = (text?: string | null, limit = 100) =>
-    text && text.length > limit ? `${text.slice(0, limit)}...` : text ?? '';
 
 /* ==================== Dialog state ==================== */
 const mode        = ref<DialogMode>('create');
@@ -501,28 +499,28 @@ const thumb = (url: string) =>
                    class="mx-auto mt-1 max-w-[240px] text-left text-xs text-red-600 dark:text-red-400"
                    :title="trip.reject_reason">
                   <span class="font-medium">{{ trip.reviewer?.name ?? 'Cố vấn' }} từ chối:</span>
-                  {{ truncate(trip.reject_reason) }}
+                  {{ trip.reject_reason }}
                 </p>
 
                 <p v-if="trip.pending_reopen_request"
                    class="mx-auto mt-1 max-w-[240px] text-left text-xs text-indigo-600 dark:text-indigo-400"
                    :title="trip.pending_reopen_request.reason">
                   <span class="font-medium">Chờ duyệt mở khoá:</span>
-                  {{ truncate(trip.pending_reopen_request.reason) }}
+                  {{ trip.pending_reopen_request.reason }}
                 </p>
 
                 <p v-if="editingNote(trip)"
                    class="mx-auto mt-1 max-w-[240px] text-left text-xs text-indigo-600 dark:text-indigo-400"
                    :title="editingNote(trip) ?? ''">
                   <span class="font-medium">{{ reviewerName(approvedReopen(trip)) }} duyệt:</span>
-                  {{ truncate(editingNote(trip)) }}
+                  {{ editingNote(trip) }}
                 </p>
 
                 <p v-if="trip.status === 'confirmed' && rejectedReopen(trip)"
                    class="mx-auto mt-1 max-w-[240px] text-left text-xs text-orange-600 dark:text-orange-400"
                    :title="rejectedReopen(trip)?.review_note ?? ''">
                   <span class="font-medium">{{ reviewerName(rejectedReopen(trip)) }} từ chối mở khoá:</span>
-                  {{ truncate(rejectedReopen(trip)?.review_note) }}
+                  {{ rejectedReopen(trip)?.review_note }}
                 </p>
               </td>
 
@@ -551,6 +549,48 @@ const thumb = (url: string) =>
                     <Eye class="h-4 w-4" />
                   </Button>
 
+                  <Button v-if="canUpdate(trip)" variant="outline" size="sm"
+                          :title="updateHint(trip)" @click="openEdit(trip)">
+                    <Pencil class="mr-1 h-3.5 w-3.5" />
+                    {{ editButtonLabel(trip) }}
+                  </Button>
+
+                  <Button v-if="canRequestReopen(trip)" variant="secondary" size="sm"
+                          title="Gửi yêu cầu mở khoá cho cố vấn duyệt"
+                          @click="openReopenRequest(trip)">
+                    <Unlock class="mr-1 h-3.5 w-3.5" /> Xin mở khoá
+                  </Button>
+
+                  <Button v-if="canDelete(trip)" variant="destructive" size="sm"
+                          :title="deleteHint(trip)" @click="openDelete(trip)">
+                    <Trash2 class="mr-1 h-3.5 w-3.5" /> Xoá
+                  </Button>
+
+                  <!-- Advisor / Admin: duyệt yêu cầu mở khoá -->
+                  <template v-if="canReviewReopen(trip)">
+                    <Button variant="default" size="sm" title="Đồng ý cho tài xế cập nhật lại chuyến"
+                            @click="openReopenReview(trip, 'approve')">
+                      <ThumbsUp class="mr-1 h-3.5 w-3.5" /> Duyệt mở khoá
+                    </Button>
+                    <Button variant="outline" size="sm" title="Từ chối cho tài xế cập nhật lại chuyến"
+                            @click="openReopenReview(trip, 'reject')">
+                      <ThumbsDown class="mr-1 h-3.5 w-3.5" /> Từ chối mở khoá
+                    </Button>
+                  </template>
+
+                  <!-- Advisor / Admin: confirm / reject chuyến -->
+                  <template v-if="canReview(trip)">
+                    <Button size="sm" variant="default" title="Xác nhận thông tin chuyến đi chính xác"
+                            :disabled="confirmingId === trip.id" @click="confirmTrip(trip)">
+                      <Loader2 v-if="confirmingId === trip.id" class="mr-1 h-3.5 w-3.5 animate-spin" />
+                      <Check v-else class="mr-1 h-3.5 w-3.5" />
+                      Xác nhận
+                    </Button>
+                    <Button variant="destructive" size="sm" title="Thông tin chuyến đi không chính xác"
+                            @click="openRejectTrip(trip)">
+                      <Ban class="mr-1 h-3.5 w-3.5" /> Từ chối
+                    </Button>
+                  </template>
                 </div>
               </td>
             </tr>
