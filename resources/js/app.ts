@@ -9,6 +9,9 @@ import { initializeFlashToast } from '@/lib/flashToast';
 import { createApp, h } from 'vue'
 import { vCan } from './directives/can'
 import 'vue-sonner/style.css';
+import { i18n } from './i18n';
+import 'flag-icons/css/flag-icons.min.css';
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 /** Các page dùng ClientLayout (public site) */
@@ -49,6 +52,7 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(i18n)
 
         // Đăng ký directive toàn cục
         app.directive('can', vCan)

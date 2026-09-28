@@ -16,7 +16,7 @@ use App\Http\Controllers\TripReopenController;
 use App\Http\Controllers\Client\TripReopenRequestController;
 use App\Http\Controllers\TripReopenReviewController;
 use App\Http\Controllers\TripReviewController;
-
+use Illuminate\Http\Request;
 
 
 Route::middleware(['auth', 'role:driver|advisor|admin|editor'])->group(function () {
@@ -119,7 +119,13 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin|editor'])->group(functi
 
 });
 
+Route::post('/locale', function (Request $request) {
+    $locale = $request->input('locale');
+    $locale = in_array($locale, ['vi', 'en'], true) ? $locale : 'vi';
+
+    session(['locale' => $locale]);
+    return back();
+})->name('locale.switch');
 
 
-    
 require __DIR__.'/settings.php';
