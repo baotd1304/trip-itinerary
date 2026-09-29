@@ -2,26 +2,25 @@
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
-    Ban, Check, CheckCircle2, Eye, Loader2, Pencil, ThumbsDown, ThumbsUp, Trash2, Unlock, XCircle
+    Ban, CheckCircle2, Eye, Loader2, Pencil, ThumbsDown, ThumbsUp, Trash2, Unlock,
 } from 'lucide-vue-next';
 import {
     canDelete, canRequestReopen, canReview, canReviewReopen, canUpdate,
     deleteHintKey, editLabelKey, updateHintKey,
 } from '@/lib/trip-permissions';
-import type { Trip, TripActionPayload, TripActionType } from '@/types/trip';
+import type { Trip, TripActionType } from '@/types/trip';
 
 const props = withDefaults(defineProps<{
     trip: Trip;
     variant?: 'table' | 'dialog';
     confirming?: boolean;
-    showView?: boolean;
     showEmptyHint?: boolean;
     // giới hạn nút được render:
     // - null/undefined => hiển thị tất cả các nút mà user có quyền
     // - [view]         => chỉ hiển thị nút View
     only?: TripActionType[] | null;
 }>(), {
-    variant: 'dialog',
+    variant: 'table',
     confirming: false,
     showEmptyHint: false,
     only: null,
@@ -40,9 +39,11 @@ const showView = computed(() => allow('view'));
 const showEdit = computed(() => allow('edit') && canUpdate(props.trip));
 const showRequestReopen = computed(() => allow('request-reopen') && canRequestReopen(props.trip));
 const showDelete = computed(() => allow('delete') && canDelete(props.trip));
+
 const showReopenReview = computed(() => canReviewReopen(props.trip));
 const showApproveReopen = computed(() => allow('approve-reopen') && showReopenReview.value);
 const showRejectReopen = computed(() => allow('reject-reopen') && showReopenReview.value);
+
 const showConfirm = computed(() => allow('confirm') && canReview(props.trip));
 const showReject = computed(() => allow('reject') && canReview(props.trip));
 
@@ -61,42 +62,42 @@ const hasAnyAction = computed(() =>
             <Eye class="h-4 w-4" />
         </Button>
         <!-- update -->
-        <Button v-if="canUpdate(trip)" size="sm" variant="outline"
+        <Button v-if="showEdit" size="sm" variant="outline"
                 :title="$t(updateHintKey(trip))" @click="fire('edit')">
             <Pencil class="mr-1 h-3.5 w-3.5" /> {{ $t(editLabelKey(trip)) }}
         </Button>
         <!-- yêu cầu mở khóa -->
-        <Button v-if="canRequestReopen(trip)" size="sm" variant="secondary"
+        <Button v-if="showRequestReopen" size="sm" variant="secondary"
                 :title="$t('trip.hints.requestReopen')" @click="fire('request-reopen')">
             <Unlock class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.requestReopen') }}
         </Button>
         <!-- xóa -->
-        <Button v-if="canDelete(trip)" size="sm" variant="destructive"
+        <Button v-if="showDelete" size="sm" variant="destructive"
                 :title="$t(deleteHintKey(trip))" @click="fire('delete')">
             <Trash2 class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.delete') }}
         </Button>
 
         <!-- Cố vấn / Admin: duyệt/từ chối yêu cầu mở khoá -->
-        <template v-if="canReviewReopen(trip)">
-            <Button size="sm" variant="default"
+        <template v-if="showApproveReopen || showRejectReopen">
+            <Button size="sm" variant="primary"
                     :title="$t('trip.hints.approveReopen')" @click="fire('approve-reopen')">
                 <ThumbsUp class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.approveReopen') }}
             </Button>
-            <Button size="sm" variant="outline"
+            <Button size="sm" variant="default"
                     :title="$t('trip.hints.rejectReopen')" @click="fire('reject-reopen')">
                 <ThumbsDown class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.rejectReopen') }}
             </Button>
         </template>
 
         <!-- Cố vấn / Admin: xác nhận / từ chối chuyến -->
-        <template v-if="canReview(trip)">
-            <Button size="sm" variant="primary" :disabled="confirming"
+        <template v-if="showConfirm || showReject">
+            <Button size="sm" variant="success" :disabled="confirming"
                     :title="$t('trip.hints.confirm')" @click="fire('confirm')">
                 <Loader2 v-if="confirming" class="mr-1 h-3.5 w-3.5 animate-spin" />
                 <CheckCircle2 v-else class="mr-1 h-3.5 w-3.5" />
                 {{ $t('trip.actions.confirm') }}
             </Button>
-            <Button size="sm" variant="destructive"
+            <Button size="sm" variant="default"
                     :title="$t('trip.hints.reject')" @click="fire('reject')">
                 <Ban class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.reject') }}
             </Button>

@@ -2,9 +2,9 @@ import type { ReopenRequest, Trip, TripStatus } from '@/types/trip';
 
 export const STATUS_CLASS: Record<TripStatus, string> = {
     pending: 'bg-amber-500',
-    editing: 'bg-indigo-500',
+    editing: 'bg-indigo-600',
     confirmed: 'bg-emerald-600',
-    rejected: 'bg-red-500',
+    rejected: 'bg-red-600',
 };
 
 export const statusClass = (s?: TripStatus) =>

@@ -22,6 +22,7 @@ import trips from '@/routes/client/trips';
 import { useFormat } from '@/composables/useFormat';
 import { submitWarningKey } from '@/lib/trip-status';
 import { deleteHintKey } from '@/lib/trip-permissions';
+import { DIALOG_ACTIONS } from '@/lib/trip-action-presets.js';
 import { emptyTripForm, mapTripToForm } from '@/composables/useTripModel';
 import type {
     Advisor, Car, DialogMode, Driver, Trip, TripActionPayload, TripImage, TripActionType
@@ -57,11 +58,11 @@ const isView = computed(() => props.mode === 'view');
 const isEdit = computed(() => props.mode === 'edit');
 
 /** Dialog chi tiết: đủ mọi thao tác, trừ nút "Xem" (đang ở trong chính màn xem) */
-const DIALOG_ACTIONS: TripActionType[] = [
-    'edit', 'delete', 'request-reopen',
-    'approve-reopen', 'reject-reopen',
-    'confirm', 'reject',
-];
+// const DIALOG_ACTIONS: TripActionType[] = [
+//     'edit', 'delete', 'request-reopen',
+//     'approve-reopen', 'reject-reopen',
+//     'confirm', 'reject',
+// ];
 
 /* Đồng bộ model mỗi khi mở dialog hoặc đổi trip/mode */
 watch(

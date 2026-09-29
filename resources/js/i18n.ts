@@ -1,8 +1,9 @@
 import { createI18n } from 'vue-i18n';
 import vi from './locales/vi';
+import th from './locales/th';
 import en from './locales/en';
 
-export const SUPPORT_LOCALES = ['vi', 'en'] as const;
+export const SUPPORT_LOCALES = ['vi', 'en', 'th'] as const;
 export type AppLocale = (typeof SUPPORT_LOCALES)[number];
 
 const LOCALE_KEY = 'app_locale';
@@ -18,10 +19,10 @@ function detectLocale(): AppLocale {
 
 export const i18n = createI18n({
     legacy: false,          // bắt buộc dùng Composition API
-    globalInjection: true,  // cho phép dùng $t trong template
+    globalInjection: true,  // cho phép dùng $t trong template ma k cần khai báo
     locale: detectLocale(),
     fallbackLocale: 'vi',
-    messages: { vi, en },
+    messages: { vi, en, th },
 });
 
 export const persistLocale = (locale: AppLocale) => {

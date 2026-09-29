@@ -36,7 +36,8 @@ const { formatDate } = useFormat();
 
                 <div class="rounded-md bg-muted/40 p-3 text-sm">
                     <p class="font-medium">
-                        #{{ trip.id }} · {{ formatDate(trip.day) }} · {{ trip.origin }} → {{ trip.destination }}
+                        #{{ trip.id }} - {{ formatDate(trip.day) }} 
+                        <br> {{ trip.origin }} → {{ trip.destination }}
                     </p>
                     <p class="mt-2 text-muted-foreground">
                         {{ $t('trip.reopenReview.requesterSaid', {

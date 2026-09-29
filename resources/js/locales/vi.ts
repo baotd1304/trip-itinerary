@@ -13,6 +13,7 @@ export default {
         note: 'Ghi chú',
         sentAt: 'Gửi lúc',
         language: 'Ngôn ngữ',
+        search: 'Tìm kiếm',
     },
 
     trip: {
@@ -28,18 +29,33 @@ export default {
         },
 
         table: {
+            stt: 'STT',
             id: 'ID',
             advisor: 'Cố vấn',
             driver: 'Tài xế',
             origin: 'Điểm đi',
             destination: 'Điểm đến',
             day: 'Ngày',
+            time: 'Thời gian',
             distance: 'Quãng đường',
             status: 'Trạng thái',
             overnight: 'Nghỉ đêm',
             holiday: 'Ngày lễ',
             totalFee: 'Tổng phí',
             actions: 'Thao tác',
+        },
+
+        filters: {
+            searchPlaceholder: 'Tìm theo mã, cố vấn, tài xế, điểm đi/đến...',
+            status: 'Trạng thái',
+            allStatus: 'Tất cả trạng thái',
+            fromDate: 'Từ ngày',
+            toDate: 'Đến ngày',
+            reset: 'Xoá bộ lọc',
+            searching: 'Đang tìm...',
+            resultCount: 'Tìm thấy {count} chuyến đi',
+            resultRange: 'Hiển thị {from} – {to} trên tổng {total} chuyến đi',
+            resultEmpty: 'Không có chuyến đi nào khớp với điều kiện lọc',
         },
 
         actions: {

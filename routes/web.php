@@ -121,7 +121,7 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin|editor'])->group(functi
 
 Route::post('/locale', function (Request $request) {
     $locale = $request->input('locale');
-    $locale = in_array($locale, ['vi', 'en'], true) ? $locale : 'vi';
+    $locale = in_array($locale, ['vi', 'en', 'th'], true) ? $locale : 'vi';
 
     session(['locale' => $locale]);
     return back();

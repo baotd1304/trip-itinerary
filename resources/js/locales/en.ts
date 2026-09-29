@@ -13,6 +13,7 @@ export default {
         note: 'Note',
         sentAt: 'Sent at',
         language: 'Language',
+        search: 'Search',
     },
 
     trip: {
@@ -28,18 +29,33 @@ export default {
         },
 
         table: {
+            stt: 'No.',
             id: 'ID',
             advisor: 'Advisor',
             driver: 'Driver',
             origin: 'Origin',
             destination: 'Destination',
             day: 'Day',
+            time: 'Time',
             distance: 'Distance',
             status: 'Status',
             overnight: 'Overnight',
             holiday: 'Holiday',
             totalFee: 'Total fee',
             actions: 'Actions',
+        },
+
+        filters: {
+            searchPlaceholder: 'Search by ID, advisor, driver, origin/destination...',
+            status: 'Status',
+            allStatus: 'All statuses',
+            fromDate: 'From date',
+            toDate: 'To date',
+            reset: 'Clear filters',
+            searching: 'Searching...',
+            resultCount: 'Found {count} trips',
+            resultRange: 'Showing {from} – {to} of {total} trips',
+            resultEmpty: 'No trips match the current filters',
         },
 
         actions: {

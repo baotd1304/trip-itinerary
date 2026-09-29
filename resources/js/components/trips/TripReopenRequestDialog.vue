@@ -26,7 +26,8 @@ const { formatDate } = useFormat();
             <Form v-if="trip" :action="`/trips/${trip.id}/reopen-requests`" method="post"
                   v-slot="{ errors, processing }" class="space-y-4" @success="open = false">
                 <p class="text-sm text-muted-foreground">
-                    <b>#{{ trip.id }}</b> · {{ formatDate(trip.day) }} · {{ trip.origin }} → {{ trip.destination }}
+                    <b>#{{ trip.id }} - {{ formatDate(trip.day) }} :</b>
+                    <br> {{ trip.origin }} → {{ trip.destination }}
                 </p>
 
                 <div class="grid gap-2">
