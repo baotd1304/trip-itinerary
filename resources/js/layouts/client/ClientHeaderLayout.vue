@@ -4,6 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronDown, Menu, Moon, Sun, Tickets } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { 
@@ -37,23 +38,23 @@ interface NavItemWithIcon extends NavItem {
 
 const mainNavItems: NavItemWithIcon[] = [
     { title: 'Trang chủ', href: '/' },
-    {
-        title: 'QL Trip Itinerary',
-        href: '#', // hoặc href: admin.trips.index() nếu muốn click vào parent cũng chuyển trang
-        icon: Tickets,
-        children: [
-            {
-                title: 'List trips',
-                href: admin.trips.index(),
-                icon: Tickets,
-            },
-            {
-                title: 'Export trip',
-                href: admin.trips.export.index(),
-                icon: Tickets,
-            },
-        ]
-    },
+    // {
+    //     title: 'QL Trip Itinerary',
+    //     href: '#', // hoặc href: admin.trips.index() nếu muốn click vào parent cũng chuyển trang
+    //     icon: Tickets,
+    //     children: [
+    //         {
+    //             title: 'List trips',
+    //             href: admin.trips.index(),
+    //             icon: Tickets,
+    //         },
+    //         {
+    //             title: 'Export trip',
+    //             href: admin.trips.export.index(),
+    //             icon: Tickets,
+    //         },
+    //     ]
+    // },
     { title: 'Chuyến đi', href: '/trips' },
     { title: 'Chi phí', href: '/expenses' },
     { title: 'Liên hệ', href: '/contact' },
@@ -194,8 +195,9 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                     </Link>
                 </template>
             </nav>
-
+        
             <div class="ml-auto flex items-center gap-2">
+                <LocaleSwitcher />
                 <Button variant="ghost" size="icon" @click="toggleAppearance">
                     <Sun v-if="appearance === 'dark'" class="size-5" />
                     <Moon v-else class="size-5" />

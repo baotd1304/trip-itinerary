@@ -26,60 +26,149 @@ class ClientTripController extends Controller
         private readonly CloudinaryService $cloudinary,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         Gate::authorize('viewAny', Trip::class);
-        
+
+        // ---------- 1. Chuẩn hoá & validate tham số lọc ----------
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'in:pending,editing,confirmed,rejected'],
+            'from'   => ['nullable', 'date'],
+            'to'     => ['nullable', 'date', 'after_or_equal:from'],
+            'is_overnight' => ['nullable', 'in:0,1'],
+            'is_holiday'   => ['nullable', 'in:0,1'],
+        ]);
+
+        $search = trim($filters['search'] ?? '');
+        $status = $filters['status'] ?? null;
+        $from   = $filters['from'] ?? null;
+        $to     = $filters['to'] ?? null;
+
+        // Ép về bool|null — KHÔNG dùng ?? '' vì '0' phải được giữ lại
+        $overnight = isset($filters['is_overnight']) ? (bool) $filters['is_overnight'] : null;
+        $holiday   = isset($filters['is_holiday']) ? (bool) $filters['is_holiday'] : null;
+
+        // ---------- 2. Query gốc ----------
         $query = Trip::with([
-            'tripExpense', 'images', 'car', 'advisor', 'driver',
-            'reviewer:id,name',
-            'pendingReopenRequest.requester:id,name',
-            'latestReopenRequest.requester:id,name',
-            'latestReopenRequest.reviewer:id,name',
-        ])
-        ->when(
-            ! $user->hasAnyRole(['admin', 'editor']),
-            function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                    if ($user->hasRole('driver')) {
-                        $q->where('driver_id', $user->id);
+                'advisor:id,name',
+                'driver:id,name',
+                'images',
+                'tripExpense',
+                'reviewer:id,name',
+                'pendingReopenRequest.requester:id,name',
+                'latestReopenRequest.requester:id,name',
+                'latestReopenRequest.reviewer:id,name',
+            ])
+            // ----- Giới hạn theo vai trò -----
+            ->when(
+                ! $user->hasAnyRole(['admin', 'manager']),
+                function ($query) use ($user) {
+                    $query->where(function ($q) use ($user) {
+                        if ($user->hasRole('driver')) {
+                            $q->where('driver_id', $user->id);
+                        }
+                        if ($user->hasRole('advisor')) {
+                            $q->orWhere('advisor_id', $user->id);
+                        }
+                        // Không phải driver/advisor => không thấy gì
+                        if (! $user->hasAnyRole(['driver', 'advisor'])) {
+                            $q->whereRaw('1 = 0');
+                        }
+                    });
+                }
+            )
+            // ----- Tìm kiếm: ID / điểm đi / điểm đến / tên advisor / tên driver -----
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($sub) use ($search) {
+                    if (ctype_digit($search)) {
+                        $sub->orWhere('id', (int) $search);
                     }
-                    if ($user->hasRole('advisor')) {
-                        $q->orWhere('advisor_id', $user->id);
-                    }
-                    // Không có driver/advisor thì không trả về dữ liệu
-                    if (! $user->hasAnyRole(['driver', 'advisor'])) {
-                        $q->whereRaw('1 = 0');
-                    }
+
+                    $sub->orWhere('origin', 'like', "%{$search}%")
+                        ->orWhere('destination', 'like', "%{$search}%")
+                        ->orWhereHas('advisor', fn ($a) => $a->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%"));
                 });
-            }
-        )
-        ->orderByDesc('id');
+            })
+            // ----- Lọc trạng thái -----
+            ->when($status, fn ($q, $value) => $q->where('status', $value))
+            // ----- Lọc khoảng ngày -----
+            ->when($from, fn ($q, $value) => $q->whereDate('day', '>=', $value))
+            ->when($to, fn ($q, $value) => $q->whereDate('day', '<=', $value))
+            // ----- Overnight (lọc qua quan hệ trip_expense) -----
+            ->when(! is_null($overnight), function ($q) use ($overnight) {
+                if ($overnight) {
+                    $q->whereHas('tripExpense', fn ($e) => $e->where('is_overnight', 1));
+                } else {
+                    // "Không" = có bản ghi với giá trị 0 HOẶC chưa có bản ghi chi phí
+                    $q->where(function ($sub) {
+                        $sub->whereHas('tripExpense', fn ($e) => $e->where('is_overnight', 0))
+                            ->orWhereDoesntHave('tripExpense');
+                    });
+                }
+            })
+            // ----- Holiday -----
+            ->when(! is_null($holiday), function ($q) use ($holiday) {
+                if ($holiday) {
+                    $q->whereHas('tripExpense', fn ($e) => $e->where('is_holiday', 1));
+                } else {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('tripExpense', fn ($e) => $e->where('is_holiday', 0))
+                            ->orWhereDoesntHave('tripExpense');
+                    });
+                }
+            })
+            ->orderByDesc('day')
+            ->orderByDesc('id');
 
         $trips = $query
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString(); // giữ lại filter khi chuyển trang
 
-        // Gắn cờ quyền cho từng chuyến đi để UI tự ẩn/khoá nút
-        $trips->getCollection()->transform(function (Trip $trip) use ($user) {
+        // ---------- 3. Gắn quyền cho từng chuyến ----------
+        $trips->getCollection()->transform(function ($trip) use ($user) {
             $trip->setAttribute('can', [
                 'update'        => $user->can('update', $trip),
                 'delete'        => $user->can('delete', $trip),
                 'requestReopen' => $user->can('requestReopen', $trip),
                 'review'        => $user->can('review', $trip),
                 'reviewReopen'  => $trip->pendingReopenRequest
-                                    && $user->can('review', $trip->pendingReopenRequest),
+                    ? $user->can('review', $trip->pendingReopenRequest)
+                    : false,
             ]);
+
             return $trip;
         });
 
         return Inertia::render('client/ListTrip', [
             'trips'    => $trips,
+            // Khối meta tường minh — luôn ổn định ở FE
+            'tripsMeta' => [
+                'total'        => $trips->total(),        // tổng sau khi lọc
+                'from'         => $trips->firstItem(),    // null nếu rỗng
+                'to'           => $trips->lastItem(),
+                'current_page' => $trips->currentPage(),
+                'last_page'    => $trips->lastPage(),
+                'per_page'     => $trips->perPage(),
+            ],
+
             'cars'     => Car::where('is_active', 1)->get(['id', 'license_plate']),
             'advisors' => User::role('advisor')->where('is_active', 1)->get(['id', 'name']),
             'drivers'  => User::role('driver')->where('is_active', 1)->get(['id', 'name']),
-            'can'      => [
+
+            'filters' => [
+                'search' => $search ?: null,
+                'status' => $status,
+                'from'   => $from,
+                'to'     => $to,
+                // Trả về string '1'/'0'/null để FE khôi phục đúng trạng thái select
+                'is_overnight' => is_null($overnight) ? null : (string) (int) $overnight,
+                'is_holiday'   => is_null($holiday) ? null : (string) (int) $holiday,
+            ],
+
+            'can' => [
                 'create' => $user->can('create', Trip::class),
             ],
         ]);

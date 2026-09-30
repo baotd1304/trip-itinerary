@@ -24,6 +24,9 @@ return new class extends Migration
             $table->boolean('is_holiday')->default(0);
             $table->decimal('holiday_rate', 15,0)->unsigned()->nullable();
             $table->timestamps();
+
+            $table->index(['trip_id', 'is_overnight']);
+            $table->index(['trip_id', 'is_holiday']);
         });
     }
 
