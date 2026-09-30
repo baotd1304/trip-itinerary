@@ -31,7 +31,7 @@ const carLabel = computed(() => {
                 </div>
                 <div>
                     <dt class="text-xs text-muted-foreground">{{ $t('trip.form.car') }}</dt>
-                    <dd class="font-medium">{{ carLabel }}</dd>
+                    <dd class="font-medium">#{{ carLabel }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-muted-foreground">{{ $t('trip.form.day') }}</dt>

@@ -16,6 +16,26 @@ export const badgeVariants = cva(
          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        primary:
+            'bg-blue-700 text-white hover:bg-blue-800 focus-visible:ring-blue-500/50',
+
+        success:
+            'bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500/50',
+
+        danger:
+            'bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-500/50',
+
+        warning:
+            'bg-yellow-600 text-white hover:bg-yellow-700 focus-visible:ring-yellow-500/50',
+
+        info:
+            'bg-cyan-700 text-white hover:bg-cyan-800 focus-visible:ring-cyan-500/50',
+
+        light:
+            'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-400/50 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700',
+
+        dark:
+            'bg-gray-900 text-white hover:bg-gray-800 focus-visible:ring-gray-700/50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white',
       },
     },
     defaultVariants: {

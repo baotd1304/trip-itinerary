@@ -37,12 +37,18 @@ class ClientTripController extends Controller
             'status' => ['nullable', 'in:pending,editing,confirmed,rejected'],
             'from'   => ['nullable', 'date'],
             'to'     => ['nullable', 'date', 'after_or_equal:from'],
+            'is_overnight' => ['nullable', 'in:0,1'],
+            'is_holiday'   => ['nullable', 'in:0,1'],
         ]);
 
         $search = trim($filters['search'] ?? '');
         $status = $filters['status'] ?? null;
         $from   = $filters['from'] ?? null;
         $to     = $filters['to'] ?? null;
+
+        // Ép về bool|null — KHÔNG dùng ?? '' vì '0' phải được giữ lại
+        $overnight = isset($filters['is_overnight']) ? (bool) $filters['is_overnight'] : null;
+        $holiday   = isset($filters['is_holiday']) ? (bool) $filters['is_holiday'] : null;
 
         // ---------- 2. Query gốc ----------
         $query = Trip::with([
@@ -63,11 +69,9 @@ class ClientTripController extends Controller
                         if ($user->hasRole('driver')) {
                             $q->where('driver_id', $user->id);
                         }
-
                         if ($user->hasRole('advisor')) {
                             $q->orWhere('advisor_id', $user->id);
                         }
-
                         // Không phải driver/advisor => không thấy gì
                         if (! $user->hasAnyRole(['driver', 'advisor'])) {
                             $q->whereRaw('1 = 0');
@@ -93,6 +97,29 @@ class ClientTripController extends Controller
             // ----- Lọc khoảng ngày -----
             ->when($from, fn ($q, $value) => $q->whereDate('day', '>=', $value))
             ->when($to, fn ($q, $value) => $q->whereDate('day', '<=', $value))
+            // ----- Overnight (lọc qua quan hệ trip_expense) -----
+            ->when(! is_null($overnight), function ($q) use ($overnight) {
+                if ($overnight) {
+                    $q->whereHas('tripExpense', fn ($e) => $e->where('is_overnight', 1));
+                } else {
+                    // "Không" = có bản ghi với giá trị 0 HOẶC chưa có bản ghi chi phí
+                    $q->where(function ($sub) {
+                        $sub->whereHas('tripExpense', fn ($e) => $e->where('is_overnight', 0))
+                            ->orWhereDoesntHave('tripExpense');
+                    });
+                }
+            })
+            // ----- Holiday -----
+            ->when(! is_null($holiday), function ($q) use ($holiday) {
+                if ($holiday) {
+                    $q->whereHas('tripExpense', fn ($e) => $e->where('is_holiday', 1));
+                } else {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('tripExpense', fn ($e) => $e->where('is_holiday', 0))
+                            ->orWhereDoesntHave('tripExpense');
+                    });
+                }
+            })
             ->orderByDesc('day')
             ->orderByDesc('id');
 
@@ -100,7 +127,7 @@ class ClientTripController extends Controller
             ->paginate(10)
             ->withQueryString(); // giữ lại filter khi chuyển trang
 
-        // ---------- 3. Gắn quyền cho từng dòng ----------
+        // ---------- 3. Gắn quyền cho từng chuyến ----------
         $trips->getCollection()->transform(function ($trip) use ($user) {
             $trip->setAttribute('can', [
                 'update'        => $user->can('update', $trip),
@@ -136,6 +163,9 @@ class ClientTripController extends Controller
                 'status' => $status,
                 'from'   => $from,
                 'to'     => $to,
+                // Trả về string '1'/'0'/null để FE khôi phục đúng trạng thái select
+                'is_overnight' => is_null($overnight) ? null : (string) (int) $overnight,
+                'is_holiday'   => is_null($holiday) ? null : (string) (int) $holiday,
             ],
 
             'can' => [

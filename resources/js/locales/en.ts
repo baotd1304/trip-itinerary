@@ -14,6 +14,9 @@ export default {
         sentAt: 'Sent at',
         language: 'Language',
         search: 'Search',
+        checkAll: "Check all",
+        clearAll: "Clear all",
+        required: "Required",
     },
 
     trip: {
@@ -29,6 +32,10 @@ export default {
         },
 
         table: {
+            chooseColumns: 'Columns',
+            displayColumns: 'Visible columns',
+            columnsSelected: '{count}/{total} columns enabled',
+            resetColumns: 'Reset to default',
             stt: 'No.',
             id: 'ID',
             advisor: 'Advisor',
@@ -56,6 +63,12 @@ export default {
             resultCount: 'Found {count} trips',
             resultRange: 'Showing {from} – {to} of {total} trips',
             resultEmpty: 'No trips match the current filters',
+            surcharge:    'Surcharges',
+            overnight: 'Overnight',
+            holiday: 'Holiday',
+            anyValue: 'All',
+            optionYes: 'Yes',
+            optionNo: 'No',
         },
 
         actions: {
@@ -72,6 +85,7 @@ export default {
             submitCreate: 'Create trip',
             submitUpdate: 'Save & submit',
             noneAvailable: 'No actions available for this trip.',
+            viewNumber: 'View trip #{id}',
         },
 
         hints: {

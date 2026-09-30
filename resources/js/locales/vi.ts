@@ -14,6 +14,9 @@ export default {
         sentAt: 'Gửi lúc',
         language: 'Ngôn ngữ',
         search: 'Tìm kiếm',
+        checkAll: "Chọn tất cả",
+        clearAll: "Bỏ chọn tất cả",
+        required: "Bắt buộc",
     },
 
     trip: {
@@ -29,6 +32,10 @@ export default {
         },
 
         table: {
+            chooseColumns: 'Cột',
+            displayColumns: 'Cột hiển thị',
+            columnsSelected: 'Đang chọn {count}/{total} cột',
+            resetColumns: 'Khôi phục mặc định',
             stt: 'STT',
             id: 'ID',
             advisor: 'Cố vấn',
@@ -56,6 +63,12 @@ export default {
             resultCount: 'Tìm thấy {count} chuyến đi',
             resultRange: 'Hiển thị {from} – {to} trên tổng {total} chuyến đi',
             resultEmpty: 'Không có chuyến đi nào khớp với điều kiện lọc',
+            surcharge:    'Phụ phí',
+            overnight: 'Nghỉ đêm',
+            holiday: 'Ngày lễ',
+            anyValue: 'Tất cả',
+            optionYes: 'Có',
+            optionNo: 'Không',
         },
 
         actions: {
@@ -72,6 +85,7 @@ export default {
             submitCreate: 'Tạo chuyến',
             submitUpdate: 'Lưu & gửi duyệt',
             noneAvailable: 'Bạn không có thao tác khả dụng với chuyến này.',
+            viewNumber: 'Xem chi tiết chuyến #{id}',
         },
 
         hints: {

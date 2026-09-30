@@ -38,6 +38,8 @@ const props = defineProps<{
         status?: TripStatus | null;
         from?: string | null;
         to?: string | null;
+        is_overnight?: '1' | '0' | null;
+        is_holiday?: '1' | '0' | null;
     };
     can?: { create?: boolean };
 }>();
