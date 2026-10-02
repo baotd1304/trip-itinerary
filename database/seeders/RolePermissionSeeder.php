@@ -18,6 +18,7 @@ class RolePermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'advisor']);
         Role::firstOrCreate(['name' => 'driver']);
         Role::firstOrCreate(['name' => 'editor']);
+        Role::firstOrCreate(['name' => 'manager']);
 
         Permission::firstOrCreate(['name' => 'trip.view']);
         Permission::firstOrCreate(['name' => 'trip.create']);
@@ -43,7 +44,13 @@ class RolePermissionSeeder extends Seeder
             'trip.create',
             'trip.update',
         ]);
-
+        Role::findByName('manager')->syncPermissions([
+            'trip.view',
+            'trip.create',
+            'trip.update',
+            'trip.delete',
+        ]);
+        
 
     }
 }

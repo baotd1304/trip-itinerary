@@ -1,26 +1,32 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
 import { CircleCheckBigIcon, CircleX } from 'lucide-vue-next';
 import TripActions from './TripActions.vue';
 import TripStatusCell from './TripStatusCell.vue';
 import TripColumnPicker from './TripColumnPicker.vue';
 import { useFormat } from '@/composables/useFormat';
 import { useTableColumns } from '@/composables/useTableColumns';
+import { useStickyShadow } from '@/composables/useStickyShadow';
 import { TABLE_ONLY_VIEW } from '@/lib/trip-action-presets';
 import { TRIP_TABLE_COLUMNS, DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import type { ColumnKey } from '@/types/trip-table';
 import type { Trip, TripActionType } from '@/types/trip';
 
 const props = withDefaults(
   defineProps<{
     trips: Trip[];
     confirmingId?: number | null;
-    /** Số thứ tự bắt đầu STT (lấy từ meta.from của paginator, mặc định 1) */
-    startIndex?: number;
+    startIndex?: number;    // Số thứ tự bắt đầu STT (lấy từ meta.from của paginator, mặc định 1)
     storageKey?: string;
+    defaultColumns?: ColumnKey[];
+    tableActions?: TripActionType[];
   }>(),
   {
     confirmingId: null,
     startIndex: 1,
     storageKey: 'trip-table-visible-columns',
+    defaultColumns: () => DEFAULT_TRIP_TABLE_COLUMNS,
+    tableActions: () => TABLE_ONLY_VIEW,
   },
 );
 
@@ -43,9 +49,37 @@ const {
     resetToDefault,
 } = useTableColumns({
     columns: TRIP_TABLE_COLUMNS,
-    defaultColumns: DEFAULT_TRIP_TABLE_COLUMNS,
     storageKey: props.storageKey,
+    defaultColumns: props.defaultColumns,
 });
+//Ghim column khi scroll
+const scroller = ref<HTMLElement | null>(null);
+const { atStart, atEnd } = useStickyShadow(scroller);
+
+/** Chỉ ghim khi cột đó thực sự đang hiển thị */
+const pinLeft = computed(() => isVisible('stt'));
+const pinRight = computed(() => isVisible('actions'));
+
+/* ---- Lớp dùng lại cho ô ghim ---- */
+const stickyLeftCell = computed(() => [
+    'sticky left-0 z-10 bg-inherit',
+    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
+const stickyRightCell = computed(() => [
+    'sticky right-0 z-10 bg-inherit',
+    !atEnd.value ? 'shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
+const stickyLeftHead = computed(() => [
+    'sticky left-0 z-30 bg-inherit',
+    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
+const stickyRightHead = computed(() => [
+    'sticky right-0 z-30 bg-inherit',
+    !atEnd.value ? 'shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
+/** Viền chuẩn cho mọi ô (thay cho border-collapse) */
+const cellBorder = 'border-b border-r border-gray-300 dark:border-gray-700';
+
 
 /** Chuẩn hoá "HH:mm" từ chuỗi giờ hoặc datetime */
 const hhmm = (v?: string | null): string => (v ? String(v).slice(0, 5) : '');
@@ -76,110 +110,129 @@ const fire = (type: TripActionType, trip: Trip) => emit('action', { type, trip }
                 @reset="resetToDefault"
             />
         </div>
-        <div class="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700">
-            <table class="w-full table-auto border-collapse">
-                <thead>
-                    <tr class="bg-gray-100 dark:bg-gray-800">
-                        <th
-                            v-for="column in renderedColumns"
-                            :key="column.key" scope="col"
-                            class="whitespace-nowrap border border-gray-300 px-2 py-2 text-center dark:border-gray-700"
-                        >
-                            {{ $t(column.labelKey) }}
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr v-if="!trips.length">
-                        <td :colspan="visibleColumnCount"
-                            class="px-4 py-8 text-center text-muted-foreground"
-                        >
-                            {{ $t('common.noData') }}
-                        </td>
-                    </tr>
-
-                    <tr v-for="(trip, index) in trips" :key="trip.id" class="hover:bg-gray-50 dark:hover:bg-gray-900">
-                        <td
-                            v-if="isVisible('stt')"
-                            class="border px-2 py-2 text-center align-middle text-sm font-medium dark:border-gray-700"
-                        >
-                            <button
-                                type="button"
-                                class="inline-flex min-w-8 items-center justify-center rounded-md px-2 py-1 text-primary underline-offset-4 transition-colors hover:bg-primary/10 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
-                                :title="$t('trip.actions.viewNumber', { id: trip.id })"
-                                :aria-label="$t('trip.actions.viewNumber', { id: trip.id })"
-                                @click="fire('view', trip)"
+        <!-- Scroller -->
+        <div
+            ref="scroller"
+            class="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700"
+        >
+            <div class="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700">
+                <table class="w-full table-auto border-separate border-spacing-0">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-800">
+                            <th
+                                v-for="column in renderedColumns"
+                                :key="column.key" scope="col"
+                                class="whitespace-nowrap border border-gray-300 px-2 py-2 text-center dark:border-gray-700"
+                                :class="[
+                                        cellBorder,
+                                        column.key === 'stt' && pinLeft ? stickyLeftHead : '',
+                                        column.key === 'actions' && pinRight ? stickyRightHead : '',
+                                    ]"
                             >
-                                {{ startIndex + index }}
-                            </button>
-                        </td>
-                        <td v-if="isVisible('advisor')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
-                            {{ trip.advisor?.name ?? '—' }}
-                        </td>
-                        <td v-if="isVisible('driver')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
-                            {{ trip.driver?.name ?? '—' }}
-                        </td>
-                        <td
-                            v-if="isVisible('origin')"
-                            class="max-w-[150px] truncate border px-2 py-2 text-center align-middle dark:border-gray-700"
-                            :title="trip.origin"
-                        >
-                            {{ trip.origin }}
-                        </td>
-                        <td
-                            v-if="isVisible('destination')"
-                            class="max-w-[150px] truncate border px-2 py-2 text-center align-middle dark:border-gray-700"
-                            :title="trip.destination"
-                        >
-                            {{ trip.destination }}
-                        </td>
-                        <td v-if="isVisible('day')" class="whitespace-nowrap border px-2 py-2 text-center align-middle dark:border-gray-700">
-                            {{ formatDate(trip.day) }}
-                        </td>
+                                {{ $t(column.labelKey) }}
+                            </th>
+                        </tr>
+                    </thead>
 
-                        <td v-if="isVisible('time')" class="whitespace-nowrap border px-2 py-2 text-center align-middle text-sm dark:border-gray-700">
-                            {{ timeRange(trip) }}
-                        </td>
+                    <tbody>
+                        <tr v-if="!trips.length">
+                            <td :colspan="visibleColumnCount"
+                                class="px-4 py-8 text-center text-muted-foreground"
+                            >
+                                {{ $t('common.noData') }}
+                            </td>
+                        </tr>
 
-                        <td v-if="isVisible('distance')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
-                            {{ trip.distance }}
-                        </td>
+                        <tr v-for="(trip, index) in trips" :key="trip.id" class="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900">
+                            <td
+                                v-if="isVisible('stt')"
+                                class="sticky left-0 bg-inherit border px-2 py-2 text-center align-middle text-sm font-medium dark:border-gray-700"
+                                :class="[cellBorder, stickyLeftCell]"
+                            >
+                                <button
+                                    type="button"
+                                    class="inline-flex min-w-8 items-center justify-center rounded-md px-2 py-1 text-primary underline-offset-4 transition-colors hover:bg-primary/10 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                                    :title="$t('trip.actions.viewNumber', { id: trip.id })"
+                                    :aria-label="$t('trip.actions.viewNumber', { id: trip.id })"
+                                    @click="fire('view', trip)"
+                                >
+                                    {{ startIndex + index }}
+                                </button>
+                            </td>
+                            <td v-if="isVisible('advisor')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
+                                {{ trip.advisor?.name ?? '—' }}
+                            </td>
+                            <td v-if="isVisible('driver')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
+                                {{ trip.driver?.name ?? '—' }}
+                            </td>
+                            <td
+                                v-if="isVisible('origin')"
+                                class="max-w-[150px] truncate border px-2 py-2 text-center align-middle dark:border-gray-700"
+                                :title="trip.origin"
+                            >
+                                {{ trip.origin }}
+                            </td>
+                            <td
+                                v-if="isVisible('destination')"
+                                class="max-w-[150px] truncate border px-2 py-2 text-center align-middle dark:border-gray-700"
+                                :title="trip.destination"
+                            >
+                                {{ trip.destination }}
+                            </td>
+                            <td v-if="isVisible('day')" class="whitespace-nowrap border px-2 py-2 text-center align-middle dark:border-gray-700">
+                                {{ formatDate(trip.day) }}
+                            </td>
 
-                        <td v-if="isVisible('status')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
-                            <TripStatusCell :trip="trip" />
-                        </td>
+                            <td v-if="isVisible('time')" class="whitespace-nowrap border px-2 py-2 text-center align-middle text-sm dark:border-gray-700">
+                                {{ timeRange(trip) }}
+                            </td>
 
-                        <td v-if="isVisible('overnight')" class="border px-2 py-2 align-middle dark:border-gray-700">
-                            <div class="flex items-center justify-center">
-                                <CircleCheckBigIcon v-if="trip.trip_expense?.is_overnight" class="h-4 w-4 text-green-500" />
-                                <CircleX v-else class="h-4 w-4 text-gray-400" />
-                            </div>
-                        </td>
+                            <td v-if="isVisible('distance')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
+                                {{ trip.distance }}
+                            </td>
 
-                        <td v-if="isVisible('holiday')" class="border px-2 py-2 align-middle dark:border-gray-700">
-                            <div class="flex items-center justify-center">
-                                <CircleCheckBigIcon v-if="trip.trip_expense?.is_holiday" class="h-4 w-4 text-green-500" />
-                                <CircleX v-else class="h-4 w-4 text-gray-400" />
-                            </div>
-                        </td>
+                            <td v-if="isVisible('status')" class="border px-2 py-2 text-center align-middle dark:border-gray-700">
+                                <TripStatusCell :trip="trip" />
+                            </td>
 
-                        <td v-if="isVisible('totalFee')" class="whitespace-nowrap border px-2 py-2 text-right align-middle dark:border-gray-700">
-                            {{ formatMoney(trip.total_fee) }}
-                        </td>
+                            <td v-if="isVisible('overnight')" class="border px-2 py-2 align-middle dark:border-gray-700">
+                                <div class="flex items-center justify-center">
+                                    <CircleCheckBigIcon v-if="trip.trip_expense?.is_overnight" class="h-4 w-4 text-green-500" />
+                                    <CircleX v-else class="h-4 w-4 text-gray-400" />
+                                </div>
+                            </td>
 
-                        <td v-if="isVisible('actions')" class="border px-2 py-2 align-middle dark:border-gray-700">
-                            <TripActions
-                                :trip="trip"
-                                variant="table"
-                                :only="TABLE_ONLY_VIEW"
-                                :confirming="confirmingId === trip.id"
-                                @action="emit('action', $event)"
-                            />
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                            <td v-if="isVisible('holiday')" class="border px-2 py-2 align-middle dark:border-gray-700">
+                                <div class="flex items-center justify-center">
+                                    <CircleCheckBigIcon v-if="trip.trip_expense?.is_holiday" class="h-4 w-4 text-green-500" />
+                                    <CircleX v-else class="h-4 w-4 text-gray-400" />
+                                </div>
+                            </td>
+
+                            <td v-if="isVisible('totalFee')" class="whitespace-nowrap border px-2 py-2 text-right align-middle dark:border-gray-700">
+                                {{ formatMoney(trip.total_fee) }}
+                            </td>
+                            
+                            <td v-if="isVisible('reviewer')" class="whitespace-nowrap border px-2 py-2 text-right align-middle dark:border-gray-700">
+                                {{ trip.reviewer?.name?? '-' }}
+                            </td>
+
+                            <td v-if="isVisible('actions')" 
+                                class="sticky right-0 bg-inherit border px-2 py-2 align-middle dark:border-gray-700"
+                                :class="[cellBorder, stickyRightCell]"
+                            >
+                                <TripActions
+                                    :trip="trip"
+                                    variant="table"
+                                    :only="tableActions"
+                                    :confirming="confirmingId === trip.id"
+                                    @action="emit('action', $event)"
+                                />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </template>

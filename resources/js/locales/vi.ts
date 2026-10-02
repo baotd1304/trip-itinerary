@@ -17,6 +17,7 @@ export default {
         checkAll: "Chọn tất cả",
         clearAll: "Bỏ chọn tất cả",
         required: "Bắt buộc",
+        forbidden: 'Bạn không có quyền thực hiện thao tác này.',
     },
 
     trip: {
@@ -50,6 +51,7 @@ export default {
             holiday: 'Ngày lễ',
             totalFee: 'Tổng phí',
             actions: 'Thao tác',
+            reviewer: 'Người duyệt',
         },
 
         filters: {
@@ -140,6 +142,9 @@ export default {
             totalFee: 'Tổng chi phí',
             overtimeHours: '{count} giờ',
             distanceKm: '{value} km',
+            title: {
+                total_fee: 'Gồm phí tăng ca, cầu đường, sân bay/bến bãi, qua đêm, ngày lễ',
+            }
         },
 
         images: {
@@ -212,5 +217,21 @@ export default {
             reasonPlaceholder: 'VD: Số odo không khớp, vui lòng chụp lại ảnh đồng hồ.',
             submit: 'Từ chối chuyến',
         },
+
+        admin: {
+            pageTitle: 'Quản trị chuyến đi',
+            listTitle: 'Tất cả chuyến đi',
+            pendingReopen: 'Chờ duyệt mở khoá',
+        },
+        flash: {
+            created:         'Đã tạo chuyến đi (ID: {id}, ngày: {day}). Chuyến đi đang chờ duyệt.',
+            updated:         'Đã cập nhật chuyến đi (ID: {id}).',
+            updatedByAdmin:  'Đã cập nhật chuyến đi (ID: {id}).',
+            updatedPending:  'Đã cập nhật chuyến đi #{id}. Chuyến đi vẫn đang chờ duyệt.',
+            updatedRejected: 'Đã cập nhật chuyến đi #{id} từng bị từ chối. Chuyến đi được gửi lại để duyệt.',
+            updatedEditing:  'Đã cập nhật chuyến đi #{id}. Chuyến đi chuyển về trạng thái "chờ duyệt".',
+            deleted:         'Đã xoá chuyến đi (ID: {id}).',
+        },
+
     },
 } as const;

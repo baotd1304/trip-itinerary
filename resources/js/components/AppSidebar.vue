@@ -17,6 +17,7 @@ import {
 import admin from '@/routes/admin';
 import { home } from '@/routes/';
 import type { NavItem } from '@/types';
+import LocaleSwitcher from './LocaleSwitcher.vue';
 
 const mainNavItems: NavItem[] = [
     {

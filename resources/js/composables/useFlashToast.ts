@@ -1,69 +1,102 @@
-// import { watch } from 'vue';
-// import { usePage } from '@inertiajs/vue3';
-// import { toast } from 'vue-sonner';
-
-// type FlashKey = 'success' | 'error' | 'warning' | 'info';
-
-// export function useFlashToast() {
-//   const page = usePage();
-//   let lastId: string | null = null;
-
-//   watch( () => page.props.flash, (flash: any) => {
-//       if (!flash || flash.id === lastId) return;
-//       lastId = flash.id;
-//       console.log('SHOW TOAST');
-//       (['success', 'error', 'warning', 'info'] as FlashKey[]).forEach((key) => {
-        
-//         if (flash[key]) toast[key](flash[key]);
-//       });
-//     },
-//     { immediate: true, deep: true },
-//   );
-// }
-
+import { watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
-type FlashBag = {
-  success?: string | null;
-  error?: string | null;
-  warning?: string | null;
-  info?: string | null;
+type FlashType = 'success' | 'error' | 'warning' | 'info';
+
+interface FlashMessage {
+    type: FlashType;
+    key?: string | null;
+    message?: string | null;
+    params?: Record<string, unknown> | null;
+}
+
+interface FlashBag {
+    id: string;
+    messages: FlashMessage[];
+}
+
+/* ---------- state ở MODULE SCOPE => sống sót qua mọi lần remount ---------- */
+let lastFlashId: string | null = null;
+let watcherInstalled = false;
+let invalidHookInstalled = false;
+
+const DURATION: Record<FlashType, number> = {
+    success: 3000,
+    info: 3000,
+    warning: 4000,
+    error: 5000,
 };
 
+/**
+ * GỌI DUY NHẤT 1 LẦN ở layout gốc (AppLayout.vue).
+ * Không gọi lại trong từng page.
+ */
 export function useFlashToast() {
-  const page = usePage();
+    const page = usePage();
+    const { t, te } = useI18n();
 
-  const fire = (flash?: FlashBag) => {
-    if (!flash) return;
-    if (flash.success) toast.success(flash.success);
-    if (flash.error)   toast.error(flash.error,   { duration: 3000 });
-    if (flash.warning) toast.warning(flash.warning);
-    if (flash.info)    toast.info(flash.info);
-  };
+    const render = (m: FlashMessage): string => {
+        if (m.key) {
+            // có key -> dịch; thiếu bản dịch thì fallback text thô hoặc chính key
+            return te(m.key) ? t(m.key, (m.params ?? {}) as Record<string, unknown>) : (m.message ?? m.key);
+        }
+        return m.message ?? '';
+    };
 
-  onMounted(() => fire(page.props.flash as FlashBag));
+    const show = (m: FlashMessage, id: string) => {
+        const text = render(m);
+        if (!text) return;
 
-  watch(
-    () => page.props.flash as FlashBag,
-    (flash) => fire(flash),
-    { deep: true },
-  );
+        // truyền id -> vue-sonner tự dedupe nếu lỡ bắn trùng
+        const options = { id, duration: DURATION[m.type] ?? 3000 };
 
-  // Bắt luôn 403 trả về dạng JSON (nếu có request axios ngoài Inertia)
-  const off = (router.on as (
-    eventName: string,
-    callback: (event: any) => void,
-  ) => () => void)('invalid', (event) => {
-    const response = (event.detail as { response?: { status?: number } } | undefined)?.response;
-    const status = response?.status;
+        switch (m.type) {
+            case 'error':
+                toast.error(text, options);
+                break;
+            case 'warning':
+                toast.warning(text, options);
+                break;
+            case 'info':
+                toast.info(text, options);
+                break;
+            default:
+                toast.success(text, options);
+        }
+    };
 
-    if (status === 403) {
-      event.preventDefault();
-      toast.error('Bạn không có quyền thực hiện thao tác này.');
+    /* ---------- 1 watcher duy nhất, dedupe bằng flash.id ---------- */
+    if (!watcherInstalled) {
+        watcherInstalled = true;
+
+        watch(
+            () => page.props.flash as FlashBag | null | undefined,
+            (flash) => {
+                if (!flash?.id) return;
+                if (flash.id === lastFlashId) return; // <-- chặn lặp khi filter / partial reload
+
+                lastFlashId = flash.id;
+                (flash.messages ?? []).forEach((m, i) => show(m, `${flash.id}:${i}`));
+            },
+            { immediate: true, deep: true },
+        );
     }
-  });
 
-  onUnmounted(() => off());
+    /* ---------- Bắt 403 trả về JSON (không phải Inertia response) ---------- */
+    if (!invalidHookInstalled) {
+        invalidHookInstalled = true;
+
+        (router.on as (e: string, cb: (event: CustomEvent) => void) => () => void)('invalid', (event) => {
+            const status = (event.detail as { response?: { status?: number } } | undefined)?.response?.status;
+
+            if (status === 403) {
+                event.preventDefault();
+                toast.error(te('common.forbidden') ? t('common.forbidden') : 'Bạn không có quyền thực hiện thao tác này.', {
+                    id: 'forbidden',
+                });
+            }
+        });
+    }
 }

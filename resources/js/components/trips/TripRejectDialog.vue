@@ -9,10 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/InputError.vue';
 import { useFormat } from '@/composables/useFormat';
 import type { Trip } from '@/types/trip';
+import { useTripRoutes } from '@/composables/useTripRoutes';
 
 defineProps<{ trip: Trip | null }>();
 const open = defineModel<boolean>('open', { required: true });
 const { formatDate } = useFormat();
+const routes = useTripRoutes();
 </script>
 
 <template>
@@ -23,7 +25,7 @@ const { formatDate } = useFormat();
                 <DialogDescription>{{ $t('trip.rejectTrip.description') }}</DialogDescription>
             </DialogHeader>
 
-            <Form v-if="trip" :action="`/trips/${trip.id}/reject`" method="patch"
+            <Form v-if="trip" :action="routes.reject(trip.id)" method="patch"
                   v-slot="{ errors, processing }" class="space-y-4" @success="open = false">
                 <p class="text-sm text-muted-foreground">
                     <b>#{{ trip.id }} - {{ formatDate(trip.day) }} </b>

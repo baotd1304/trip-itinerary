@@ -100,7 +100,7 @@ const carLabel = computed(() => {
                         {{ model.is_holiday ? $t('common.yes') : $t('common.no') }}
                     </dd>
                 </div>
-                <div>
+                <div :title=" $t('trip.detail.title.total_fee')">
                     <dt class="text-xs text-muted-foreground">{{ $t('trip.detail.totalFee') }}</dt>
                     <dd class="text-base font-semibold text-emerald-700 dark:text-emerald-400">
                         {{ formatMoney(model.total_fee) }}

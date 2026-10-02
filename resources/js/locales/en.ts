@@ -17,6 +17,7 @@ export default {
         checkAll: "Check all",
         clearAll: "Clear all",
         required: "Required",
+        forbidden: 'You do not have permission to perform this action.'
     },
 
     trip: {
@@ -50,6 +51,7 @@ export default {
             holiday: 'Holiday',
             totalFee: 'Total fee',
             actions: 'Actions',
+            reviewer: 'Reviewer',
         },
 
         filters: {
@@ -140,6 +142,9 @@ export default {
             totalFee: 'Total fee',
             overtimeHours: '{count} h',
             distanceKm: '{value} km',
+            title: {
+                total_fee: 'Includes fees overtime, tolls, airport/terminal access, overnight, holiday',
+            }
         },
 
         images: {
@@ -211,6 +216,21 @@ export default {
             reasonLabel: 'Rejection reason',
             reasonPlaceholder: 'E.g. Odometer mismatch, please re-take the dashboard photo.',
             submit: 'Reject trip',
+        },
+
+        admin: {
+            pageTitle: 'Trip administration',
+            listTitle: 'All trips',
+            pendingReopen: 'Pending unlock',
+        },
+        flash: {
+            created:         'Trip created (ID: {id}, date: {day}). Awaiting approval.',
+            updated:         'Trip updated (ID: {id}).',
+            updatedByAdmin:  'Trip updated (ID: {id}).',
+            updatedPending:  'Trip #{id} updated. Still awaiting approval.',
+            updatedRejected: 'Rejected trip #{id} has been updated and resubmitted for approval.',
+            updatedEditing:  'Trip #{id} updated and moved back to "awaiting approval".',
+            deleted:         'Trip #{id} deleted.',
         },
     },
 } as const;

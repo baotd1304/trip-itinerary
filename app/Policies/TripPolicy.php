@@ -20,7 +20,7 @@ class TripPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['driver', 'advisor', 'editor']);
+        return $user->hasAnyRole(['driver', 'advisor', 'manager', 'editor']);
     }
 
     public function view(User $user, Trip $trip): bool
@@ -28,16 +28,16 @@ class TripPolicy
         return $trip->driver_id === $user->id || $trip->advisor_id === $user->id;      //chi các user là driver hoặc advisor của chuyến đi mới được xem
     }
 
-    // create: driver, editor được phép tạo chuyến đi
+    // create: driver, editor, manager được phép tạo chuyến đi
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['driver', 'editor']);
+        return $user->hasAnyRole(['driver', 'editor', 'manager']);
     }
 
     /* ---------- Driver sửa: chỉ khi editing hoặc rejected ---------- */
     public function update(User $user, Trip $trip): Response
     {
-        if (! $user->hasAnyRole(['driver','editor'])) {
+        if (! $user->hasAnyRole(['driver','editor', 'manager'])) {
             return Response::deny('Chỉ tài xế hoặc quản trị viên mới được chỉnh sửa chuyến đi.');
         }
         if ($trip->driver_id !== $user->id) {

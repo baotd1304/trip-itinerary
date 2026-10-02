@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/InputError.vue';
 import { useFormat } from '@/composables/useFormat';
+import { useTripRoutes } from '@/composables/useTripRoutes';
 import type { Trip } from '@/types/trip';
 
 const props = defineProps<{ trip: Trip | null; action: 'approve' | 'reject' }>();
 const open = defineModel<boolean>('open', { required: true });
 const { formatDate } = useFormat();
+const routes = useTripRoutes();
 </script>
 
 <template>
@@ -30,7 +32,7 @@ const { formatDate } = useFormat();
             </DialogHeader>
 
             <Form v-if="trip?.pending_reopen_request"
-                  :action="`/reopen-requests/${trip.pending_reopen_request.id}/${action}`"
+                  :action="routes.reopenReview(trip.pending_reopen_request.id, action)"
                   method="patch" v-slot="{ errors, processing }" class="space-y-4"
                   @success="open = false">
 

@@ -18,7 +18,7 @@ import TripImageUploader from './TripImageUploader.vue';
 import TripDetailView from './TripDetailView.vue';
 import TripActions from './TripActions.vue';
 
-import trips from '@/routes/client/trips';
+import { useTripRoutes } from '@/composables/useTripRoutes';
 import { useFormat } from '@/composables/useFormat';
 import { submitWarningKey } from '@/lib/trip-status';
 import { deleteHintKey } from '@/lib/trip-permissions';
@@ -37,6 +37,7 @@ const props = defineProps<{
     isAdvisor: boolean;
     authUser?: { id: number; name: string } | null;
     confirmingId: number | null;
+    dialogActions?: TripActionType[];
 }>();
 
 const emit = defineEmits<{
@@ -56,13 +57,6 @@ const uploaderRef = ref<InstanceType<typeof TripImageUploader> | null>(null);
 const isCreate = computed(() => props.mode === 'create');
 const isView = computed(() => props.mode === 'view');
 const isEdit = computed(() => props.mode === 'edit');
-
-/** Dialog chi tiết: đủ mọi thao tác, trừ nút "Xem" (đang ở trong chính màn xem) */
-// const DIALOG_ACTIONS: TripActionType[] = [
-//     'edit', 'delete', 'request-reopen',
-//     'approve-reopen', 'reject-reopen',
-//     'confirm', 'reject',
-// ];
 
 /* Đồng bộ model mỗi khi mở dialog hoặc đổi trip/mode */
 watch(
@@ -95,8 +89,10 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 function $tKey(key: string) { return t(key); }
 
+const routes = useTripRoutes();
 const formProps = computed(() =>
-    isCreate.value ? trips.store.form() : trips.update.form(model.value.id));
+    isCreate.value ? routes.store.form() : routes.update.form(model.value.id)
+);
 
 const submitWarning = computed(() => {
     if (!isEdit.value || !props.isDriver) return null;

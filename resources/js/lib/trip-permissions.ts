@@ -1,11 +1,26 @@
-import type { Trip } from '@/types/trip';
+import type { Trip, TripStatus } from '@/types/trip';
 
-export const canUpdate = (t?: Trip | null) => t?.can?.update === true;
-export const canDelete = (t?: Trip | null) => t?.can?.delete === true;
-export const canRequestReopen = (t?: Trip | null) => t?.can?.requestReopen === true;
-export const canReview = (t?: Trip | null) => t?.can?.review === true;
-export const canReviewReopen = (t?: Trip | null) =>
-    t?.can?.reviewReopen === true && !!t?.pending_reopen_request;
+/** Trạng thái còn có thể duyệt/từ chối */
+const REVIEWABLE: TripStatus[] = ['pending', 'editing'];
+
+/** Mặc định FALSE — không có cờ từ server nghĩa là KHÔNG có quyền */
+export const canUpdate = (t?: Trip | null): boolean => t?.can?.update === true;
+
+export const canDelete = (t?: Trip | null): boolean => t?.can?.delete === true;
+
+export const canRequestReopen = (t?: Trip | null): boolean =>
+  t?.can?.requestReopen === true && t?.status === 'confirmed';
+
+/** Xác nhận / Từ chối: cần cả QUYỀN và ĐÚNG TRẠNG THÁI */
+export const canReview = (t?: Trip | null): boolean =>
+  t?.can?.review === true
+  && !!t?.status
+  && REVIEWABLE.includes(t.status)
+  && !t?.pending_reopen_request; // đang chờ xử lý mở khoá thì không duyệt chuyến
+
+/** Duyệt/từ chối yêu cầu mở khoá: phải có request đang chờ */
+export const canReviewReopen = (t?: Trip | null): boolean =>
+  t?.can?.reviewReopen === true && !!t?.pending_reopen_request;
 
 export const hasAnyAction = (t?: Trip | null) =>
     canUpdate(t) || canDelete(t) || canRequestReopen(t) || canReview(t) || canReviewReopen(t);

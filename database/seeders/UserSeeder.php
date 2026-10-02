@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
     {
         $admin = User::firstOrCreate([
             'name' => 'Administrator',
-            'email' => 'admin@gmail.com',
+            'email' => 'admin@example.com',
             'phone' => fake()->unique()->e164PhoneNumber(),
             'password' => Hash::make('password'),
         ]);
@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
 
         $driver = User::firstOrCreate([
             'name' => 'Driver',
-            'email' => 'driver@gmail.com',
+            'email' => 'driver@example.com',
             'phone' => fake()->unique()->e164PhoneNumber(),
             'password' => Hash::make('password'),
         ]);
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
 
         $advisor = User::firstOrCreate([
             'name' => 'Advisor',
-            'email' => 'advisor@gmail.com',
+            'email' => 'advisor@example.com',
             'phone' => fake()->unique()->e164PhoneNumber(),
             'password' => Hash::make('password'),
         ]);
@@ -43,17 +43,27 @@ class UserSeeder extends Seeder
         
         $editor = User::firstOrCreate([
             'name' => 'Editor',
-            'email' => 'editor@gmail.com',
+            'email' => 'editor@example.com',
             'phone' => fake()->unique()->e164PhoneNumber(),
             'password' => Hash::make('password'),
         ]);
         if (! $editor->hasRole('editor')) {
             $editor->assignRole('editor');
         }
+        $manager = User::firstOrCreate([
+            'name' => 'Manager',
+            'email' => 'manager@example.com',
+            'phone' => fake()->unique()->e164PhoneNumber(),
+            'password' => Hash::make('password'),
+        ]);
+        if (! $manager->hasRole('manager')) {
+            $manager->assignRole('manager');
+        }   
 
         User::factory()->count(20)->advisor()->create();
         User::factory()->count(10)->editor()->create();
         User::factory()->count(10)->driver()->create();
+        User::factory()->count(5)->manager()->create();
 
     }
 }

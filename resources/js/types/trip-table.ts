@@ -11,7 +11,14 @@ export type ColumnKey =
     | 'overnight'
     | 'holiday'
     | 'totalFee'
-    | 'actions';
+    | 'actions'
+    | 'reject_reason'
+    | 'submitted_at'
+    | 'reviewed_at'
+    | 'reviewer'
+    | 'created_at'
+    | 'updated_at';
+
 
 export interface TableColumn {
     key: ColumnKey;
@@ -69,6 +76,10 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
         labelKey: 'trip.table.totalFee',
     },
     {
+        key: 'reviewer',
+        labelKey: 'trip.table.reviewer',
+    },
+    {
         key: 'actions',
         labelKey: 'trip.table.actions',
         required: true,
@@ -76,6 +87,23 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
 ];
 
 export const DEFAULT_TRIP_TABLE_COLUMNS: ColumnKey[] = [
+    'stt',
+    'advisor',
+    'driver',
+    'origin',
+    'destination',
+    'day',
+    'time',
+    'distance',
+    'status',
+    'overnight',
+    'holiday',
+    'totalFee',
+    'actions',
+];
+
+//  preset cột cho admin
+export const ADMIN_DEFAULT_TRIP_TABLE_COLUMNS: ColumnKey[] = [
     'stt',
     'advisor',
     'driver',

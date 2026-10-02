@@ -44,7 +44,7 @@ const showReopenReview = computed(() => canReviewReopen(props.trip));
 const showApproveReopen = computed(() => allow('approve-reopen') && showReopenReview.value);
 const showRejectReopen = computed(() => allow('reject-reopen') && showReopenReview.value);
 
-const showConfirm = computed(() => allow('confirm') && canReview(props.trip));
+const showConfirm = computed(() => allow('confirm') && canReview(props.trip) && !props.confirming);
 const showReject = computed(() => allow('reject') && canReview(props.trip));
 
 const hasAnyAction = computed(() =>
@@ -62,7 +62,7 @@ const hasAnyAction = computed(() =>
             <Eye class="h-4 w-4" />
         </Button>
         <!-- update -->
-        <Button v-if="showEdit" size="sm" variant="outline"
+        <Button v-if="showEdit" size="sm" variant="default"
                 :title="$t(updateHintKey(trip))" @click="fire('edit')">
             <Pencil class="mr-1 h-3.5 w-3.5" /> {{ $t(editLabelKey(trip)) }}
         </Button>
