@@ -36,6 +36,7 @@ export interface TripAbilities {
 }
 
 export interface Trip {
+    [x: string]: any;
     id: number;
     advisor?: PersonRef | null;
     driver?: PersonRef | null;
@@ -58,6 +59,15 @@ export interface Trip {
     can?: TripAbilities;
     pending_reopen_request?: ReopenRequest | null;
     latest_reopen_request?: ReopenRequest | null;
+}
+
+export interface TripFilters {
+    search?: string | null;
+    status?: TripStatus | null;
+    from?: string | null;
+    to?: string | null;
+    is_overnight?: '1' | '0' | null;
+    is_holiday?: '1' | '0' | null;
 }
 
 /** Payload phát ra từ TripActions */

@@ -20,6 +20,15 @@ import { toArray } from '@/lib/array';
 import { useTripDialogs } from '@/composables/useTripDialogs';
 import type { Advisor, Car, Driver, PaginationLink, Trip, TripStatus } from '@/types/trip';
 import { usePagination, type PaginationMeta } from '@/composables/usePagination';
+import { provideTripRoutes } from '@/composables/useTripRoutes';
+import { clientTripRoutes } from '@/lib/trip-routes-client';
+import { DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import {
+    ADMIN_TABLE_ACTIONS,
+    ADMIN_DIALOG_ACTIONS,
+    TABLE_ONLY_VIEW,
+    DIALOG_ACTIONS
+} from '@/lib/trip-action-presets';
 
 const { t } = useI18n();
 
@@ -43,6 +52,9 @@ const props = defineProps<{
     };
     can?: { create?: boolean };
 }>();
+
+// Route cho cac dialog con phia client trip
+provideTripRoutes(clientTripRoutes);
 
 /* Dữ liệu */
 const items = computed(() => toArray<Trip>(props.trips));
@@ -70,7 +82,7 @@ const {
     deleteOpen, reopenRequestOpen, reopenReviewOpen, rejectTripOpen,
     target, reviewAction, confirmingId, previewImage,
     openCreate, handleAction,
-} = useTripDialogs();
+} = useTripDialogs(clientTripRoutes);
 
 </script>
 
@@ -82,7 +94,7 @@ const {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>{{ $t('trip.listTitle') }}</CardTitle>
                 <div class="flex items-center gap-3">
-                    <Button v-if="props.can?.create" @click="openCreate" variant="default">
+                    <Button v-if="props.can?.create" @click="openCreate" variant="info" size="sm">
                         {{ $t('trip.create') }}
                     </Button>
                 </div>
@@ -91,7 +103,7 @@ const {
 
         <CardContent>
             <!-- Thanh tìm kiếm / lọc -->
-            <TripFilters :url="trips.index().url" :initial="props.filters" :only="['trips', 'filters']"/>
+            <TripFilters :url="trips.index().url" :initial="props.filters" :only="['trips', 'filters', 'tripsMeta']"/>
             <!-- Tổng số TRÊN TẤT CẢ CÁC TRANG sau khi lọc -->
             <p class="mb-2 text-xs text-muted-foreground">
                 <template v-if="totalCount">
@@ -105,7 +117,15 @@ const {
                     {{ $t('trip.filters.resultEmpty') }}
                 </template>
             </p>
-            <TripTable :trips="items" :start-index="startIndex" :confirming-id="confirmingId" @action="handleAction" />
+            <TripTable 
+                :trips="items" 
+                :start-index="startIndex" 
+                :confirming-id="confirmingId" 
+                storage-key="client-trip-columns" 
+                :default-columns="DEFAULT_TRIP_TABLE_COLUMNS"
+                :table-actions="TABLE_ONLY_VIEW"
+                @action="handleAction"
+            />
             <TripPagination :links="links" :fallback-url="trips.index().url" />
         </CardContent>
     </Card>

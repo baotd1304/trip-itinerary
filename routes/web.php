@@ -19,7 +19,7 @@ use App\Http\Controllers\TripReviewController;
 use Illuminate\Http\Request;
 
 
-Route::middleware(['auth', 'role:driver|advisor|admin|editor'])->group(function () {
+Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     
     Route::get('trips', [ClientTripController::class, 'index'])
@@ -68,13 +68,7 @@ Route::middleware(['auth', 'role:driver|advisor|admin|editor'])->group(function 
     
 });
 
-// Route::middleware(['auth', 'role:driver|admin'])->group(function () {
-//     Route::post('trips', [ClientTripController::class, 'store'])
-//         ->middleware('can:create,App\Models\Trip')
-//         ->name('client.trips.store');
-// });
-
-Route::prefix('/admin')->middleware(['auth', 'role:admin|editor'])->group(function () {
+Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->group(function () {
     Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');
 
     //user routes
@@ -103,8 +97,8 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin|editor'])->group(functi
 
     Route::get('/trips', [TripController::class, 'index'])->name('admin.trips.index');
     Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
-    Route::put('/trips/{id}', [TripController::class, 'update'])->name('admin.trips.update');
-    Route::delete('/trips/{id}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
+    Route::put('/trips/{trip}', [TripController::class, 'update'])->name('admin.trips.update');
+    Route::delete('/trips/{trip}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
     Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
     Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
     

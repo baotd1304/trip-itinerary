@@ -49,7 +49,7 @@ function hasPermission(permission) {
  *   v-can="'admin'"                  -> kiểm tra role
  *   v-can="'role:admin'"            -> kiểm tra role
  *   v-can="'permission:edit-post'"  -> kiểm tra permission
- *   v-can="'admin|editor'"           -> kiểm tra 1 trong các role (OR)
+ *   v-can="'admin|editor|manager'"           -> kiểm tra 1 trong các role (OR)
  *   v-can="'role:admin,permission:edit-post'" -> kiểm tra role VÀ permission (AND với dấu phẩy)
  */
 function parseDirectiveValue(bindingValue) {

@@ -17,6 +17,7 @@ import {
 import admin from '@/routes/admin';
 import { home } from '@/routes/';
 import type { NavItem } from '@/types';
+import LocaleSwitcher from './LocaleSwitcher.vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -30,12 +31,12 @@ const mainNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'QL Cars',
+        title: 'Cars',
         href: admin.cars.index(),
         icon: Car,
     },
     {
-        title: 'QL Trip Itinerary',
+        title: 'Trips',
         href: admin.trips.index(),
         icon: Tickets,
         children: [
@@ -52,7 +53,7 @@ const mainNavItems: NavItem[] = [
         ]
     },
     {
-        title: 'QL Expenses',
+        title: 'Expenses',
         href: admin.expenses.index(),
         icon: BanknoteArrowDown ,
     },

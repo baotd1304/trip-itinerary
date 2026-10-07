@@ -2,13 +2,14 @@ import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { canUpdate } from '@/lib/trip-permissions';
 import type { DialogMode, Trip, TripActionPayload } from '@/types/trip';
+import { TripRouteContext } from './useTripRoutes';
 
-export function useTripDialogs() {
+export function useTripDialogs(routes: TripRouteContext) {
     /* Dialog chính: create / edit / view */
     const mainOpen = ref(false);
     const mode = ref<DialogMode>('create');
     const activeTrip = ref<Trip | null>(null);
-
+    
     /* Dialog phụ */
     const deleteOpen = ref(false);
     const reopenRequestOpen = ref(false);
@@ -76,7 +77,7 @@ export function useTripDialogs() {
     const confirmTrip = (trip?: Trip | null) => {
         if (!trip || confirmingId.value) return;
         confirmingId.value = trip.id;
-        router.patch(`/trips/${trip.id}/confirm`, {}, {
+        router.patch(routes.confirm(trip.id), {}, {
             preserveScroll: true,
             onSuccess: () => { if (activeTrip.value?.id === trip.id) mainOpen.value = false; },
             onFinish: () => { confirmingId.value = null; },

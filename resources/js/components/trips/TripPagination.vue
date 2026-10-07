@@ -190,10 +190,10 @@ const visibleItems = computed<PaginationItem[]>(() => {
                     v-else-if="item.link.url"
                     :href="item.link.url"
                     preserve-scroll
-                    class="flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+                    class="flex h-7 min-w-7 items-center justify-center rounded-md px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
                     :class="
                         item.link.active
-                            ? 'bg-primary font-medium text-primary-foreground shadow-sm'
+                            ? 'bg-blue-800 font-medium text-primary-foreground shadow-sm'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     "
                     :aria-current="
@@ -222,11 +222,11 @@ const visibleItems = computed<PaginationItem[]>(() => {
                 >
                     <template v-if="isPrevious(item.link.label)">
                         <ChevronLeft class="mr-1 h-4 w-4" />
-                        <span class="hidden sm:inline">Trước</span>
+                        <span class="hidden sm:inline"></span>
                     </template>
 
                     <template v-else-if="isNext(item.link.label)">
-                        <span class="hidden sm:inline">Sau</span>
+                        <span class="hidden sm:inline"></span>
                         <ChevronRight class="ml-1 h-4 w-4" />
                     </template>
 

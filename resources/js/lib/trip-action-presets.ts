@@ -10,5 +10,15 @@ export const DIALOG_ACTIONS: TripActionType[] = [
     'confirm', 'reject',
 ];
 
-/** Admin muốn duyệt nhanh ngay trên bảng (tuỳ chọn) */
-export const TABLE_QUICK_REVIEW: TripActionType[] = ['view', 'confirm', 'reject'];
+/** Admin ở bảng: xem + duyệt nhanh */
+export const ADMIN_TABLE_ACTIONS: TripActionType[] = ['view', 'confirm', 'reject'];
+
+/** Admin trong dialog: toàn quyền */
+export const ADMIN_DIALOG_ACTIONS: TripActionType[] = [
+    'edit',
+    'delete',
+    'approve-reopen',
+    'reject-reopen',
+    'confirm',
+    'reject',
+];

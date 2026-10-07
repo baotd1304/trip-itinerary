@@ -17,6 +17,7 @@ export default {
         checkAll: "Chọn tất cả",
         clearAll: "Bỏ chọn tất cả",
         required: "Bắt buộc",
+        forbidden: 'Bạn không có quyền thực hiện thao tác này.',
     },
 
     trip: {
@@ -40,6 +41,7 @@ export default {
             id: 'ID',
             advisor: 'Cố vấn',
             driver: 'Tài xế',
+            car: 'Xe',
             origin: 'Điểm đi',
             destination: 'Điểm đến',
             day: 'Ngày',
@@ -49,7 +51,12 @@ export default {
             overnight: 'Nghỉ đêm',
             holiday: 'Ngày lễ',
             totalFee: 'Tổng phí',
+            created_at: 'Ngày tạo',
+            updated_at: 'Ngày cập nhật',
+            submitted_at: 'Ngày gửi lại',
+            reviewed_at: 'Ngày duyệt',
             actions: 'Thao tác',
+            reviewer: 'Người duyệt',
         },
 
         filters: {
@@ -140,6 +147,9 @@ export default {
             totalFee: 'Tổng chi phí',
             overtimeHours: '{count} giờ',
             distanceKm: '{value} km',
+            title: {
+                total_fee: 'Gồm phí tăng ca, cầu đường, sân bay/bến bãi, qua đêm, ngày lễ',
+            }
         },
 
         images: {
@@ -212,5 +222,21 @@ export default {
             reasonPlaceholder: 'VD: Số odo không khớp, vui lòng chụp lại ảnh đồng hồ.',
             submit: 'Từ chối chuyến',
         },
+
+        admin: {
+            pageTitle: 'Quản trị chuyến đi',
+            listTitle: 'Tất cả chuyến đi',
+            pendingReopen: 'Chờ duyệt mở khoá',
+        },
+        flash: {
+            created:         'Đã tạo chuyến đi (#{id}, ngày: {day}). Chuyến đi đang chờ duyệt.',
+            updated:         'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
+            updatedByAdmin:  'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
+            updatedPending:  'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi vẫn đang chờ duyệt.',
+            updatedRejected: 'Đã cập nhật chuyến đi #{id}, ngày: {day} từng bị từ chối. Chuyến đi được gửi lại để duyệt.',
+            updatedEditing:  'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi chuyển về trạng thái "chờ duyệt".',
+            deleted:         'Đã xoá chuyến đi (ID: {id}, ngày: {day}).',
+        },
+
     },
 } as const;

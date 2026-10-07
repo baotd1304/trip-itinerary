@@ -17,6 +17,7 @@ export default {
         checkAll: "Check all",
         clearAll: "Clear all",
         required: "Required",
+        forbidden: 'You do not have permission to perform this action.'
     },
 
     trip: {
@@ -41,6 +42,7 @@ export default {
             advisor: 'Advisor',
             driver: 'Driver',
             origin: 'Origin',
+            car: 'Car',
             destination: 'Destination',
             day: 'Day',
             time: 'Time',
@@ -49,7 +51,12 @@ export default {
             overnight: 'Overnight',
             holiday: 'Holiday',
             totalFee: 'Total fee',
+            created_at: 'Created at',
+            updated_at: 'Updated at',
+            submitted_at: 'Submitted at',
+            reviewed_at: 'Reviewed at',
             actions: 'Actions',
+            reviewer: 'Reviewer',
         },
 
         filters: {
@@ -140,6 +147,9 @@ export default {
             totalFee: 'Total fee',
             overtimeHours: '{count} h',
             distanceKm: '{value} km',
+            title: {
+                total_fee: 'Includes fees overtime, tolls, airport/terminal access, overnight, holiday',
+            }
         },
 
         images: {
@@ -211,6 +221,21 @@ export default {
             reasonLabel: 'Rejection reason',
             reasonPlaceholder: 'E.g. Odometer mismatch, please re-take the dashboard photo.',
             submit: 'Reject trip',
+        },
+
+        admin: {
+            pageTitle: 'Trip administration',
+            listTitle: 'All trips',
+            pendingReopen: 'Pending unlock',
+        },
+        flash: {
+            created:         'Trip created (#{id}, date: {day}). Awaiting approval.',
+            updated:         'Trip updated (#{id}, date: {day}).',
+            updatedByAdmin:  'Trip updated (#{id}, date: {day}).',
+            updatedPending:  'Trip #{id} updated (date: {day}). Still awaiting approval.',
+            updatedRejected: 'Rejected trip #{id} (date: {day}) has been updated and resubmitted for approval.',
+            updatedEditing:  'Trip #{id} (date: {day}) updated and moved back to "awaiting approval".',
+            deleted:         'Trip #{id} (date: {day}) deleted.',
         },
     },
 } as const;

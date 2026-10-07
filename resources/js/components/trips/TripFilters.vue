@@ -18,8 +18,8 @@ const props = withDefaults(
             status?: TripStatus | null;
             from?: string | null;
             to?: string | null;
-            is_overnight?: string | number | null;
-            is_holiday?: string | number | null;
+            is_overnight?: '1' | '0' | null;
+            is_holiday?: '1' | '0' | null;
         };
         /** BẮT BUỘC có 'filters', nếu không select sẽ tự reset */
         only?: string[];

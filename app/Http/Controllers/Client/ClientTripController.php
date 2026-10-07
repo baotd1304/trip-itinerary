@@ -9,6 +9,7 @@ use App\Models\Trip;
 use App\Models\TripExpense;
 use App\Models\User;
 use App\Services\CloudinaryService;
+use App\Support\Flash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,7 @@ use App\Models\TripImage;
 use Closure;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Gate;
+
 
 class ClientTripController extends Controller
 {
@@ -46,9 +48,10 @@ class ClientTripController extends Controller
         $from   = $filters['from'] ?? null;
         $to     = $filters['to'] ?? null;
 
-        // Ép về bool|null — KHÔNG dùng ?? '' vì '0' phải được giữ lại
-        $overnight = isset($filters['is_overnight']) ? (bool) $filters['is_overnight'] : null;
-        $holiday   = isset($filters['is_holiday']) ? (bool) $filters['is_holiday'] : null;
+        $overnight = array_key_exists('is_overnight', $filters) && $filters['is_overnight'] !== null
+            ? (int) $filters['is_overnight'] : null;
+        $holiday   = array_key_exists('is_holiday', $filters) && $filters['is_holiday'] !== null
+            ? (int) $filters['is_holiday'] : null;
 
         // ---------- 2. Query gốc ----------
         $query = Trip::with([
@@ -57,6 +60,7 @@ class ClientTripController extends Controller
                 'images',
                 'tripExpense',
                 'reviewer:id,name',
+                'car:id,license_plate',
                 'pendingReopenRequest.requester:id,name',
                 'latestReopenRequest.requester:id,name',
                 'latestReopenRequest.reviewer:id,name',
@@ -89,7 +93,8 @@ class ClientTripController extends Controller
                     $sub->orWhere('origin', 'like', "%{$search}%")
                         ->orWhere('destination', 'like', "%{$search}%")
                         ->orWhereHas('advisor', fn ($a) => $a->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%"));
+                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('car', fn ($c) => $c->where('license_plate', 'like', "%{$search}%"));
                 });
             })
             // ----- Lọc trạng thái -----
@@ -121,8 +126,8 @@ class ClientTripController extends Controller
                 }
             })
             ->orderByDesc('day')
-            ->orderByDesc('id');
-
+            ->orderByDesc('created_at')
+            ;
         $trips = $query
             ->paginate(10)
             ->withQueryString(); // giữ lại filter khi chuyển trang
@@ -206,8 +211,10 @@ class ClientTripController extends Controller
 
         return redirect()
             ->route('client.trips.index')
-            ->with('success', "Tạo chuyến đi thành công (ID: {$trip->id}, ngày: {$trip->day->format('d/m/Y')}). 
-                Chuyến đi đang chờ cố vấn duyệt.");
+            ->with('flash', Flash::success('trip.flash.created', [
+                'id'  => $trip->id,
+                'day' => $trip->day->format('Y-m-d'),
+            ]));
     }
 
     public function update(Request $request, Trip $trip)
@@ -250,10 +257,7 @@ class ClientTripController extends Controller
             // 2) Thêm ảnh mới
             $this->syncImages($trip, $data['images']);
             
-            //driver submit lai -> quay ve pending cho duyet
-            if (! $isAdmin) {
-                $trip->markSubmitted();
-            }
+            $trip->markSubmitted();
         });
 
         // 3) Chỉ gọi Cloudinary SAU KHI transaction đã commit
@@ -262,7 +266,7 @@ class ClientTripController extends Controller
         }
 
         return redirect()->back()
-            ->with('success', $this->updateMessage($trip, $previousStatus, $isAdmin));
+            ->with('flash', $this->updateMessage($trip, $previousStatus, $isAdmin));
     }
 
     public function destroy(Trip $trip)
@@ -283,7 +287,8 @@ class ClientTripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()->back(303)->with('success', "Đã xoá chuyến đi (ID: {$trip->id}).");
+        return redirect()->back(303)
+                ->with('flash', Flash::success('trip.flash.deleted', ['id' => $trip->id, 'day' => $this->formatDate($trip->day)]));
     }
 
     /* ===================== Helpers ===================== */
@@ -309,16 +314,16 @@ class ClientTripController extends Controller
             'departure_time' => ['required', 'date_format:H:i'],
             'arrival_time'   => [
                 'required',
-                'date_format:H:i',
+                'date_format:H:i', 'after:departure_time'
                 // Chuyến nghỉ đêm thì giờ đến có thể nhỏ hơn giờ đi (qua ngày hôm sau)
-                Rule::when(! $request->boolean('is_overnight'), ['after:departure_time']),
+                // Rule::when(! $request->boolean('is_overnight'), ['after:departure_time']),
             ],
             'odo_start'      => ['required', 'integer', 'min:0'],
             'odo_end'        => ['required', 'integer', 'gt:odo_start'],
             'note'           => ['nullable', 'string', 'max:255'],
 
             /* ----- Expense ----- */
-            'overtime'     => ['nullable', 'integer', 'min:0', 'max:4'],
+            'overtime'     => ['nullable', 'integer', 'min:0', 'max:24'],
             'toll_fee'     => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
             'airport_fee'  => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
             'is_overnight' => ['boolean'],
@@ -342,7 +347,7 @@ class ClientTripController extends Controller
             'kept_image_ids.*' => ['integer'],
         ], [
             'odo_end.gt'          => 'Odo kết thúc phải lớn hơn odo bắt đầu.',
-            'arrival_time.after'  => 'Giờ đến phải sau giờ đi (trừ chuyến nghỉ đêm).',
+            'arrival_time.after'  => 'Giờ đến phải sau giờ đi.',
             'images.max'          => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến đi.',
             'images.*.url.starts_with' => 'Đường dẫn ảnh không hợp lệ.',
         ]);
@@ -490,24 +495,26 @@ class ClientTripController extends Controller
         return $stale->pluck('public_id')->all();
     }
 
-    /** Thông báo phù hợp với trạng thái trước khi sửa */
-    private function updateMessage(Trip $trip, string $previousStatus, bool $isAdmin): string
+    /** Trả về bag flash tuỳ theo trạng thái trước đó */
+    private function updateMessage(Trip $trip, string $previousStatus, bool $isPrivileged): array
     {
-        if ($isAdmin) {
-            return "Cập nhật chuyến đi thành công (ID: {$trip->id}).";
+        if ($isPrivileged) {
+            return Flash::success('trip.flash.updatedByAdmin', ['id' => $trip->id]);
         }
 
+        $day = $trip->day ? date('Y-m-d', strtotime($trip->day)) : '';
+
         return match ($previousStatus) {
-            Trip::STATUS_PENDING => "Đã cập nhật chuyến đi #{$trip->id}. Chuyến đi vẫn đang chờ cố vấn duyệt.",
-
-            Trip::STATUS_REJECTED => "Đã cập nhật chuyến đi #{$trip->id} sau khi bị từ chối. "
-                . 'Chuyến đi đã được gửi lại để cố vấn duyệt.',
-
-            Trip::STATUS_EDITING => "Đã cập nhật chuyến đi #{$trip->id}. "
-                . 'Chuyến đi chuyển sang trạng thái "Chờ duyệt".',
-
-            default => "Cập nhật chuyến đi thành công (ID: {$trip->id}).",
+            Trip::STATUS_PENDING  => Flash::success('trip.flash.updatedPending',  ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_REJECTED => Flash::warning('trip.flash.updatedRejected', ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_EDITING  => Flash::info('trip.flash.updatedEditing',     ['id' => $trip->id, 'day' => $day]),
+            default               => Flash::success('trip.flash.updated',         ['id' => $trip->id, 'day' => $day]),
         };
+    }
+    
+    private function formatDate(?string $date): string
+    {
+        return $date ? date('d/m/Y', strtotime($date)) : '';
     }
 
 }
