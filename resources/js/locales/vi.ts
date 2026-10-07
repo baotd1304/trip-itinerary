@@ -223,6 +223,16 @@ export default {
             submit: 'Từ chối chuyến',
         },
 
+        bulkReview: {
+            selected: 'Đã chọn {count} chuyến',
+            selectAll: 'Chọn tất cả chuyến có thể duyệt trên trang này',
+            selectTrip: 'Chọn chuyến #{id}',
+            confirm: 'Xác nhận đã chọn',
+            reject: 'Từ chối đã chọn',
+            rejectTitle: 'Từ chối nhiều chuyến',
+            rejectDescription: 'Bạn sắp từ chối {count} chuyến. Lý do này sẽ được áp dụng cho tất cả chuyến đã chọn.',
+        },
+
         admin: {
             pageTitle: 'Quản trị chuyến đi',
             listTitle: 'Tất cả chuyến đi',

@@ -1,27 +1,23 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CarController;
+use App\Http\Controllers\Admin\CloudinaryUploadController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\TripExportController;
-use App\Http\Controllers\Admin\CloudinaryUploadController;
-
-use App\Http\Controllers\Client\HomeController;
-use App\Http\Controllers\Client\ClientTripController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Client\ClientCloudinaryUploadController;
-use App\Http\Controllers\TripReopenController;
-
+use App\Http\Controllers\Client\ClientTripController;
+use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\TripReopenRequestController;
 use App\Http\Controllers\TripReopenReviewController;
 use App\Http\Controllers\TripReviewController;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
-    
+
     Route::get('trips', [ClientTripController::class, 'index'])
         ->middleware('can:viewAny,App\Models\Trip')->name('client.trips.index');
     Route::post('trips', [ClientTripController::class, 'store'])
@@ -47,7 +43,7 @@ Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(f
     Route::delete('reopen-requests/{reopenRequest}', [TripReopenRequestController::class, 'destroy'])
         ->middleware('can:cancel,reopenRequest')
         ->name('client.reopen-requests.destroy');
-    
+
     /* ---------- Advisor/Admin: duyệt yêu cầu mở khoá ---------- */
     Route::patch('reopen-requests/{reopenRequest}/approve', [TripReopenReviewController::class, 'approve'])
         ->middleware('can:review,reopenRequest')
@@ -65,31 +61,33 @@ Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(f
     Route::patch('trips/{trip}/reject', [TripReviewController::class, 'reject'])
         ->middleware('can:review,trip')
         ->name('client.trips.reject');
-    
+    Route::post('trips/bulk-review', [TripReviewController::class, 'bulkReview'])
+        ->name('client.trips.bulk-review');
+
 });
 
 Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->group(function () {
     Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');
 
-    //user routes
+    // user routes
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
     Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
-    //car routes
+    // car routes
     Route::get('/cars', [CarController::class, 'index'])->name('admin.cars.index');
     Route::post('/cars', [CarController::class, 'store'])->name('admin.cars.store');
     Route::put('/cars/{id}', [CarController::class, 'update'])->name('admin.cars.update');
     Route::delete('/cars/{id}', [CarController::class, 'destroy'])->name('admin.cars.destroy');
 
-    //expense routes
+    // expense routes
     Route::get('/expenses', [ExpenseController::class, 'index'])->name('admin.expenses.index');
     Route::post('/expenses', [ExpenseController::class, 'store'])->name('admin.expenses.store');
     Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('admin.expenses.update');
     Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
 
-    //trip routes
+    // trip routes
     Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
         ->name('admin.trips.cloudinary-signature');
     Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
@@ -101,15 +99,15 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->grou
     Route::delete('/trips/{trip}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
     Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
     Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
-    
+
     Route::patch('/trips/{trip}/confirm', [TripReviewController::class, 'confirm'])->name('admin.trips.confirm');
     Route::patch('/trips/{trip}/reject', [TripReviewController::class, 'reject'])->name('admin.trips.reject');
+    Route::post('/trips/bulk-review', [TripReviewController::class, 'bulkReview'])->name('admin.trips.bulk-review');
 
     Route::patch('/reopen-requests/{reopenRequest}/approve', [TripReopenReviewController::class, 'approve'])
         ->name('admin.reopen-requests.approve');
     Route::patch('/reopen-requests/{reopenRequest}/reject', [TripReopenReviewController::class, 'reject'])
         ->name('admin.reopen-requests.reject');
-    
 
 });
 
@@ -118,8 +116,8 @@ Route::post('/locale', function (Request $request) {
     $locale = in_array($locale, ['vi', 'en', 'th'], true) ? $locale : 'vi';
 
     session(['locale' => $locale]);
+
     return back();
 })->name('locale.switch');
-
 
 require __DIR__.'/settings.php';

@@ -223,6 +223,16 @@ export default {
             submit: 'Reject trip',
         },
 
+        bulkReview: {
+            selected: '{count} trips selected',
+            selectAll: 'Select all reviewable trips on this page',
+            selectTrip: 'Select trip #{id}',
+            confirm: 'Confirm selected',
+            reject: 'Reject selected',
+            rejectTitle: 'Reject multiple trips',
+            rejectDescription: 'You are about to reject {count} trips. This reason will apply to all selected trips.',
+        },
+
         admin: {
             pageTitle: 'Trip administration',
             listTitle: 'All trips',

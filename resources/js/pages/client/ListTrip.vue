@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import TripDeleteDialog from '@/components/trips/TripDeleteDialog.vue';
 import TripReopenRequestDialog from '@/components/trips/TripReopenRequestDialog.vue';
 import TripReopenReviewDialog from '@/components/trips/TripReopenReviewDialog.vue';
 import TripRejectDialog from '@/components/trips/TripRejectDialog.vue';
+import TripBulkRejectDialog from '@/components/trips/TripBulkRejectDialog.vue';
 import ImageLightbox from '@/components/trips/ImageLightbox.vue';
 import TripFilters from '@/components/trips/TripFilters.vue';
 
@@ -23,6 +24,7 @@ import { usePagination, type PaginationMeta } from '@/composables/usePagination'
 import { provideTripRoutes } from '@/composables/useTripRoutes';
 import { clientTripRoutes } from '@/lib/trip-routes-client';
 import { DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import { canReview } from '@/lib/trip-permissions';
 import {
     ADMIN_TABLE_ACTIONS,
     ADMIN_DIALOG_ACTIONS,
@@ -84,6 +86,36 @@ const {
     openCreate, handleAction,
 } = useTripDialogs(clientTripRoutes);
 
+const bulkReviewProcessing = ref(false);
+const bulkRejectOpen = ref(false);
+const bulkRejectTripIds = ref<number[]>([]);
+const hasReviewableTrips = computed(() =>
+    items.value.some((trip) => trip.status === 'pending' && canReview(trip)),
+);
+
+const confirmSelectedTrips = (tripIds: number[]) => {
+    if (!tripIds.length || bulkReviewProcessing.value) {
+        return;
+    }
+
+    bulkReviewProcessing.value = true;
+    router.post(
+        clientTripRoutes.bulkReview(),
+        { action: 'confirm', trip_ids: tripIds },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                bulkReviewProcessing.value = false;
+            },
+        },
+    );
+};
+
+const rejectSelectedTrips = (tripIds: number[]) => {
+    bulkRejectTripIds.value = tripIds;
+    bulkRejectOpen.value = true;
+};
+
 </script>
 
 <template>
@@ -124,7 +156,11 @@ const {
                 storage-key="client-trip-columns" 
                 :default-columns="DEFAULT_TRIP_TABLE_COLUMNS"
                 :table-actions="TABLE_ONLY_VIEW"
+                :bulk-review="hasReviewableTrips"
+                :bulk-processing="bulkReviewProcessing"
                 @action="handleAction"
+                @bulk-confirm="confirmSelectedTrips"
+                @bulk-reject="rejectSelectedTrips"
             />
             <TripPagination :links="links" :fallback-url="trips.index().url" />
         </CardContent>
@@ -152,6 +188,11 @@ const {
     <TripReopenRequestDialog v-model:open="reopenRequestOpen" :trip="target" />
     <TripReopenReviewDialog v-model:open="reopenReviewOpen" :trip="target" :action="reviewAction" />
     <TripRejectDialog v-model:open="rejectTripOpen" :trip="target" />
+    <TripBulkRejectDialog
+        v-model:open="bulkRejectOpen"
+        :trip-ids="bulkRejectTripIds"
+        :action="clientTripRoutes.bulkReview()"
+    />
 
     <ImageLightbox v-model="previewImage" />
 </template>

@@ -218,6 +218,16 @@ export default {
             submit: 'ปฏิเสธทริป',
         },
 
+        bulkReview: {
+            selected: 'เลือกแล้ว {count} ทริป',
+            selectAll: 'เลือกทริปทั้งหมดที่ตรวจสอบได้ในหน้านี้',
+            selectTrip: 'เลือกทริป #{id}',
+            confirm: 'ยืนยันทริปที่เลือก',
+            reject: 'ปฏิเสธทริปที่เลือก',
+            rejectTitle: 'ปฏิเสธหลายทริป',
+            rejectDescription: 'คุณกำลังจะปฏิเสธ {count} ทริป เหตุผลนี้จะใช้กับทริปที่เลือกทั้งหมด',
+        },
+
         admin: {
             pageTitle: 'การจัดการทริป',
             listTitle: 'ทริปทั้งหมด',

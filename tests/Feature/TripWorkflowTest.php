@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\Car;
 use App\Models\Trip;
 use App\Models\TripReopenRequest;
 use App\Models\User;
-use App\Models\Car;
+use App\Notifications\TripReviewed;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -31,8 +33,8 @@ function makeTrip(string $status): Trip
     return Trip::factory()->create([
         'driver_id' => test()->driver->id,
         'advisor_id' => test()->advisor->id,
-        'car_id'    => $car->id,
-        'status'    => $status,
+        'car_id' => $car->id,
+        'status' => $status,
     ]);
 }
 
@@ -66,9 +68,9 @@ it('không tạo được 2 yêu cầu reopen cùng lúc', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     TripReopenRequest::factory()->create([
-        'trip_id'     => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'      => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->driver)
@@ -85,9 +87,9 @@ it('advisor duyệt yêu cầu thì trip chuyển sang editing', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     $request = TripReopenRequest::factory()->create([
-        'trip_id'      => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'       => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->advisor)
@@ -110,9 +112,9 @@ it('advisor từ chối yêu cầu thì trip vẫn confirmed', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     $request = TripReopenRequest::factory()->create([
-        'trip_id'      => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'       => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->advisor)
@@ -228,4 +230,92 @@ it('trả về 409 khi advisor vừa confirm lúc driver đang lưu', function (
     $this->actingAs($this->driver)
         ->put(route('client.trips.update', $trip), tripPayload($trip))
         ->assertForbidden();   // Policy chặn trước, vì trip đã confirmed
+});
+
+it('admin xác nhận nhiều chuyến trong một lần gửi', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    Notification::fake();
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+        ])
+        ->assertStatus(303);
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
+    }
+
+    Notification::assertSentTo($this->driver, TripReviewed::class);
+});
+
+it('advisor xác nhận nhiều chuyến được giao trong trang client', function () {
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    Notification::fake();
+
+    $this->actingAs($this->advisor)
+        ->post(route('client.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+        ])
+        ->assertStatus(303);
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
+    }
+
+    Notification::assertSentTo($this->driver, TripReviewed::class);
+});
+
+it('admin từ chối nhiều chuyến với cùng một lý do', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    $reason = 'Thiếu ảnh xác nhận chi phí.';
+    Notification::fake();
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'reject',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+            'reject_reason' => $reason,
+        ])
+        ->assertStatus(303);
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_REJECTED)
+            ->and($trip->reject_reason)->toBe($reason);
+    }
+});
+
+it('không cập nhật chuyến nào nếu một chuyến đã không còn chờ duyệt', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $reviewableTrip = makeTrip(Trip::STATUS_PENDING);
+    $confirmedTrip = makeTrip(Trip::STATUS_CONFIRMED);
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => [$reviewableTrip->id, $confirmedTrip->id],
+        ])
+        ->assertStatus(409);
+
+    expect($reviewableTrip->refresh()->status)->toBe(Trip::STATUS_PENDING)
+        ->and($confirmedTrip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
 });

@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-
-import TripFilters from '@/components/trips/TripFilters.vue';
-import TripTable from '@/components/trips/TripTable.vue';
-import TripPagination from '@/components/trips/TripPagination.vue';
-import TripFormDialog from '@/components/trips/TripFormDialog.vue';
+import ImageLightbox from '@/components/trips/ImageLightbox.vue';
+import TripBulkRejectDialog from '@/components/trips/TripBulkRejectDialog.vue';
 import TripDeleteDialog from '@/components/trips/TripDeleteDialog.vue';
+import TripFilters from '@/components/trips/TripFilters.vue';
+import TripFormDialog from '@/components/trips/TripFormDialog.vue';
+import TripPagination from '@/components/trips/TripPagination.vue';
+import TripRejectDialog from '@/components/trips/TripRejectDialog.vue';
 import TripReopenRequestDialog from '@/components/trips/TripReopenRequestDialog.vue';
 import TripReopenReviewDialog from '@/components/trips/TripReopenReviewDialog.vue';
-import TripRejectDialog from '@/components/trips/TripRejectDialog.vue';
-import ImageLightbox from '@/components/trips/ImageLightbox.vue';
+import TripTable from '@/components/trips/TripTable.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { provideTripRoutes } from '@/composables/useTripRoutes';
-import { adminTripRoutes } from '@/lib/trip-routes-admin';
-import { useTripDialogs } from '@/composables/useTripDialogs';
 import { usePagination } from '@/composables/usePagination';
+import type { PaginationMeta } from '@/composables/usePagination';
+import { useTripDialogs } from '@/composables/useTripDialogs';
+import { provideTripRoutes } from '@/composables/useTripRoutes';
 import { toArray } from '@/lib/array';
 import {
     ADMIN_TABLE_ACTIONS,
@@ -28,7 +28,7 @@ import {
     TABLE_ONLY_VIEW,
     DIALOG_ACTIONS
 } from '@/lib/trip-action-presets';
-import { ADMIN_DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import { adminTripRoutes } from '@/lib/trip-routes-admin';
 import type {
     Advisor,
     Car,
@@ -37,7 +37,7 @@ import type {
     Trip,
     TripStatus,
 } from '@/types/trip';
-import type { PaginationMeta } from '@/composables/usePagination';
+import { ADMIN_DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
 
 const { t } = useI18n();
 
@@ -118,6 +118,32 @@ const hasStats = computed(
         !!props.stats &&
         Object.values(props.stats).some((v) => Number(v) > 0),
 );
+const bulkReviewProcessing = ref(false);
+const bulkRejectOpen = ref(false);
+const bulkRejectTripIds = ref<number[]>([]);
+
+const confirmSelectedTrips = (tripIds: number[]) => {
+    if (!tripIds.length || bulkReviewProcessing.value) {
+        return;
+    }
+
+    bulkReviewProcessing.value = true;
+    router.post(
+        adminTripRoutes.bulkReview(),
+        { action: 'confirm', trip_ids: tripIds },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                bulkReviewProcessing.value = false;
+            },
+        },
+    );
+};
+
+const rejectSelectedTrips = (tripIds: number[]) => {
+    bulkRejectTripIds.value = tripIds;
+    bulkRejectOpen.value = true;
+};
 </script>
 
 <template>
@@ -198,7 +224,11 @@ const hasStats = computed(
                 storage-key="admin-trip-columns"
                 :default-columns="ADMIN_DEFAULT_TRIP_TABLE_COLUMNS"
                 :table-actions="TABLE_ONLY_VIEW"
+                bulk-review
+                :bulk-processing="bulkReviewProcessing"
                 @action="handleAction"
+                @bulk-confirm="confirmSelectedTrips"
+                @bulk-reject="rejectSelectedTrips"
             />
 
             <TripPagination
@@ -230,5 +260,10 @@ const hasStats = computed(
     <TripReopenRequestDialog v-model:open="reopenRequestOpen" :trip="target" />
     <TripReopenReviewDialog v-model:open="reopenReviewOpen" :trip="target" :action="reviewAction" />
     <TripRejectDialog v-model:open="rejectTripOpen" :trip="target" />
+    <TripBulkRejectDialog
+        v-model:open="bulkRejectOpen"
+        :trip-ids="bulkRejectTripIds"
+        :action="adminTripRoutes.bulkReview()"
+    />
     <ImageLightbox v-model="previewImage" />
 </template>
