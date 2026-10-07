@@ -22,7 +22,13 @@ import type { Advisor, Car, Driver, PaginationLink, Trip, TripStatus } from '@/t
 import { usePagination, type PaginationMeta } from '@/composables/usePagination';
 import { provideTripRoutes } from '@/composables/useTripRoutes';
 import { clientTripRoutes } from '@/lib/trip-routes-client';
-
+import { DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import {
+    ADMIN_TABLE_ACTIONS,
+    ADMIN_DIALOG_ACTIONS,
+    TABLE_ONLY_VIEW,
+    DIALOG_ACTIONS
+} from '@/lib/trip-action-presets';
 
 const { t } = useI18n();
 
@@ -111,7 +117,15 @@ const {
                     {{ $t('trip.filters.resultEmpty') }}
                 </template>
             </p>
-            <TripTable :trips="items" :start-index="startIndex" :confirming-id="confirmingId" storage-key="client-trip-columns" @action="handleAction" />
+            <TripTable 
+                :trips="items" 
+                :start-index="startIndex" 
+                :confirming-id="confirmingId" 
+                storage-key="client-trip-columns" 
+                :default-columns="DEFAULT_TRIP_TABLE_COLUMNS"
+                :table-actions="TABLE_ONLY_VIEW"
+                @action="handleAction"
+            />
             <TripPagination :links="links" :fallback-url="trips.index().url" />
         </CardContent>
     </Card>

@@ -55,6 +55,7 @@ const props = defineProps<{
         pending?: number;
         editing?: number;
         pendingReopen?: number;
+        rejected?: number;
     };
     filters?: {
         search?: string | null;
@@ -148,6 +149,14 @@ const hasStats = computed(
                         >
                             {{ $t('trip.admin.pendingReopen') }}:
                             {{ props.stats.pendingReopen }}
+                        </Badge>
+                        <Badge
+                            v-if="props.stats?.rejected"
+                            variant="destructive"
+                            class="border-red-500 text-white"
+                        >
+                            {{ $t('trip.status.rejected') }}:
+                            {{ props.stats.rejected }}
                         </Badge>
                     </div>
                 </div>

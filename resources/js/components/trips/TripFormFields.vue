@@ -113,7 +113,7 @@ const distance = computed(() =>
         <div class="grid grid-cols-3 gap-4">
             <div class="grid gap-2">
                 <Label for="f-ot">{{ $t('trip.form.overtime') }}</Label>
-                <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" max="4" name="overtime" />
+                <Input id="f-ot" v-model.number="model.overtime" type="number" min="0" max="10" name="overtime" />
                 <InputError :message="errors?.overtime" />
             </div>
             <div class="grid gap-2">

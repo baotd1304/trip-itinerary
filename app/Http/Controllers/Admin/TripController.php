@@ -11,6 +11,7 @@ use App\Models\TripImage;
 use App\Models\TripReopenRequest;
 use App\Models\User;
 use App\Services\CloudinaryService;
+use App\Support\Flash;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +81,8 @@ class TripController extends Controller
                     $sub->orWhere('origin', 'like', "%{$search}%")
                         ->orWhere('destination', 'like', "%{$search}%")
                         ->orWhereHas('advisor', fn ($a) => $a->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%"));
+                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('car', fn ($c) => $c->where('license_plate', 'like', "%{$search}%"));
                 });
             })
             ->when($status, fn ($q, $value) => $q->where('status', $value))
@@ -114,8 +116,9 @@ class TripController extends Controller
                         ->orWhereDoesntHave('tripExpense');
                 });
             })
-            ->orderByDesc('id')
-            ->orderByDesc('day');
+            ->orderByDesc('day')
+            ->orderByDesc('created_at')
+            ;
 
         $trips = $query->paginate(10)->withQueryString();
 
@@ -148,6 +151,7 @@ class TripController extends Controller
                 'pending'       => Trip::where('status', Trip::STATUS_PENDING)->count(),
                 'editing'       => Trip::where('status', Trip::STATUS_EDITING)->count(),
                 'pendingReopen' => TripReopenRequest::where('status', 'pending')->count(),
+                'rejected'      => Trip::where('status', Trip::STATUS_REJECTED)->count(),
             ],
             'cars'     => Car::where('is_active', 1)->get(['id', 'license_plate']),
             'advisors' => User::role('advisor')->where('is_active', 1)->get(['id', 'name']),
@@ -196,7 +200,10 @@ class TripController extends Controller
 
         return redirect()
             ->route('admin.trips.index')
-            ->with('success', "Tạo chuyến đi thành công (ID: {$trip->id}, ngày: {$this->formatDate($trip->day)}).");
+            ->with('flash', Flash::success('trip.flash.created', [
+                'id'  => $trip->id,
+                'day' => $trip->day->format('Y-m-d'),
+            ]));
     }
 
     public function update(Request $request, Trip $trip)
@@ -249,7 +256,7 @@ class TripController extends Controller
         }
 
         return redirect()->back()
-            ->with('success', $this->updateMessage($trip, $previousStatus, $isPrivileged));
+            ->with('flash', $this->updateMessage($trip, $previousStatus, $isPrivileged));
     }
 
     public function destroy(Trip $trip)
@@ -270,7 +277,8 @@ class TripController extends Controller
             $this->cloudinary->destroy($publicId);
         }
 
-        return redirect()->back(303)->with('success', "Đã xoá chuyến đi (ID: {$trip->id}). Ngày: {$this->formatDate($trip->day)}");
+        return redirect()->back(303)
+            ->with('flash', Flash::success('trip.flash.deleted', ['id' => $trip->id]));
     }
 
     /* HELPERS
@@ -464,21 +472,24 @@ class TripController extends Controller
         return $stale->pluck('public_id')->filter()->all();
     }
 
-    private function updateMessage(Trip $trip, string $previousStatus, bool $isPrivileged): string
+    /** Trả về bag flash tuỳ theo trạng thái trước đó */
+    private function updateMessage(Trip $trip, string $previousStatus, bool $isPrivileged): array
     {
         if ($isPrivileged) {
-            return "Đã cập nhật chuyến đi (ID: {$trip->id})- Ngày: {$this->formatDate($trip->day)}.";
+            return Flash::success('trip.flash.updatedByAdmin', ['id' => $trip->id]);
         }
 
+        $day = $trip->day ? date('Y-m-d', strtotime($trip->day)) : '';
+
         return match ($previousStatus) {
-            Trip::STATUS_PENDING  => "Đã cập nhật chuyến đi #{$trip->id} - Ngày: {$this->formatDate($trip->day)}. Chuyến đi vẫn đang chờ duyệt.",
-            Trip::STATUS_REJECTED => "Đã cập nhật chuyến đi #{$trip->id} - Ngày: {$this->formatDate($trip->day)} sau khi bị từ chối. Chuyến đi được gửi lại cho cố vấn duyệt.",
-            Trip::STATUS_EDITING  => "Đã cập nhật chuyến đi #{$trip->id} - Ngày: {$this->formatDate($trip->day)}. Trạng thái chuyển về \"Chờ duyệt\".",
-            default               => "Đã cập nhật chuyến đi (ID: {$trip->id}) - Ngày: {$this->formatDate($trip->day)}.",
+            Trip::STATUS_PENDING  => Flash::success('trip.flash.updatedPending',  ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_REJECTED => Flash::warning('trip.flash.updatedRejected', ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_EDITING  => Flash::info('trip.flash.updatedEditing',     ['id' => $trip->id, 'day' => $day]),
+            default               => Flash::success('trip.flash.updated',         ['id' => $trip->id, 'day' => $day]),
         };
     }
     private function formatDate(?string $date): string
     {
-        return $date ? date('d/m/Y', strtotime($date)) : '';
+        return $date ? date('Y-m-d', strtotime($date)) : '';
     }
 }

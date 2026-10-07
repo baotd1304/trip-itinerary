@@ -76,6 +76,7 @@ class HandleInertiaRequests extends Middleware
             //     'key' => fn () => session('flash.key'),
             //     'params' => fn () => session('flash.params', []),
             // ])
+            
             // LUÔN gửi (kể cả partial reload) nhưng sẽ là null nếu không có gì
             'flash' => Inertia::always(fn () => $this->flashPayload($request)),
         ];

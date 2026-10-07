@@ -2,6 +2,7 @@ export type ColumnKey =
     | 'stt'
     | 'advisor'
     | 'driver'
+    | 'car'
     | 'origin'
     | 'destination'
     | 'day'
@@ -32,12 +33,20 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
         labelKey: 'trip.table.stt',
     },
     {
+        key: 'day',
+        labelKey: 'trip.table.day',
+    },
+    {
         key: 'advisor',
         labelKey: 'trip.table.advisor',
     },
     {
         key: 'driver',
         labelKey: 'trip.table.driver',
+    },
+    {
+        key: 'car',
+        labelKey: 'trip.table.car',
     },
     {
         key: 'origin',
@@ -47,10 +56,7 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
         key: 'destination',
         labelKey: 'trip.table.destination',
     },
-    {
-        key: 'day',
-        labelKey: 'trip.table.day',
-    },
+    
     {
         key: 'time',
         labelKey: 'trip.table.time',
@@ -76,6 +82,22 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
         labelKey: 'trip.table.totalFee',
     },
     {
+        key: 'created_at',
+        labelKey: 'trip.table.created_at',
+    },
+    {
+        key: 'updated_at',
+        labelKey: 'trip.table.updated_at',
+    },
+    {
+        key: 'submitted_at',
+        labelKey: 'trip.table.submitted_at',
+    },
+    {
+        key: 'reviewed_at',
+        labelKey: 'trip.table.reviewed_at',
+    },
+    {
         key: 'reviewer',
         labelKey: 'trip.table.reviewer',
     },
@@ -86,10 +108,12 @@ export const TRIP_TABLE_COLUMNS: TableColumn[] = [
     },
 ];
 
+//client
 export const DEFAULT_TRIP_TABLE_COLUMNS: ColumnKey[] = [
     'stt',
-    'advisor',
-    'driver',
+    // 'advisor',
+    // 'driver',
+    'car',
     'origin',
     'destination',
     'day',
@@ -105,8 +129,9 @@ export const DEFAULT_TRIP_TABLE_COLUMNS: ColumnKey[] = [
 //  preset cột cho admin
 export const ADMIN_DEFAULT_TRIP_TABLE_COLUMNS: ColumnKey[] = [
     'stt',
-    'advisor',
-    'driver',
+    // 'advisor',
+    // 'driver',
+    'car',
     'origin',
     'destination',
     'day',
