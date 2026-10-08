@@ -55,7 +55,9 @@ it('driver gửi được yêu cầu reopen cho chuyến confirmed', function ()
                 'reason' => 'Nhập sai odo kết thúc, cần sửa lại số liệu.',
             ]
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenRequested')
+        ->assertSessionHas('flash.0.params.id', $trip->id);
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_CONFIRMED);
@@ -96,7 +98,9 @@ it('advisor duyệt yêu cầu thì trip chuyển sang editing', function () {
         ->patch(
             route('client.reopen-requests.approve', $request)
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenApproved')
+        ->assertSessionHas('flash.0.params.id', $trip->id);
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_EDITING);
@@ -124,10 +128,26 @@ it('advisor từ chối yêu cầu thì trip vẫn confirmed', function () {
                 'review_note' => 'Số liệu đã đối soát xong.',
             ]
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenRejected');
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_CONFIRMED);
+});
+
+it('trả về lỗi validation yêu cầu mở khoá theo locale đã chọn', function () {
+    $trip = makeTrip(Trip::STATUS_CONFIRMED);
+    $url = route('client.trips.reopen-requests.store', $trip);
+
+    $response = $this->actingAs($this->driver)
+        ->withSession(['locale' => 'th'])
+        ->from($url)
+        ->post($url, ['reason' => '']);
+
+    $response->assertSessionHasErrors('reason');
+
+    expect($response->getSession()->get('errors')->getBag('default')->first('reason'))
+        ->toBe('trip.validation.reopen_request_reason_required');
 });
 
 it('driver sửa chuyến editing thì trip quay về pending', function () {
@@ -268,7 +288,9 @@ it('advisor xác nhận nhiều chuyến được giao trong trang client', func
             'action' => 'confirm',
             'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
         ])
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.bulkReviewConfirmed')
+        ->assertSessionHas('flash.0.params.count', count($trips));
 
     foreach ($trips as $trip) {
         expect($trip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);

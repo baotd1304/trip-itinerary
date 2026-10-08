@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trip;
 use App\Notifications\TripReopened;
+use App\Support\Flash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -17,9 +18,9 @@ class TripReopenController extends Controller
         $data = $request->validate([
             'reopen_reason' => ['required', 'string', 'min:5', 'max:500'],
         ], [
-            'reopen_reason.required' => 'Vui lòng nhập lý do yêu cầu tài xế sửa lại.',
-            'reopen_reason.min'      => 'Lý do phải có ít nhất 5 ký tự.',
-            'reopen_reason.max'      => 'Lý do tối đa 500 ký tự.',
+            'reopen_reason.required' => 'trip.validation.reopen_reason_required',
+            'reopen_reason.min' => 'trip.validation.reopen_reason_min',
+            'reopen_reason.max' => 'trip.validation.reopen_reason_max',
         ]);
 
         DB::transaction(function () use ($trip, $data, $request) {
@@ -27,7 +28,7 @@ class TripReopenController extends Controller
             $fresh = Trip::whereKey($trip->id)->lockForUpdate()->firstOrFail();
 
             // Kiểm tra lại trạng thái sau khi khoá (chống race condition)
-            abort_unless($fresh->isReopenable(), 409, 'Trạng thái chuyến vừa thay đổi, vui lòng tải lại trang.');
+            abort_unless($fresh->isReopenable(), 409, 'trip.conflicts.trip_state_changed');
 
             $fresh->reopenFor($request->user(), $data['reopen_reason']);
         });
@@ -35,9 +36,8 @@ class TripReopenController extends Controller
         // (Tuỳ chọn) báo cho tài xế
         $trip->driver?->notify(new TripReopened($trip->refresh()));
 
-        return back(303)->with(
-            'success',
-            "Đã mở khoá chỉnh sửa cho chuyến #{$trip->id}. Tài xế có thể cập nhật lại."
-        );
+        return back(303)->with('flash', Flash::success('trip.flash.tripReopened', [
+            'id' => $trip->id,
+        ]));
     }
 }

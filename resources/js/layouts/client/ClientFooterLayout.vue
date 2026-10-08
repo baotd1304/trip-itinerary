@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { BookOpen, FolderGit2, Mail } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
 import AppLogo from '@/components/AppLogo.vue';
 import { Separator } from '@/components/ui/separator';
 import type { NavItem } from '@/types';
@@ -12,36 +13,37 @@ type FooterColumn = {
 
 const columns: FooterColumn[] = [
     {
-        title: 'Sản phẩm',
+        title: 'clientLayout.footer.product',
         items: [
-            { title: 'Chuyến đi', href: '/trips' },
-            { title: 'Chi phí', href: '/expenses' },
-            { title: 'Bảng giá', href: '/pricing' },
+            { title: 'clientLayout.nav.trips', href: '/trips' },
+            { title: 'clientLayout.nav.expenses', href: '/expenses' },
+            { title: 'clientLayout.footer.pricing', href: '/pricing' },
         ],
     },
     {
-        title: 'Hỗ trợ',
+        title: 'clientLayout.footer.support',
         items: [
-            { title: 'Câu hỏi thường gặp', href: '/faq' },
-            { title: 'Liên hệ', href: '/contact' },
+            { title: 'clientLayout.footer.faq', href: '/faq' },
+            { title: 'clientLayout.nav.contact', href: '/contact' },
         ],
     },
     {
-        title: 'Pháp lý',
+        title: 'clientLayout.footer.legal',
         items: [
-            { title: 'Điều khoản sử dụng', href: '/terms' },
-            { title: 'Chính sách bảo mật', href: '/privacy' },
+            { title: 'clientLayout.footer.terms', href: '/terms' },
+            { title: 'clientLayout.footer.privacy', href: '/privacy' },
         ],
     },
 ];
 
 const socialItems: NavItem[] = [
-    { title: 'Repository', href: 'https://github.com/baotd1304/trip-itinerary', icon: FolderGit2 },
-    { title: 'Documentation', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
-    { title: 'Email', href: 'mailto:hello@example.com', icon: Mail },
+    { title: 'clientLayout.footer.repository', href: 'https://github.com/baotd1304/trip-itinerary', icon: FolderGit2 },
+    { title: 'clientLayout.footer.documentation', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
+    { title: 'clientLayout.footer.email', href: 'mailto:hello@example.com', icon: Mail },
 ];
 
 const year = new Date().getFullYear();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -53,7 +55,7 @@ const year = new Date().getFullYear();
                         <AppLogo />
                     </Link>
                     <p class="mt-4 max-w-sm text-sm text-muted-foreground">
-                        Lên kế hoạch lịch trình, quản lý xe và chi phí cho mọi chuyến đi của bạn.
+                        {{ $t('clientLayout.footer.description') }}
                     </p>
                     <div class="mt-6 flex items-center gap-3">
                         <a
@@ -65,17 +67,17 @@ const year = new Date().getFullYear();
                             class="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
                             <component :is="item.icon" v-if="item.icon" class="size-4" />
-                            <span class="sr-only">{{ item.title }}</span>
+                            <span class="sr-only">{{ t(item.title) }}</span>
                         </a>
                     </div>
                 </div>
 
                 <div v-for="column in columns" :key="column.title">
-                    <h3 class="text-sm font-semibold">{{ column.title }}</h3>
+                    <h3 class="text-sm font-semibold">{{ t(column.title) }}</h3>
                     <ul class="mt-4 space-y-2">
                         <li v-for="item in column.items" :key="item.title">
                             <Link :href="item.href" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                                {{ item.title }}
+                                {{ t(item.title) }}
                             </Link>
                         </li>
                     </ul>
@@ -85,9 +87,9 @@ const year = new Date().getFullYear();
             <Separator class="my-8" />
 
             <div class="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground md:flex-row">
-                <p>&copy; {{ year }} Trip Itinerary. All rights reserved.</p>
+                <p>&copy; {{ year }} Trip Itinerary. {{ $t('clientLayout.footer.rightsReserved') }}</p>
                 <slot name="bottom">
-                    <p>Built with Laravel, Inertia &amp; shadcn-vue.</p>
+                    <p>{{ $t('clientLayout.footer.builtWith') }}</p>
                 </slot>
             </div>
         </div>

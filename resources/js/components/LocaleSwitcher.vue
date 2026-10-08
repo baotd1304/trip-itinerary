@@ -46,7 +46,7 @@ const currentLanguage = () =>
                 variant="ghost"
                 size="xs"
                 class="h-8 w-8 p-0"
-                aria-label="Chọn ngôn ngữ"
+                :aria-label="$t('clientLayout.languageSelection')"
             >
                 <span
                     :class="[

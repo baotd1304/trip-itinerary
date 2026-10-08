@@ -14,7 +14,6 @@ type Props = {
 
 withDefaults(defineProps<Props>(), {
     backHref: '/',
-    backLabel: 'Quay lại trang chủ',
 });
 
 useFlashToast();
@@ -45,7 +44,7 @@ useFlashToast();
                 <div class="text-center text-sm text-muted-foreground">
                     <slot name="footer">
                         <Link :href="backHref" class="underline underline-offset-4 hover:text-foreground">
-                            {{ backLabel }}
+                            {{ backLabel ?? $t('clientLayout.backHome') }}
                         </Link>
                     </slot>
                 </div>

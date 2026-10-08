@@ -21,8 +21,10 @@ class TripFactory extends Factory
         $car_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         $status = [Trip::STATUS_PENDING, Trip::STATUS_CONFIRMED, Trip::STATUS_EDITING, Trip::STATUS_REJECTED];
         return [
-            'advisor_id' => User::factory()->create()->assignRole('advisor')->id,
-            'driver_id' => User::factory()->create()->assignRole('driver')->id,
+            // 'advisor_id' => User::factory()->create()->assignRole('advisor')->id,
+            // 'driver_id' => User::factory()->create()->assignRole('driver')->id,
+            'advisor_id' => $this->faker->numberBetween(1, 5),
+            'driver_id' => $this->faker->numberBetween(1, 5),
             'car_id' => $this->faker->randomElement($car_id),
             'status' => $this->faker->randomElement($status),
             'day' => $this->faker->dateTimeBetween('-1 week', '+1 week'),
@@ -33,6 +35,7 @@ class TripFactory extends Factory
             'distance' => $this->faker->numberBetween(10, 1000),
             'origin' => $this->faker->address(),
             'destination' => $this->faker->address(),
+            'total_fee' => $this->faker->numberBetween(10000, 800000),
         ];
     }
 }

@@ -1,5 +1,5 @@
-import { watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
+import { watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -42,12 +42,20 @@ export function useFlashToast() {
             // có key -> dịch; thiếu bản dịch thì fallback text thô hoặc chính key
             return te(m.key) ? t(m.key, (m.params ?? {}) as Record<string, unknown>) : (m.message ?? m.key);
         }
+
+        if (m.message && te(m.message)) {
+            return t(m.message);
+        }
+
         return m.message ?? '';
     };
 
     const show = (m: FlashMessage, id: string) => {
         const text = render(m);
-        if (!text) return;
+
+        if (!text) {
+return;
+}
 
         // truyền id -> vue-sonner tự dedupe nếu lỡ bắn trùng
         const options = { id, duration: DURATION[m.type] ?? 3000 };
@@ -74,8 +82,13 @@ export function useFlashToast() {
         watch(
             () => page.props.flash as FlashBag | null | undefined,
             (flash) => {
-                if (!flash?.id) return;
-                if (flash.id === lastFlashId) return; // <-- chặn lặp khi filter / partial reload
+                if (!flash?.id) {
+return;
+}
+
+                if (flash.id === lastFlashId) {
+return;
+} // <-- chặn lặp khi filter / partial reload
 
                 lastFlashId = flash.id;
                 (flash.messages ?? []).forEach((m, i) => show(m, `${flash.id}:${i}`));

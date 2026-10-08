@@ -31,7 +31,9 @@ class BulkTripReviewRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'reject_reason.required' => 'Vui lòng nêu lý do từ chối để tài xế biết cần sửa gì.',
+            'reject_reason.required' => 'trip.validation.trip_reject_reason_required',
+            'reject_reason.min' => 'trip.validation.trip_reject_reason_min',
+            'reject_reason.max' => 'trip.validation.trip_reject_reason_max',
         ];
     }
 }

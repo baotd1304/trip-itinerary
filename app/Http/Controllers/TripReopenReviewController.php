@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Trip;
 use App\Models\TripReopenRequest;
 use App\Notifications\ReopenRequestReviewed;
+use App\Support\Flash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,7 +27,7 @@ class TripReopenReviewController extends Controller
             abort_unless(
                 $trip->status === Trip::STATUS_CONFIRMED,
                 409,
-                'Trạng thái chuyến vừa thay đổi, vui lòng tải lại trang.'
+                'trip.conflicts.trip_state_changed'
             );
 
             $reopenRequest->approve($request->user(), $data['review_note'] ?? null);
@@ -35,10 +36,9 @@ class TripReopenReviewController extends Controller
 
         $reopenRequest->requester?->notify(new ReopenRequestReviewed($reopenRequest->refresh()));
 
-        return back(303)->with(
-            'success',
-            "Đã mở khoá chuyến #{$reopenRequest->trip_id}. Tài xế có thể chỉnh sửa."
-        );
+        return back(303)->with('flash', Flash::success('trip.flash.reopenApproved', [
+            'id' => $reopenRequest->trip_id,
+        ]));
     }
 
     /** Advisor/Admin TỪ CHỐI -> trip giữ nguyên confirmed */
@@ -49,13 +49,15 @@ class TripReopenReviewController extends Controller
         $data = $request->validate([
             'review_note' => ['required', 'string', 'min:5', 'max:500'],
         ], [
-            'review_note.required' => 'Vui lòng nêu lý do từ chối yêu cầu.',
+            'review_note.required' => 'trip.validation.review_note_required',
+            'review_note.min' => 'trip.validation.review_note_min',
+            'review_note.max' => 'trip.validation.review_note_max',
         ]);
 
         $reopenRequest->reject($request->user(), $data['review_note']);
 
         $reopenRequest->requester?->notify(new ReopenRequestReviewed($reopenRequest->refresh()));
 
-        return back(303)->with('success', 'Đã từ chối yêu cầu mở khoá.');
+        return back(303)->with('flash', Flash::success('trip.flash.reopenRejected'));
     }
 }

@@ -2,19 +2,18 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
-use Spatie\Permission\Middleware\RoleMiddleware;
-use Spatie\Permission\Middleware\PermissionMiddleware;
-use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
-
-use Illuminate\Auth\Access\AuthorizationException;
 use Inertia\Inertia;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response;
-
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            SetLocale::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -99,10 +99,10 @@ return Application::configure(basePath: dirname(__DIR__))
             /* ---------- 404 / 500 / 503: render trang lỗi Inertia ---------- */
             if (in_array($status, [404, 500, 503], true) && ! app()->environment('local')) {
                 return Inertia::render('Error', [
-                    'status'  => $status,
+                    'status' => $status,
                     'message' => match ($status) {
-                        404     => 'Không tìm thấy nội dung bạn yêu cầu.',
-                        503     => 'Hệ thống đang bảo trì. Vui lòng quay lại sau.',
+                        404 => 'Không tìm thấy nội dung bạn yêu cầu.',
+                        503 => 'Hệ thống đang bảo trì. Vui lòng quay lại sau.',
                         default => 'Đã có lỗi xảy ra. Vui lòng thử lại.',
                     },
                 ])->toResponse($request)->setStatusCode($status);

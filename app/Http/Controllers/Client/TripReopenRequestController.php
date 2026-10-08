@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Trip;
 use App\Models\TripReopenRequest;
 use App\Notifications\ReopenRequestSubmitted;
+use App\Support\Flash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -20,9 +21,9 @@ class TripReopenRequestController extends Controller
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ], [
-            'reason.required' => 'Vui lòng nhập lý do cần chỉnh sửa lại chuyến.',
-            'reason.min'      => 'Lý do phải có ít nhất 10 ký tự để cố vấn hiểu rõ.',
-            'reason.max'      => 'Lý do tối đa 500 ký tự.',
+            'reason.required' => 'trip.validation.reopen_request_reason_required',
+            'reason.min' => 'trip.validation.reopen_request_reason_min',
+            'reason.max' => 'trip.validation.reopen_request_reason_max',
         ]);
 
         $reopenRequest = DB::transaction(function () use ($trip, $data, $request) {
@@ -32,7 +33,7 @@ class TripReopenRequestController extends Controller
             abort_unless(
                 $fresh->canRequestReopen(),
                 409,
-                'Trạng thái chuyến vừa thay đổi, vui lòng tải lại trang.'
+                'trip.conflicts.trip_state_changed'
             );
 
             $duplicated = TripReopenRequest::where('trip_id', $fresh->id)
@@ -40,22 +41,21 @@ class TripReopenRequestController extends Controller
                 ->lockForUpdate()
                 ->exists();
 
-            abort_if($duplicated, 409, 'Đã có yêu cầu mở khoá đang chờ duyệt cho chuyến này.');
+            abort_if($duplicated, 409, 'trip.conflicts.duplicate_reopen_request');
 
             return TripReopenRequest::create([
-                'trip_id'      => $fresh->id,
+                'trip_id' => $fresh->id,
                 'requested_by' => $request->user()->id,
-                'reason'       => $data['reason'],
-                'status'       => TripReopenRequest::STATUS_PENDING,
+                'reason' => $data['reason'],
+                'status' => TripReopenRequest::STATUS_PENDING,
             ]);
         });
 
         $trip->advisor?->notify(new ReopenRequestSubmitted($reopenRequest));
 
-        return back(303)->with(
-            'success',
-            "Đã gửi yêu cầu mở khoá chuyến #{$trip->id}. Vui lòng chờ cố vấn duyệt."
-        );
+        return back(303)->with('flash', Flash::success('trip.flash.reopenRequested', [
+            'id' => $trip->id,
+        ]));
     }
 
     /** Driver huỷ yêu cầu của chính mình khi chưa được duyệt */
@@ -65,6 +65,6 @@ class TripReopenRequestController extends Controller
 
         $reopenRequest->delete();
 
-        return back(303)->with('success', 'Đã huỷ yêu cầu mở khoá.');
+        return back(303)->with('flash', Flash::success('trip.flash.reopenCancelled'));
     }
 }
