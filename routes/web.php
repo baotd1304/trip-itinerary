@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\CloudinaryUploadController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\TripExportController;
@@ -67,7 +68,7 @@ Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(f
 });
 
 Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->group(function () {
-    Route::inertia('/dashboard', 'admin/Dashboard')->name('admin.dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('admin.dashboard');
 
     // user routes
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');

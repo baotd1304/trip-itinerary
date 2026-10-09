@@ -95,11 +95,12 @@ const hasAnyAction = computed(() =>
                     :title="$t('trip.hints.confirm')" @click="fire('confirm')">
                 <Loader2 v-if="confirming" class="mr-1 h-3.5 w-3.5 animate-spin" />
                 <CheckCircle2 v-else class="mr-1 h-3.5 w-3.5" />
-                {{ $t('trip.actions.confirm') }}
+                <!-- {{ $t('trip.actions.confirm') }} -->
             </Button>
-            <Button size="sm" variant="default"
+            <Button size="sm" variant="destructive"
                     :title="$t('trip.hints.reject')" @click="fire('reject')">
-                <Ban class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.reject') }}
+                <Ban class="mr-1 h-3.5 w-3.5" /> 
+                <!-- {{ $t('trip.actions.reject') }} -->
             </Button>
         </template>
 
