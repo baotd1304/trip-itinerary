@@ -33,22 +33,24 @@ class TripController extends Controller
 
         // ---------- 1. Chuẩn hoá & validate tham số lọc ----------
         $filters = $request->validate([
-            'search'       => ['nullable', 'string', 'max:100'],
-            'status'       => ['nullable', 'in:pending,editing,confirmed,rejected'],
-            'from'         => ['nullable', 'date'],
-            'to'           => ['nullable', 'date', 'after_or_equal:from'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'in:pending,editing,confirmed,rejected'],
+            'pending_reopen' => ['nullable', 'in:1'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
             'is_overnight' => ['nullable', 'in:0,1'],
-            'is_holiday'   => ['nullable', 'in:0,1'],
-            'advisor_id'   => ['nullable', 'integer', 'exists:users,id'],
-            'driver_id'    => ['nullable', 'integer', 'exists:users,id'],
+            'is_holiday' => ['nullable', 'in:0,1'],
+            'advisor_id' => ['nullable', 'integer', 'exists:users,id'],
+            'driver_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $search    = trim($filters['search'] ?? '');
-        $status    = $filters['status'] ?? null;
-        $from      = $filters['from'] ?? null;
-        $to        = $filters['to'] ?? null;
+        $search = trim($filters['search'] ?? '');
+        $status = $filters['status'] ?? null;
+        $pendingReopen = $filters['pending_reopen'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
         $advisorId = $filters['advisor_id'] ?? null;
-        $driverId  = $filters['driver_id'] ?? null;
+        $driverId = $filters['driver_id'] ?? null;
 
         // array_key_exists + loại chuỗi rỗng — KHÔNG dùng isset()/?: để '0' không bị nuốt
         $overnight = array_key_exists('is_overnight', $filters) && $filters['is_overnight'] !== null && $filters['is_overnight'] !== ''
@@ -61,16 +63,16 @@ class TripController extends Controller
 
         // ---------- 2. Query gốc — ADMIN XEM TOÀN BỘ, KHÔNG SCOPE THEO USER ----------
         $query = Trip::with([
-                'advisor:id,name',
-                'driver:id,name',
-                'car:id,license_plate',
-                'images',
-                'tripExpense',
-                'reviewer:id,name',
-                'pendingReopenRequest.requester:id,name',
-                'latestReopenRequest.requester:id,name',
-                'latestReopenRequest.reviewer:id,name',
-            ])
+            'advisor:id,name',
+            'driver:id,name',
+            'car:id,license_plate',
+            'images',
+            'tripExpense',
+            'reviewer:id,name',
+            'pendingReopenRequest.requester:id,name',
+            'latestReopenRequest.requester:id,name',
+            'latestReopenRequest.reviewer:id,name',
+        ])
             // ----- Tìm kiếm: ID / điểm đi / điểm đến / cố vấn / tài xế -----
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($sub) use ($search) {
@@ -86,6 +88,7 @@ class TripController extends Controller
                 });
             })
             ->when($status, fn ($q, $value) => $q->where('status', $value))
+            ->when($pendingReopen, fn ($q) => $q->whereHas('pendingReopenRequest'))
             ->when($from, fn ($q, $value) => $q->whereDate('day', '>=', $value))
             ->when($to, fn ($q, $value) => $q->whereDate('day', '<=', $value))
             ->when($advisorId, fn ($q, $value) => $q->where('advisor_id', $value))
@@ -125,11 +128,11 @@ class TripController extends Controller
         // ---------- 3. Gắn cờ quyền cho từng dòng ----------
         $trips->getCollection()->transform(function ($trip) use ($user) {
             $trip->setAttribute('can', [
-                'update'        => $user->can('update', $trip),
-                'delete'        => $user->can('delete', $trip),
+                'update' => $user->can('update', $trip),
+                'delete' => $user->can('delete', $trip),
                 'requestReopen' => $user->can('requestReopen', $trip),
-                'review'        => $user->can('review', $trip),
-                'reviewReopen'  => $trip->pendingReopenRequest
+                'review' => $user->can('review', $trip),
+                'reviewReopen' => $trip->pendingReopenRequest
                     ? $user->can('review', $trip->pendingReopenRequest)
                     : false,
             ]);
@@ -138,34 +141,35 @@ class TripController extends Controller
         });
 
         return Inertia::render('admin/trips/Trip', [
-            'trips'     => $trips,
+            'trips' => $trips,
             'tripsMeta' => [
-                'total'        => $trips->total(),
-                'from'         => $trips->firstItem(),
-                'to'           => $trips->lastItem(),
+                'total' => $trips->total(),
+                'from' => $trips->firstItem(),
+                'to' => $trips->lastItem(),
                 'current_page' => $trips->currentPage(),
-                'last_page'    => $trips->lastPage(),
-                'per_page'     => $trips->perPage(),
+                'last_page' => $trips->lastPage(),
+                'per_page' => $trips->perPage(),
             ],
             'stats' => [
-                'pending'       => Trip::where('status', Trip::STATUS_PENDING)->count(),
-                'editing'       => Trip::where('status', Trip::STATUS_EDITING)->count(),
+                'pending' => Trip::where('status', Trip::STATUS_PENDING)->count(),
+                'editing' => Trip::where('status', Trip::STATUS_EDITING)->count(),
                 'pendingReopen' => TripReopenRequest::where('status', 'pending')->count(),
-                'rejected'      => Trip::where('status', Trip::STATUS_REJECTED)->count(),
+                'rejected' => Trip::where('status', Trip::STATUS_REJECTED)->count(),
             ],
-            'cars'     => Car::where('is_active', 1)->get(['id', 'license_plate']),
+            'cars' => Car::where('is_active', 1)->get(['id', 'license_plate']),
             'advisors' => User::role('advisor')->where('is_active', 1)->get(['id', 'name']),
-            'drivers'  => User::role('driver')->where('is_active', 1)->get(['id', 'name']),
-            'filters'  => [
-                'search'       => $search ?: null,
-                'status'       => $status,
-                'from'         => $from,
-                'to'           => $to,
+            'drivers' => User::role('driver')->where('is_active', 1)->get(['id', 'name']),
+            'filters' => [
+                'search' => $search ?: null,
+                'status' => $status,
+                'pending_reopen' => $pendingReopen,
+                'from' => $from,
+                'to' => $to,
                 // trả về chuỗi '1' / '0' / null để khớp v-model select tri-state ở FE
                 'is_overnight' => is_null($overnight) ? null : (string) $overnight,
-                'is_holiday'   => is_null($holiday) ? null : (string) $holiday,
-                'advisor_id'   => $advisorId,
-                'driver_id'    => $driverId,
+                'is_holiday' => is_null($holiday) ? null : (string) $holiday,
+                'advisor_id' => $advisorId,
+                'driver_id' => $driverId,
             ],
             'can' => [
                 'create' => $user->can('create', Trip::class),
@@ -177,14 +181,14 @@ class TripController extends Controller
     {
         Gate::authorize('create', Trip::class);
 
-        $data    = $this->validateData($request);
+        $data = $this->validateData($request);
         $expense = $this->activeExpense();
 
         $trip = DB::transaction(function () use ($data, $expense) {
             $trip = Trip::create([
                 ...$data['trip'],
-                'distance'     => $data['distance'],
-                'status'       => Trip::STATUS_PENDING,
+                'distance' => $data['distance'],
+                'status' => Trip::STATUS_PENDING,
                 'submitted_at' => now(),
             ]);
 
@@ -201,7 +205,7 @@ class TripController extends Controller
         return redirect()
             ->route('admin.trips.index')
             ->with('flash', Flash::success('trip.flash.created', [
-                'id'  => $trip->id,
+                'id' => $trip->id,
                 'day' => $trip->day->format('Y-m-d'),
             ]));
     }
@@ -212,15 +216,15 @@ class TripController extends Controller
 
         $trip->load('images');
 
-        $data    = $this->validateData($request, $trip);
+        $data = $this->validateData($request, $trip);
         $expense = $this->activeExpense();
-        $user    = auth()->user();
+        $user = auth()->user();
 
         // admin / manager được bỏ qua khoá trạng thái; editor vẫn theo policy
         $isPrivileged = $user->hasAnyRole(['admin', 'manager']);
 
         $previousStatus = $trip->status;
-        $orphans        = [];
+        $orphans = [];
 
         DB::transaction(function () use ($trip, $data, $expense, $isPrivileged, &$orphans) {
             // Khoá dòng, kiểm tra lại: tránh xung đột confirm/reject xảy ra song song
@@ -286,84 +290,84 @@ class TripController extends Controller
     private function validateData(Request $request, ?Trip $trip = null): array
     {
         $request->merge([
-            'is_overnight'  => $request->boolean('is_overnight'),
-            'is_holiday'    => $request->boolean('is_holiday'),
+            'is_overnight' => $request->boolean('is_overnight'),
+            'is_holiday' => $request->boolean('is_holiday'),
             'images_synced' => $request->boolean('images_synced'),
         ]);
 
         $validated = $request->validate([
             /* ----- Chuyến đi ----- */
-            'advisor_id'     => ['required', 'integer', 'min:1', $this->activeUserWithRole('advisor', 'Advisor')],
-            'driver_id'      => ['required', 'integer', 'min:1', $this->activeUserWithRole('driver', 'Driver')],
-            'day'            => ['required', 'date'],
-            'car_id'         => ['required', 'integer', Rule::exists('cars', 'id')->where('is_active', 1)],
-            'origin'         => ['required', 'string', 'max:255'],
-            'destination'    => ['required', 'string', 'max:255'],
+            'advisor_id' => ['required', 'integer', 'min:1', $this->activeUserWithRole('advisor', 'Advisor')],
+            'driver_id' => ['required', 'integer', 'min:1', $this->activeUserWithRole('driver', 'Driver')],
+            'day' => ['required', 'date'],
+            'car_id' => ['required', 'integer', Rule::exists('cars', 'id')->where('is_active', 1)],
+            'origin' => ['required', 'string', 'max:255'],
+            'destination' => ['required', 'string', 'max:255'],
             'departure_time' => ['required', 'date_format:H:i'],
-            'arrival_time'   => [
+            'arrival_time' => [
                 'required',
                 'date_format:H:i', 'after:departure_time'
                 // Nghỉ đêm thì giờ đến có thể nhỏ hơn (qua ngày)
                 // Rule::when(! $request->boolean('is_overnight'), ['after:departure_time']),
             ],
-            'odo_start'      => ['required', 'integer', 'min:0'],
-            'odo_end'        => ['required', 'integer', 'gt:odo_start'],
-            'note'           => ['nullable', 'string', 'max:255'],
+            'odo_start' => ['required', 'integer', 'min:0'],
+            'odo_end' => ['required', 'integer', 'gt:odo_start'],
+            'note' => ['nullable', 'string', 'max:255'],
 
             /* ----- Chi phí ----- */
-            'overtime'     => ['nullable', 'integer', 'min:0', 'max:24'],
-            'toll_fee'     => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
-            'airport_fee'  => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'overtime' => ['nullable', 'integer', 'min:0', 'max:24'],
+            'toll_fee' => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'airport_fee' => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
             'is_overnight' => ['boolean'],
-            'is_holiday'   => ['boolean'],
+            'is_holiday' => ['boolean'],
 
             /* ----- Ảnh ----- */
-            'images'              => ['nullable', 'array', 'max:10'],
-            'images.*.public_id'  => ['required', 'string', 'max:255'],
-            'images.*.url'        => [
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*.public_id' => ['required', 'string', 'max:255'],
+            'images.*.url' => [
                 'required', 'url', 'max:500',
                 'starts_with:https://res.cloudinary.com/',
             ],
             'images.*.format' => ['nullable', 'string', 'max:20'],
-            'images.*.width'  => ['nullable', 'integer', 'min:0'],
+            'images.*.width' => ['nullable', 'integer', 'min:0'],
             'images.*.height' => ['nullable', 'integer', 'min:0'],
-            'images.*.bytes'  => ['nullable', 'integer', 'min:0'],
+            'images.*.bytes' => ['nullable', 'integer', 'min:0'],
 
             // Danh sách ảnh GIỮ LẠI
-            'images_synced'    => ['boolean'],
-            'kept_image_ids'   => ['nullable', 'array'],
+            'images_synced' => ['boolean'],
+            'kept_image_ids' => ['nullable', 'array'],
             'kept_image_ids.*' => ['integer'],
         ], [
-            'odo_end.gt'                     => 'ODO kết thúc phải lớn hơn ODO bắt đầu.',
-            'arrival_time.after'             => 'Giờ đến phải sau giờ đi.',
-            'images.max'                     => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến đi.',
-            'images.*.url.starts_with'       => 'Đường dẫn ảnh không hợp lệ.',
+            'odo_end.gt' => 'ODO kết thúc phải lớn hơn ODO bắt đầu.',
+            'arrival_time.after' => 'Giờ đến phải sau giờ đi.',
+            'images.max' => 'Chỉ được tải lên tối đa 10 ảnh cho mỗi chuyến đi.',
+            'images.*.url.starts_with' => 'Đường dẫn ảnh không hợp lệ.',
         ]);
 
         return [
             'trip' => [
-                'advisor_id'     => $validated['advisor_id'],
-                'driver_id'      => $validated['driver_id'],
-                'day'            => $validated['day'],
-                'car_id'         => $validated['car_id'],
-                'origin'         => $validated['origin'],
-                'destination'    => $validated['destination'],
+                'advisor_id' => $validated['advisor_id'],
+                'driver_id' => $validated['driver_id'],
+                'day' => $validated['day'],
+                'car_id' => $validated['car_id'],
+                'origin' => $validated['origin'],
+                'destination' => $validated['destination'],
                 'departure_time' => $validated['departure_time'],
-                'arrival_time'   => $validated['arrival_time'],
-                'odo_start'      => $validated['odo_start'],
-                'odo_end'        => $validated['odo_end'],
-                'note'           => $validated['note'] ?? null,
+                'arrival_time' => $validated['arrival_time'],
+                'odo_start' => $validated['odo_start'],
+                'odo_end' => $validated['odo_end'],
+                'note' => $validated['note'] ?? null,
             ],
             'expense' => [
-                'overtime'     => (int) ($validated['overtime'] ?? 0),
-                'toll_fee'     => (float) ($validated['toll_fee'] ?? 0),
-                'airport_fee'  => (float) ($validated['airport_fee'] ?? 0),
+                'overtime' => (int) ($validated['overtime'] ?? 0),
+                'toll_fee' => (float) ($validated['toll_fee'] ?? 0),
+                'airport_fee' => (float) ($validated['airport_fee'] ?? 0),
                 'is_overnight' => (bool) ($validated['is_overnight'] ?? false),
-                'is_holiday'   => (bool) ($validated['is_holiday'] ?? false),
+                'is_holiday' => (bool) ($validated['is_holiday'] ?? false),
             ],
-            'distance'       => $validated['odo_end'] - $validated['odo_start'],
-            'images'         => $validated['images'] ?? [],
-            'images_synced'  => (bool) ($validated['images_synced'] ?? false),
+            'distance' => $validated['odo_end'] - $validated['odo_start'],
+            'images' => $validated['images'] ?? [],
+            'images_synced' => (bool) ($validated['images_synced'] ?? false),
             'kept_image_ids' => array_map('intval', $validated['kept_image_ids'] ?? []),
         ];
     }
@@ -401,16 +405,16 @@ class TripController extends Controller
     private function expensePayload(int $tripId, array $input, Expense $expense): array
     {
         return [
-            'trip_id'        => $tripId,
-            'expense_id'     => $expense->id,
-            'overtime'       => $input['overtime'],
-            'overtime_rate'  => $expense->overtime_rate,
-            'is_overnight'   => $input['is_overnight'],
+            'trip_id' => $tripId,
+            'expense_id' => $expense->id,
+            'overtime' => $input['overtime'],
+            'overtime_rate' => $expense->overtime_rate,
+            'is_overnight' => $input['is_overnight'],
             'overnight_rate' => $expense->overnight_rate,
-            'is_holiday'     => $input['is_holiday'],
-            'holiday_rate'   => $expense->holiday_rate,
-            'toll_fee'       => $input['toll_fee'],
-            'airport_fee'    => $input['airport_fee'],
+            'is_holiday' => $input['is_holiday'],
+            'holiday_rate' => $expense->holiday_rate,
+            'toll_fee' => $input['toll_fee'],
+            'airport_fee' => $input['airport_fee'],
         ];
     }
 
@@ -438,11 +442,11 @@ class TripController extends Controller
             $trip->images()->firstOrCreate(
                 ['public_id' => $img['public_id']],
                 [
-                    'url'        => $img['url'],
-                    'format'     => $img['format'] ?? null,
-                    'width'      => $img['width'] ?? null,
-                    'height'     => $img['height'] ?? null,
-                    'bytes'      => $img['bytes'] ?? null,
+                    'url' => $img['url'],
+                    'format' => $img['format'] ?? null,
+                    'width' => $img['width'] ?? null,
+                    'height' => $img['height'] ?? null,
+                    'bytes' => $img['bytes'] ?? null,
                     'sort_order' => $order + $i + 1,
                 ]
             );
@@ -482,10 +486,10 @@ class TripController extends Controller
         $day = $trip->day ? date('Y-m-d', strtotime($trip->day)) : '';
 
         return match ($previousStatus) {
-            Trip::STATUS_PENDING  => Flash::success('trip.flash.updatedPending',  ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_PENDING => Flash::success('trip.flash.updatedPending', ['id' => $trip->id, 'day' => $day]),
             Trip::STATUS_REJECTED => Flash::warning('trip.flash.updatedRejected', ['id' => $trip->id, 'day' => $day]),
-            Trip::STATUS_EDITING  => Flash::info('trip.flash.updatedEditing',     ['id' => $trip->id, 'day' => $day]),
-            default               => Flash::success('trip.flash.updated',         ['id' => $trip->id, 'day' => $day]),
+            Trip::STATUS_EDITING => Flash::info('trip.flash.updatedEditing', ['id' => $trip->id, 'day' => $day]),
+            default => Flash::success('trip.flash.updated', ['id' => $trip->id, 'day' => $day]),
         };
     }
     private function formatDate(?string $date): string

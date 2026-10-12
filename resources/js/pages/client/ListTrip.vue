@@ -2,8 +2,6 @@
 import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 import TripTable from '@/components/trips/TripTable.vue';
 import TripPagination from '@/components/trips/TripPagination.vue';
@@ -15,6 +13,9 @@ import TripRejectDialog from '@/components/trips/TripRejectDialog.vue';
 import TripBulkRejectDialog from '@/components/trips/TripBulkRejectDialog.vue';
 import ImageLightbox from '@/components/trips/ImageLightbox.vue';
 import TripFilters from '@/components/trips/TripFilters.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import trips from '@/routes/client/trips';
 import { toArray } from '@/lib/array';
@@ -44,9 +45,16 @@ const props = defineProps<{
     cars: { data?: Car[] } | Car[];
     advisors: { data?: Advisor[] } | Advisor[];
     drivers: { data?: Driver[] } | Driver[];
+    stats?: {
+        pending?: number;
+        editing?: number;
+        pendingReopen?: number;
+        rejected?: number;
+    };
     filters?: {
         search?: string | null;
         status?: TripStatus | null;
+        pending_reopen?: '1' | null;
         from?: string | null;
         to?: string | null;
         is_overnight?: '1' | '0' | null;
@@ -89,6 +97,12 @@ const {
 const bulkReviewProcessing = ref(false);
 const bulkRejectOpen = ref(false);
 const bulkRejectTripIds = ref<number[]>([]);
+const tripFilters = ref<InstanceType<typeof TripFilters> | null>(null);
+const hasStats = computed(
+    () =>
+        !!props.stats &&
+        Object.values(props.stats).some((value) => Number(value) > 0),
+);
 const hasReviewableTrips = computed(() =>
     items.value.some((trip) => trip.status === 'pending' && canReview(trip)),
 );
@@ -124,7 +138,56 @@ const rejectSelectedTrips = (tripIds: number[]) => {
     <Card class="overflow-hidden">
         <CardHeader>
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>{{ $t('trip.listTitle') }}</CardTitle>
+                <div class="flex flex-wrap items-center gap-3">
+                    <CardTitle>{{ $t('trip.listTitle') }}</CardTitle>
+
+                    <div v-if="hasStats" class="flex flex-wrap items-center gap-1.5">
+                        <Badge
+                            as="button"
+                            type="button"
+                            v-if="props.stats?.pending"
+                            :aria-pressed="props.filters?.status === 'pending' && !props.filters?.pending_reopen"
+                            class="cursor-pointer bg-amber-500 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('pending')"
+                        >
+                            {{ $t('trip.status.pending') }}: {{ props.stats.pending }}
+                        </Badge>
+                        <Badge
+                            as="button"
+                            type="button"
+                            v-if="props.stats?.editing"
+                            :aria-pressed="props.filters?.status === 'editing' && !props.filters?.pending_reopen"
+                            class="cursor-pointer bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('editing')"
+                        >
+                            {{ $t('trip.status.editing') }}: {{ props.stats.editing }}
+                        </Badge>
+                        <Badge
+                            as="button"
+                            type="button"
+                            v-if="props.stats?.pendingReopen"
+                            variant="outline"
+                            :aria-pressed="props.filters?.pending_reopen === '1'"
+                            class="cursor-pointer border-amber-500 text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-amber-400"
+                            @click="tripFilters?.applyStatsFilter('pendingReopen')"
+                        >
+                            {{ $t('trip.admin.pendingReopen') }}:
+                            {{ props.stats.pendingReopen }}
+                        </Badge>
+                        <Badge
+                            as="button"
+                            type="button"
+                            v-if="props.stats?.rejected"
+                            variant="destructive"
+                            :aria-pressed="props.filters?.status === 'rejected' && !props.filters?.pending_reopen"
+                            class="cursor-pointer border-red-500 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('rejected')"
+                        >
+                            {{ $t('trip.status.rejected') }}:
+                            {{ props.stats.rejected }}
+                        </Badge>
+                    </div>
+                </div>
                 <div class="flex items-center gap-3">
                     <Button v-if="props.can?.create" @click="openCreate" variant="info" size="sm">
                         {{ $t('trip.create') }}
@@ -135,7 +198,7 @@ const rejectSelectedTrips = (tripIds: number[]) => {
 
         <CardContent>
             <!-- Thanh tìm kiếm / lọc -->
-            <TripFilters :url="trips.index().url" :initial="props.filters" :only="['trips', 'filters', 'tripsMeta']"/>
+            <TripFilters ref="tripFilters" :url="trips.index().url" :initial="props.filters" :only="['trips', 'filters', 'tripsMeta', 'stats']"/>
             <!-- Tổng số TRÊN TẤT CẢ CÁC TRANG sau khi lọc -->
             <p class="mb-2 text-xs text-muted-foreground">
                 <template v-if="totalCount">

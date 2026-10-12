@@ -45,6 +45,86 @@ it('driver không sửa được chuyến confirmed', function () {
         ->toBeFalse();
 });
 
+it('client trip list reports status counts only for trips visible to the driver', function () {
+    makeTrip(Trip::STATUS_PENDING);
+    makeTrip(Trip::STATUS_EDITING);
+    makeTrip(Trip::STATUS_REJECTED);
+    $confirmedTrip = makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $confirmedTrip->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $otherDriver = User::factory()
+        ->create(['is_active' => true])
+        ->assignRole('driver');
+    Trip::factory()->create([
+        'driver_id' => $otherDriver->id,
+        'advisor_id' => $this->advisor->id,
+        'car_id' => Car::factory()->create()->id,
+        'status' => Trip::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($this->driver)
+        ->get(route('client.trips.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('client/ListTrip')
+            ->where('stats.pending', 1)
+            ->where('stats.editing', 1)
+            ->where('stats.pendingReopen', 1)
+            ->where('stats.rejected', 1));
+});
+
+it('client trip list filters trips with a pending reopen request', function () {
+    $tripWithPendingReopen = makeTrip(Trip::STATUS_CONFIRMED);
+    makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $tripWithPendingReopen->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($this->driver)
+        ->get(route('client.trips.index', ['pending_reopen' => '1']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('client/ListTrip')
+            ->where('trips.data.0.id', $tripWithPendingReopen->id)
+            ->where('filters.pending_reopen', '1'));
+});
+
+it('admin trip list filters trips with a pending reopen request', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()
+        ->create(['is_active' => true])
+        ->assignRole('admin');
+
+    $tripWithPendingReopen = makeTrip(Trip::STATUS_CONFIRMED);
+    makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $tripWithPendingReopen->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.trips.index', ['pending_reopen' => '1']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/trips/Trip')
+            ->has('trips.data', 1)
+            ->where('trips.data.0.id', $tripWithPendingReopen->id)
+            ->where('filters.pending_reopen', '1'));
+});
+
 it('driver gửi được yêu cầu reopen cho chuyến confirmed', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 

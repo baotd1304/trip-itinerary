@@ -60,6 +60,7 @@ const props = defineProps<{
     filters?: {
         search?: string | null;
         status?: TripStatus | null;
+        pending_reopen?: '1' | null;
         from?: string | null;
         to?: string | null;
         is_overnight?: '1' | '0' | null;
@@ -121,6 +122,7 @@ const hasStats = computed(
 const bulkReviewProcessing = ref(false);
 const bulkRejectOpen = ref(false);
 const bulkRejectTripIds = ref<number[]>([]);
+const tripFilters = ref<InstanceType<typeof TripFilters> | null>(null);
 
 const confirmSelectedTrips = (tripIds: number[]) => {
     if (!tripIds.length || bulkReviewProcessing.value) {
@@ -157,29 +159,45 @@ const rejectSelectedTrips = (tripIds: number[]) => {
 
                     <div v-if="hasStats" class="flex flex-wrap items-center gap-1.5">
                         <Badge
+                            as="button"
+                            type="button"
                             v-if="props.stats?.pending"
-                            class="bg-amber-500 text-white"
+                            :aria-pressed="props.filters?.status === 'pending' && !props.filters?.pending_reopen"
+                            class="cursor-pointer bg-amber-500 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('pending')"
                         >
                             {{ $t('trip.status.pending') }}: {{ props.stats.pending }}
                         </Badge>
                         <Badge
+                            as="button"
+                            type="button"
                             v-if="props.stats?.editing"
-                            class="bg-indigo-600 text-white"
+                            :aria-pressed="props.filters?.status === 'editing' && !props.filters?.pending_reopen"
+                            class="cursor-pointer bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('editing')"
                         >
                             {{ $t('trip.status.editing') }}: {{ props.stats.editing }}
                         </Badge>
                         <Badge
+                            as="button"
+                            type="button"
                             v-if="props.stats?.pendingReopen"
                             variant="outline"
-                            class="border-amber-500 text-amber-700 dark:text-amber-400"
+                            :aria-pressed="props.filters?.pending_reopen === '1'"
+                            class="cursor-pointer border-amber-500 text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-amber-400"
+                            @click="tripFilters?.applyStatsFilter('pendingReopen')"
                         >
                             {{ $t('trip.admin.pendingReopen') }}:
                             {{ props.stats.pendingReopen }}
                         </Badge>
                         <Badge
+                            as="button"
+                            type="button"
                             v-if="props.stats?.rejected"
                             variant="destructive"
-                            class="border-red-500 text-white"
+                            :aria-pressed="props.filters?.status === 'rejected' && !props.filters?.pending_reopen"
+                            class="cursor-pointer border-red-500 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                            @click="tripFilters?.applyStatsFilter('rejected')"
                         >
                             {{ $t('trip.status.rejected') }}:
                             {{ props.stats.rejected }}
@@ -197,6 +215,7 @@ const rejectSelectedTrips = (tripIds: number[]) => {
 
         <CardContent>
             <TripFilters
+                ref="tripFilters"
                 :url="adminTripRoutes.index().url"
                 :initial="props.filters"
                 :only="['trips', 'tripsMeta', 'stats', 'filters']"
