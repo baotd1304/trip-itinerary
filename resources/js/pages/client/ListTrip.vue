@@ -155,7 +155,7 @@ const rejectSelectedTrips = (tripIds: number[]) => {
                 :confirming-id="confirmingId" 
                 storage-key="client-trip-columns" 
                 :default-columns="DEFAULT_TRIP_TABLE_COLUMNS"
-                :table-actions="ADMIN_TABLE_ACTIONS"
+                :table-actions="TABLE_ONLY_VIEW"
                 :bulk-review="hasReviewableTrips"
                 :bulk-processing="bulkReviewProcessing"
                 @action="handleAction"

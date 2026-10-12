@@ -29,6 +29,7 @@ class TripReviewController extends Controller
 
         return back(303)->with('flash', Flash::success('trip.flash.reviewConfirmed', [
             'id' => $trip->id,
+            'day' => $this->formatDate($trip->day),
         ]));
     }
 
@@ -56,6 +57,7 @@ class TripReviewController extends Controller
 
         return back(303)->with('flash', Flash::success('trip.flash.reviewRejected', [
             'id' => $trip->id,
+            'day' => $this->formatDate($trip->day),
         ]));
     }
 
@@ -101,5 +103,10 @@ class TripReviewController extends Controller
         return back(303)->with('flash', Flash::success($flashKey, [
             'count' => $trips->count(),
         ]));
+    }
+
+    private function formatDate(?string $date): string
+    {
+        return $date ? date('Y-m-d', strtotime($date)) : '';
     }
 }

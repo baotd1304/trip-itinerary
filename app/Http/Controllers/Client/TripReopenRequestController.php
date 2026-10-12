@@ -55,6 +55,7 @@ class TripReopenRequestController extends Controller
 
         return back(303)->with('flash', Flash::success('trip.flash.reopenRequested', [
             'id' => $trip->id,
+            'day' => $this->formatDate($trip->day),
         ]));
     }
 
@@ -65,6 +66,13 @@ class TripReopenRequestController extends Controller
 
         $reopenRequest->delete();
 
-        return back(303)->with('flash', Flash::success('trip.flash.reopenCancelled'));
+        return back(303)->with('flash', Flash::success('trip.flash.reopenCancelled', [
+            'id' => $reopenRequest->trip_id,
+            'day' => $this->formatDate($reopenRequest->trip->day),
+        ]));
+    }
+    private function formatDate(?string $date): string
+    {
+        return $date ? date('Y-m-d', strtotime($date)) : '';
     }
 }

@@ -38,6 +38,7 @@ class TripReopenReviewController extends Controller
 
         return back(303)->with('flash', Flash::success('trip.flash.reopenApproved', [
             'id' => $reopenRequest->trip_id,
+            'day' => $this->formatDate($reopenRequest->trip->day),
         ]));
     }
 
@@ -58,6 +59,13 @@ class TripReopenReviewController extends Controller
 
         $reopenRequest->requester?->notify(new ReopenRequestReviewed($reopenRequest->refresh()));
 
-        return back(303)->with('flash', Flash::success('trip.flash.reopenRejected'));
+        return back(303)->with('flash', Flash::success('trip.flash.reopenRejected', [
+            'id' => $reopenRequest->trip_id,
+            'day' => $this->formatDate($reopenRequest->trip->day),
+        ]));
+    }
+    private function formatDate(?string $date): string
+    {
+        return $date ? date('Y-m-d', strtotime($date)) : '';
     }
 }

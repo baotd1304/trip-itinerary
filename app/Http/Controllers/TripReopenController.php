@@ -33,11 +33,16 @@ class TripReopenController extends Controller
             $fresh->reopenFor($request->user(), $data['reopen_reason']);
         });
 
-        // (Tuỳ chọn) báo cho tài xế
+        // báo cho tài xế
         $trip->driver?->notify(new TripReopened($trip->refresh()));
 
         return back(303)->with('flash', Flash::success('trip.flash.tripReopened', [
             'id' => $trip->id,
+            'day' => $this->formatDate($trip->day),
         ]));
+    }
+    private function formatDate(?string $date): string
+    {
+        return $date ? date('Y-m-d', strtotime($date)) : '';
     }
 }

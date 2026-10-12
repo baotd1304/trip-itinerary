@@ -188,7 +188,7 @@ const rejectSelectedTrips = (tripIds: number[]) => {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <Button v-if="props.can?.create" @click="openCreate">
+                    <Button v-if="props.can?.create" @click="openCreate" variant="info" size="sm">
                         {{ $t('trip.create') }}
                     </Button>
                 </div>
