@@ -55,7 +55,7 @@ const hasAnyAction = computed(() =>
 </script>
 
 <template>
-    <div class="flex flex-wrap gap-1.5" :class="variant === 'table' ? 'justify-center' : 'justify-start' ">
+    <div class="flex gap-1.5" :class="variant === 'table' ? 'flex-nowrap justify-center' : 'flex-wrap justify-start'">
         <!-- xem chi tiết -->
         <Button v-if="showView" size="sm" variant="outline"
                 :title="$t('trip.actions.view')" @click="fire('view')">
@@ -97,9 +97,10 @@ const hasAnyAction = computed(() =>
                 <CheckCircle2 v-else class="mr-1 h-3.5 w-3.5" />
                 {{ $t('trip.actions.confirm') }}
             </Button>
-            <Button size="sm" variant="default"
+            <Button size="sm" variant="destructive"
                     :title="$t('trip.hints.reject')" @click="fire('reject')">
-                <Ban class="mr-1 h-3.5 w-3.5" /> {{ $t('trip.actions.reject') }}
+                <Ban class="mr-1 h-3.5 w-3.5" /> 
+                {{ $t('trip.actions.reject') }}
             </Button>
         </template>
 

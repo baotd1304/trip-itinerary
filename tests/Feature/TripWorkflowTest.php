@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\Car;
 use App\Models\Trip;
 use App\Models\TripReopenRequest;
 use App\Models\User;
-use App\Models\Car;
+use App\Notifications\TripReviewed;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -31,8 +33,8 @@ function makeTrip(string $status): Trip
     return Trip::factory()->create([
         'driver_id' => test()->driver->id,
         'advisor_id' => test()->advisor->id,
-        'car_id'    => $car->id,
-        'status'    => $status,
+        'car_id' => $car->id,
+        'status' => $status,
     ]);
 }
 
@@ -41,6 +43,86 @@ it('driver không sửa được chuyến confirmed', function () {
 
     expect($this->driver->can('update', $trip))
         ->toBeFalse();
+});
+
+it('client trip list reports status counts only for trips visible to the driver', function () {
+    makeTrip(Trip::STATUS_PENDING);
+    makeTrip(Trip::STATUS_EDITING);
+    makeTrip(Trip::STATUS_REJECTED);
+    $confirmedTrip = makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $confirmedTrip->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $otherDriver = User::factory()
+        ->create(['is_active' => true])
+        ->assignRole('driver');
+    Trip::factory()->create([
+        'driver_id' => $otherDriver->id,
+        'advisor_id' => $this->advisor->id,
+        'car_id' => Car::factory()->create()->id,
+        'status' => Trip::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($this->driver)
+        ->get(route('client.trips.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('client/ListTrip')
+            ->where('stats.pending', 1)
+            ->where('stats.editing', 1)
+            ->where('stats.pendingReopen', 1)
+            ->where('stats.rejected', 1));
+});
+
+it('client trip list filters trips with a pending reopen request', function () {
+    $tripWithPendingReopen = makeTrip(Trip::STATUS_CONFIRMED);
+    makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $tripWithPendingReopen->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($this->driver)
+        ->get(route('client.trips.index', ['pending_reopen' => '1']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('client/ListTrip')
+            ->where('trips.data.0.id', $tripWithPendingReopen->id)
+            ->where('filters.pending_reopen', '1'));
+});
+
+it('admin trip list filters trips with a pending reopen request', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()
+        ->create(['is_active' => true])
+        ->assignRole('admin');
+
+    $tripWithPendingReopen = makeTrip(Trip::STATUS_CONFIRMED);
+    makeTrip(Trip::STATUS_CONFIRMED);
+
+    TripReopenRequest::query()->create([
+        'trip_id' => $tripWithPendingReopen->id,
+        'requested_by' => $this->driver->id,
+        'reason' => 'Correct the recorded mileage.',
+        'status' => TripReopenRequest::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.trips.index', ['pending_reopen' => '1']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/trips/Trip')
+            ->has('trips.data', 1)
+            ->where('trips.data.0.id', $tripWithPendingReopen->id)
+            ->where('filters.pending_reopen', '1'));
 });
 
 it('driver gửi được yêu cầu reopen cho chuyến confirmed', function () {
@@ -53,7 +135,9 @@ it('driver gửi được yêu cầu reopen cho chuyến confirmed', function ()
                 'reason' => 'Nhập sai odo kết thúc, cần sửa lại số liệu.',
             ]
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenRequested')
+        ->assertSessionHas('flash.0.params.id', $trip->id);
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_CONFIRMED);
@@ -66,9 +150,9 @@ it('không tạo được 2 yêu cầu reopen cùng lúc', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     TripReopenRequest::factory()->create([
-        'trip_id'     => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'      => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->driver)
@@ -85,16 +169,18 @@ it('advisor duyệt yêu cầu thì trip chuyển sang editing', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     $request = TripReopenRequest::factory()->create([
-        'trip_id'      => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'       => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->advisor)
         ->patch(
             route('client.reopen-requests.approve', $request)
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenApproved')
+        ->assertSessionHas('flash.0.params.id', $trip->id);
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_EDITING);
@@ -110,9 +196,9 @@ it('advisor từ chối yêu cầu thì trip vẫn confirmed', function () {
     $trip = makeTrip(Trip::STATUS_CONFIRMED);
 
     $request = TripReopenRequest::factory()->create([
-        'trip_id'      => $trip->id,
+        'trip_id' => $trip->id,
         'requested_by' => $this->driver->id,
-        'status'       => TripReopenRequest::STATUS_PENDING,
+        'status' => TripReopenRequest::STATUS_PENDING,
     ]);
 
     $this->actingAs($this->advisor)
@@ -122,10 +208,26 @@ it('advisor từ chối yêu cầu thì trip vẫn confirmed', function () {
                 'review_note' => 'Số liệu đã đối soát xong.',
             ]
         )
-        ->assertStatus(303);
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.reopenRejected');
 
     expect($trip->refresh()->status)
         ->toBe(Trip::STATUS_CONFIRMED);
+});
+
+it('trả về lỗi validation yêu cầu mở khoá theo locale đã chọn', function () {
+    $trip = makeTrip(Trip::STATUS_CONFIRMED);
+    $url = route('client.trips.reopen-requests.store', $trip);
+
+    $response = $this->actingAs($this->driver)
+        ->withSession(['locale' => 'th'])
+        ->from($url)
+        ->post($url, ['reason' => '']);
+
+    $response->assertSessionHasErrors('reason');
+
+    expect($response->getSession()->get('errors')->getBag('default')->first('reason'))
+        ->toBe('trip.validation.reopen_request_reason_required');
 });
 
 it('driver sửa chuyến editing thì trip quay về pending', function () {
@@ -228,4 +330,94 @@ it('trả về 409 khi advisor vừa confirm lúc driver đang lưu', function (
     $this->actingAs($this->driver)
         ->put(route('client.trips.update', $trip), tripPayload($trip))
         ->assertForbidden();   // Policy chặn trước, vì trip đã confirmed
+});
+
+it('admin xác nhận nhiều chuyến trong một lần gửi', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    Notification::fake();
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+        ])
+        ->assertStatus(303);
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
+    }
+
+    Notification::assertSentTo($this->driver, TripReviewed::class);
+});
+
+it('advisor xác nhận nhiều chuyến được giao trong trang client', function () {
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    Notification::fake();
+
+    $this->actingAs($this->advisor)
+        ->post(route('client.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+        ])
+        ->assertStatus(303)
+        ->assertSessionHas('flash.0.key', 'trip.flash.bulkReviewConfirmed')
+        ->assertSessionHas('flash.0.params.count', count($trips));
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
+    }
+
+    Notification::assertSentTo($this->driver, TripReviewed::class);
+});
+
+it('admin từ chối nhiều chuyến với cùng một lý do', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $trips = [
+        makeTrip(Trip::STATUS_PENDING),
+        makeTrip(Trip::STATUS_PENDING),
+    ];
+    $reason = 'Thiếu ảnh xác nhận chi phí.';
+    Notification::fake();
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'reject',
+            'trip_ids' => array_map(fn (Trip $trip) => $trip->id, $trips),
+            'reject_reason' => $reason,
+        ])
+        ->assertStatus(303);
+
+    foreach ($trips as $trip) {
+        expect($trip->refresh()->status)->toBe(Trip::STATUS_REJECTED)
+            ->and($trip->reject_reason)->toBe($reason);
+    }
+});
+
+it('không cập nhật chuyến nào nếu một chuyến đã không còn chờ duyệt', function () {
+    Role::findOrCreate('admin', 'web');
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('admin');
+    $reviewableTrip = makeTrip(Trip::STATUS_PENDING);
+    $confirmedTrip = makeTrip(Trip::STATUS_CONFIRMED);
+
+    $this->actingAs($admin)
+        ->post(route('admin.trips.bulk-review'), [
+            'action' => 'confirm',
+            'trip_ids' => [$reviewableTrip->id, $confirmedTrip->id],
+        ])
+        ->assertStatus(409);
+
+    expect($reviewableTrip->refresh()->status)->toBe(Trip::STATUS_PENDING)
+        ->and($confirmedTrip->refresh()->status)->toBe(Trip::STATUS_CONFIRMED);
 });

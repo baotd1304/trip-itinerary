@@ -16,6 +16,7 @@ const props = withDefaults(
         initial?: {
             search?: string | null;
             status?: TripStatus | null;
+            pending_reopen?: '1' | null;
             from?: string | null;
             to?: string | null;
             is_overnight?: '1' | '0' | null;
@@ -42,6 +43,7 @@ const toTri = (v: unknown): TriState => {
 
 const search = ref<string>(props.initial?.search ?? '');
 const status = ref<TripStatus | ''>((props.initial?.status as TripStatus) ?? '');
+const pendingReopen = ref<TriState>(toTri(props.initial?.pending_reopen));
 const from = ref<string>(props.initial?.from ?? '');
 const to = ref<string>(props.initial?.to ?? '');
 const isOvernight = ref<TriState>(toTri(props.initial?.is_overnight));
@@ -63,6 +65,7 @@ const apply = (delay = 0) => {
             {
                 search: search.value || undefined,
                 status: status.value || undefined,
+                pending_reopen: pendingReopen.value === '1' ? '1' : undefined,
                 from: from.value || undefined,
                 to: to.value || undefined,
                 // Không dùng `|| undefined`: chuỗi '0' phải được gửi đi
@@ -87,7 +90,7 @@ const apply = (delay = 0) => {
 // Gõ phím: debounce 350ms
 watch(search, () => apply(350));
 // Select và date: lọc ngay khi giá trị thay đổi
-watch([status, from, to, isOvernight, isHoliday], () => apply(0));
+watch([status, pendingReopen, from, to, isOvernight, isHoliday], () => apply(0));
 
 // Đồng bộ khi server đẩy filters mới (Back/Forward)
 watch(
@@ -96,6 +99,7 @@ watch(
         if (selfUpdating) return;
         search.value = v?.search ?? '';
         status.value = (v?.status as TripStatus) ?? '';
+        pendingReopen.value = toTri(v?.pending_reopen);
         from.value = v?.from ?? '';
         to.value = v?.to ?? '';
         isOvernight.value = toTri(v?.is_overnight);
@@ -109,6 +113,7 @@ const activeCount = computed(
     () =>
         (search.value ? 1 : 0) +
         (status.value ? 1 : 0) +
+        (pendingReopen.value === '1' ? 1 : 0) +
         (from.value ? 1 : 0) +
         (to.value ? 1 : 0) +
         (isOvernight.value !== '' ? 1 : 0) +
@@ -118,12 +123,27 @@ const activeCount = computed(
 const reset = () => {
     search.value = '';
     status.value = '';
+    pendingReopen.value = '';
     from.value = '';
     to.value = '';
     isOvernight.value = '';
     isHoliday.value = '';
     apply(0);
 };
+
+const applyStatsFilter = (filter: TripStatus | 'pendingReopen') => {
+    if (filter === 'pendingReopen') {
+        pendingReopen.value = pendingReopen.value === '1' ? '' : '1';
+        status.value = '';
+
+        return;
+    }
+
+    status.value = status.value === filter ? '' : filter;
+    pendingReopen.value = '';
+};
+
+defineExpose({ applyStatsFilter });
 
 onBeforeUnmount(() => clearTimeout(timer));
 </script>

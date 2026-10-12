@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronDown, Menu, Moon, Sun, Tickets } from '@lucide/vue';
+import { ChevronDown, Menu, Moon, Sun } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import type { FunctionalComponent } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AppLogo from '@/components/AppLogo.vue';
-import UserMenuContent from '@/components/UserMenuContent.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -15,15 +17,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useAppearance } from '@/composables/useAppearance';
 import { useInitials } from '@/composables/useInitials';
-import { home, login, register } from '@/routes';
+import { login, register } from '@/routes';
 import admin from '@/routes/admin';
 import type { NavItem } from '@/types';
-import type { FunctionalComponent } from 'vue';
 
 const page = usePage();
+const { t } = useI18n();
 const auth = computed(() => page.props.auth);
 
 const { getInitials } = useInitials();
@@ -37,7 +39,7 @@ interface NavItemWithIcon extends NavItem {
 }
 
 const mainNavItems: NavItemWithIcon[] = [
-    { title: 'Trang chủ', href: '/' },
+    { title: 'clientLayout.nav.home', href: '/' },
     // {
     //     title: 'QL Trip Itinerary',
     //     href: '#', // hoặc href: admin.trips.index() nếu muốn click vào parent cũng chuyển trang
@@ -55,15 +57,16 @@ const mainNavItems: NavItemWithIcon[] = [
     //         },
     //     ]
     // },
-    { title: 'Chuyến đi', href: '/trips' },
-    { title: 'Chi phí', href: '/expenses' },
-    { title: 'Liên hệ', href: '/contact' },
+    { title: 'clientLayout.nav.trips', href: '/trips' },
+    { title: 'clientLayout.nav.expenses', href: '/expenses' },
+    { title: 'clientLayout.nav.contact', href: '/contact' },
 ];
 
 const toUrl = (href: NavItem['href']): string => (typeof href === 'string' ? href : href.url);
 
 const isCurrent = (href: NavItem['href']) => {
     const url = toUrl(href);
+
     return url === '/' ? page.url === '/' : page.url.startsWith(url);
 };
 
@@ -85,12 +88,12 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                 <SheetTrigger as-child>
                     <Button variant="ghost" size="icon" class="lg:hidden">
                         <Menu class="size-5" />
-                        <span class="sr-only">Mở menu</span>
+                        <span class="sr-only">{{ $t('clientLayout.openMenu') }}</span>
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" class="w-72 p-6">
                     <SheetHeader class="p-0 text-left">
-                        <SheetTitle class="sr-only">Menu điều hướng</SheetTitle>
+                        <SheetTitle class="sr-only">{{ $t('clientLayout.navigationMenu') }}</SheetTitle>
                         <Link href="/" class="flex items-center gap-2" @click="mobileOpen = false">
                             <AppLogo />
                         </Link>
@@ -105,7 +108,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                                 <CollapsibleTrigger class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground" :class="hasActiveChild(item) || isCurrent(item.href) ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'">
                                     <span class="flex items-center gap-2">
                                         <component v-if="item.icon" :is="item.icon" class="size-4" />
-                                        {{ item.title }}
+                                        {{ t(item.title) }}
                                     </span>
                                     <ChevronDown class="size-4 transition-transform duration-200" />
                                 </CollapsibleTrigger>
@@ -119,7 +122,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                                         @click="mobileOpen = false"
                                     >
                                         <component v-if="child.icon" :is="child.icon" class="size-4" />
-                                        {{ child.title }}
+                                        {{ t(child.title) }}
                                     </Link>
                                 </CollapsibleContent>
                             </Collapsible>
@@ -133,7 +136,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                                 @click="mobileOpen = false"
                             >
                                 <component v-if="item.icon" :is="item.icon" class="size-4" />
-                                {{ item.title }}
+                                {{ t(item.title) }}
                             </Link>
                         </template>
                     </nav>
@@ -142,10 +145,10 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                         <Separator class="my-6" />
                         <div class="flex flex-col gap-2">
                             <Button as-child variant="outline">
-                                <Link :href="login()">Đăng nhập</Link>
+                                <Link :href="login()">{{ $t('clientLayout.logIn') }}</Link>
                             </Button>
                             <Button as-child>
-                                <Link :href="register()">Đăng ký</Link>
+                                <Link :href="register()">{{ $t('clientLayout.register') }}</Link>
                             </Button>
                         </div>
                     </template>
@@ -168,7 +171,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                                 class="relative flex items-center gap-1 px-3 py-2 text-sm font-medium hover:text-foreground"
                                 :class="hasActiveChild(item) || isCurrent(item.href) ? 'text-foreground' : 'text-muted-foreground'"
                             >
-                                {{ item.title }}
+                                {{ t(item.title) }}
                                 <ChevronDown class="size-4" />
                                 <span v-if="hasActiveChild(item) || isCurrent(item.href)" class="absolute inset-x-2 -bottom-[13px] h-0.5 rounded-full bg-primary" />
                             </Button>
@@ -190,7 +193,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                         class="relative rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground"
                         :class="isCurrent(item.href) ? 'text-foreground' : 'text-muted-foreground'"
                     >
-                        {{ item.title }}
+                        {{ t(item.title) }}
                         <span v-if="isCurrent(item.href)" class="absolute inset-x-2 -bottom-[13px] h-0.5 rounded-full bg-primary" />
                     </Link>
                 </template>
@@ -201,12 +204,12 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                 <Button variant="ghost" size="icon" @click="toggleAppearance">
                     <Sun v-if="appearance === 'dark'" class="size-5" />
                     <Moon v-else class="size-5" />
-                    <span class="sr-only">Đổi giao diện sáng/tối</span>
+                    <span class="sr-only">{{ $t('clientLayout.toggleAppearance') }}</span>
                 </Button>
 
                 <template v-if="auth.user">
                     <Button as-child variant="ghost" class="hidden md:inline-flex">
-                        <Link :href="admin.dashboard()">Trang quản trị</Link>
+                        <Link :href="admin.dashboard()">{{ $t('clientLayout.adminDashboard') }}</Link>
                     </Button>
 
                     <DropdownMenu>
@@ -228,10 +231,10 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
 
                 <template v-else>
                     <Button as-child variant="ghost" class="hidden sm:inline-flex">
-                        <Link :href="login()">Đăng nhập</Link>
+                        <Link :href="login()">{{ $t('clientLayout.logIn') }}</Link>
                     </Button>
                     <Button as-child class="hidden sm:inline-flex">
-                        <Link :href="register()">Đăng ký</Link>
+                        <Link :href="register()">{{ $t('clientLayout.register') }}</Link>
                     </Button>
                 </template>
             </div>

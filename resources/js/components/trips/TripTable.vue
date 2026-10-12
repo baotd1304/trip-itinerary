@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { CircleCheckBigIcon, CircleX } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
+import { CheckCheck, CircleCheckBigIcon, CircleX } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import TripActions from './TripActions.vue';
 import TripStatusCell from './TripStatusCell.vue';
 import TripColumnPicker from './TripColumnPicker.vue';
@@ -8,6 +10,7 @@ import { useFormat } from '@/composables/useFormat';
 import { useTableColumns } from '@/composables/useTableColumns';
 import { useStickyShadow } from '@/composables/useStickyShadow';
 import { TABLE_ONLY_VIEW } from '@/lib/trip-action-presets';
+import { canReview } from '@/lib/trip-permissions';
 import { TRIP_TABLE_COLUMNS, DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
 import type { ColumnKey } from '@/types/trip-table';
 import type { Trip, TripActionType } from '@/types/trip';
@@ -20,6 +23,8 @@ const props = withDefaults(
     storageKey?: string;
     defaultColumns?: ColumnKey[];
     tableActions?: TripActionType[];
+    bulkReview?: boolean;
+    bulkProcessing?: boolean;
   }>(),
   {
     confirmingId: null,
@@ -27,11 +32,15 @@ const props = withDefaults(
     storageKey: 'trip-table-visible-columns',
     defaultColumns: () => DEFAULT_TRIP_TABLE_COLUMNS,
     tableActions: () => TABLE_ONLY_VIEW,
+    bulkReview: false,
+    bulkProcessing: false,
   },
 );
 
 const emit = defineEmits<{
     (e: 'action', payload: { type: TripActionType; trip: Trip }): void;
+    (e: 'bulk-confirm', tripIds: number[]): void;
+    (e: 'bulk-reject', tripIds: number[]): void;
 }>();
 
 const { formatDate, formatDateTime, formatMoney } = useFormat();
@@ -55,6 +64,49 @@ const {
 //Ghim column khi scroll
 const scroller = ref<HTMLElement | null>(null);
 const { atStart, atEnd } = useStickyShadow(scroller);
+const selectedTripIds = ref(new Set<number>());
+
+const canBulkReview = (trip: Trip): boolean => trip.status === 'pending' && canReview(trip);
+const reviewableTrips = computed(() => props.trips.filter(canBulkReview));
+const selectedTrips = computed(() =>
+    reviewableTrips.value.filter((trip) => selectedTripIds.value.has(trip.id)),
+);
+const allReviewableSelected = computed(
+    () =>
+        reviewableTrips.value.length > 0
+        && selectedTrips.value.length === reviewableTrips.value.length,
+);
+
+watch(
+    () => props.trips.map((trip) => ({ id: trip.id, reviewable: canBulkReview(trip) })),
+    (trips) => {
+        const reviewableIds = new Set(trips.filter((trip) => trip.reviewable).map((trip) => trip.id));
+        selectedTripIds.value = new Set(
+            [...selectedTripIds.value].filter((id) => reviewableIds.has(id)),
+        );
+    },
+);
+
+const setTripSelected = (tripId: number, checked: boolean | 'indeterminate') => {
+    const updatedIds = new Set(selectedTripIds.value);
+
+    if (checked === true) {
+        updatedIds.add(tripId);
+    } else {
+        updatedIds.delete(tripId);
+    }
+
+    selectedTripIds.value = updatedIds;
+};
+
+const setAllTripsSelected = (checked: boolean | 'indeterminate') => {
+    selectedTripIds.value = checked === true
+        ? new Set(reviewableTrips.value.map((trip) => trip.id))
+        : new Set();
+};
+
+const emitBulkConfirm = () => emit('bulk-confirm', selectedTrips.value.map((trip) => trip.id));
+const emitBulkReject = () => emit('bulk-reject', selectedTrips.value.map((trip) => trip.id));
 
 /** Chỉ ghim khi cột đó thực sự đang hiển thị */
 const pinLeft = computed(() => isVisible('stt'));
@@ -108,18 +160,51 @@ const fire = (type: TripActionType, trip: Trip) => emit('action', { type, trip }
 
 <template>
     <div class="space-y-3">
-        <div class="flex justify-end">
-            <TripColumnPicker
-                :optional-columns="optionalColumns"
-                :visible-column-count="visibleColumnCount"
-                :total-column-count="TRIP_TABLE_COLUMNS.length"
-                :selected-optional-count="selectedOptionalCount"
-                :all-selected="allOptionalSelected"
-                :is-visible="isVisible"
-                @toggle="toggle"
-                @toggle-all="toggleAll"
-                @reset="resetToDefault"
-            />
+        <div class="flex flex-wrap justify-end">
+            <div class="flex w-full flex-wrap items-center justify-end gap-2">
+                <div v-if="bulkReview && selectedTrips.length" class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                    <span class="text-xs text-muted-foreground sm:text-sm">
+                        {{ $t('trip.bulkReview.selected', { count: selectedTrips.length }) }}
+                    </span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="success"
+                        class="h-9 w-9 gap-1 px-0 text-xs sm:h-8 sm:w-auto sm:px-2.5"
+                        :disabled="bulkProcessing"
+                        :title="$t('trip.bulkReview.confirm')"
+                        :aria-label="$t('trip.bulkReview.confirm')"
+                        @click="emitBulkConfirm"
+                    >
+                        <CheckCheck class="size-3.5 shrink-0" />
+                        <span class="hidden sm:inline">{{ $t('trip.bulkReview.confirm') }}</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        class="h-9 w-9 gap-1 px-0 text-xs sm:h-8 sm:w-auto sm:px-2.5"
+                        :disabled="bulkProcessing"
+                        :title="$t('trip.bulkReview.reject')"
+                        :aria-label="$t('trip.bulkReview.reject')"
+                        @click="emitBulkReject"
+                    >
+                        <CircleX class="size-3.5 shrink-0" />
+                        <span class="hidden sm:inline">{{ $t('trip.bulkReview.reject') }}</span>
+                    </Button>
+                </div>
+                <TripColumnPicker
+                    :optional-columns="optionalColumns"
+                    :visible-column-count="visibleColumnCount"
+                    :total-column-count="TRIP_TABLE_COLUMNS.length"
+                    :selected-optional-count="selectedOptionalCount"
+                    :all-selected="allOptionalSelected"
+                    :is-visible="isVisible"
+                    @toggle="toggle"
+                    @toggle-all="toggleAll"
+                    @reset="resetToDefault"
+                />
+            </div>
         </div>
         <!-- Scroller -->
         <div
@@ -136,6 +221,7 @@ const fire = (type: TripActionType, trip: Trip) => emit('action', { type, trip }
                             class="whitespace-nowrap border-b border-r border-gray-300 bg-gray-100 px-2 py-2 text-center align-middle text-sm font-semibold dark:border-gray-700 dark:bg-gray-800"
                             :class="[
                                 cellBorder,
+                                column.key === 'actions' ? 'w-px min-w-max whitespace-nowrap' : '',
                                 column.key === 'stt' && pinLeft
                                     ? stickyLeftHead
                                     : '',
@@ -144,7 +230,16 @@ const fire = (type: TripActionType, trip: Trip) => emit('action', { type, trip }
                                     : '',
                             ]"
                         >
-                            {{ $t(column.labelKey) }}
+                            <div v-if="bulkReview && column.key === 'actions'" class="flex min-w-max items-center justify-center gap-2 whitespace-nowrap">
+                                <span>{{ $t(column.labelKey) }}</span>
+                                <Checkbox
+                                    :model-value="allReviewableSelected ? true : selectedTrips.length ? 'indeterminate' : false"
+                                    :aria-label="$t('trip.bulkReview.selectAll')"
+                                    :disabled="!reviewableTrips.length"
+                                    @update:model-value="setAllTripsSelected"
+                                />
+                            </div>
+                            <template v-else>{{ $t(column.labelKey) }}</template>
                         </th>
                     </tr>
                 </thead>
@@ -250,15 +345,29 @@ const fire = (type: TripActionType, trip: Trip) => emit('action', { type, trip }
 
                         <td v-if="isVisible('actions')" 
                             class="sticky right-0 bg-inherit border px-2 py-2 align-middle dark:border-gray-700"
-                            :class="[cellBorder, stickyRightCell]"
+                            :class="[cellBorder, stickyRightCell, 'w-px min-w-max whitespace-nowrap']"
                         >
-                            <TripActions
-                                :trip="trip"
-                                variant="table"
-                                :only="tableActions"
-                                :confirming="confirmingId === trip.id"
-                                @action="emit('action', $event)"
-                            />
+                            <div class="flex w-max min-w-full flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
+                                <div class="flex shrink-0 justify-center">
+                                    <TripActions
+                                        :trip="trip"
+                                        variant="table"
+                                        :only="tableActions"
+                                        :confirming="confirmingId === trip.id"
+                                        @action="emit('action', $event)"
+                                    />
+                                </div>
+                                <template v-if="bulkReview">
+                                    <div class="flex size-4 shrink-0 items-center justify-center">
+                                        <Checkbox
+                                            v-if="canBulkReview(trip)"
+                                            :model-value="selectedTripIds.has(trip.id)"
+                                            :aria-label="$t('trip.bulkReview.selectTrip', { id: trip.id })"
+                                            @update:model-value="(checked) => setTripSelected(trip.id, checked)"
+                                        />
+                                    </div>
+                                </template>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

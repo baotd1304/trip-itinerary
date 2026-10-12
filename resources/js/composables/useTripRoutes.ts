@@ -10,6 +10,7 @@ export interface TripRouteContext {
     /** Các action dạng URL thuần */
     confirm: (id: number) => string;
     reject: (id: number) => string;
+    bulkReview: () => string;
     reopenRequest: (id: number) => string;
     reopenReview: (requestId: number, action: 'approve' | 'reject') => string;
     cloudinarySignature: string;

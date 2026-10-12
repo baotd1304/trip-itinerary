@@ -15,7 +15,6 @@ import cars from '@/routes/admin/cars';
 import { local as storageLocal } from '@/routes/storage';
 import { ref, computed } from 'vue';
 
-
 defineOptions({
     layout: {
         breadcrumbs: [
