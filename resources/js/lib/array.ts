@@ -12,5 +12,5 @@ export const toArray = <T,>(src: unknown): T[] => {
     return [];
 };
 
-export const truncate = (text?: string | null, limit = 100) =>
+export const truncate = (text?: string | null, limit = 50) =>
     text && text.length > limit ? `${text.slice(0, limit)}...` : (text ?? '');

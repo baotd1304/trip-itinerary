@@ -1,7 +1,7 @@
 import type { Trip, TripStatus } from '@/types/trip';
 
 /** Trạng thái còn có thể duyệt/từ chối */
-const REVIEWABLE: TripStatus[] = ['pending', 'editing'];
+const REVIEWABLE: TripStatus[] = ['pending'];
 
 /** Mặc định FALSE — không có cờ từ server nghĩa là KHÔNG có quyền */
 export const canUpdate = (t?: Trip | null): boolean => t?.can?.update === true;

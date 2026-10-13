@@ -24,8 +24,6 @@ import { provideTripRoutes } from '@/composables/useTripRoutes';
 import { toArray } from '@/lib/array';
 import {
     ADMIN_TABLE_ACTIONS,
-    ADMIN_DIALOG_ACTIONS,
-    TABLE_ONLY_VIEW,
     DIALOG_ACTIONS
 } from '@/lib/trip-action-presets';
 import { adminTripRoutes } from '@/lib/trip-routes-admin';
@@ -109,7 +107,6 @@ const {
     previewImage,
     confirmingId,
     openCreate,
-    openView,
     handleAction,
 } = useTripDialogs(adminTripRoutes);
 
@@ -242,7 +239,7 @@ const rejectSelectedTrips = (tripIds: number[]) => {
                 :confirming-id="confirmingId"
                 storage-key="admin-trip-columns"
                 :default-columns="ADMIN_DEFAULT_TRIP_TABLE_COLUMNS"
-                :table-actions="TABLE_ONLY_VIEW"
+                :table-actions="ADMIN_TABLE_ACTIONS"
                 bulk-review
                 :bulk-processing="bulkReviewProcessing"
                 @action="handleAction"

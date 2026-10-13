@@ -212,13 +212,13 @@ const rejectSelectedTrips = (tripIds: number[]) => {
                     {{ $t('trip.filters.resultEmpty') }}
                 </template>
             </p>
-            <TripTable 
+            <TripTable
                 :trips="items" 
                 :start-index="startIndex" 
                 :confirming-id="confirmingId" 
                 storage-key="client-trip-columns" 
                 :default-columns="DEFAULT_TRIP_TABLE_COLUMNS"
-                :table-actions="TABLE_ONLY_VIEW"
+                :table-actions="ADMIN_TABLE_ACTIONS"
                 :bulk-review="hasReviewableTrips"
                 :bulk-processing="bulkReviewProcessing"
                 @action="handleAction"
