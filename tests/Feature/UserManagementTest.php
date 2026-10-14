@@ -1,0 +1,166 @@
+<?php
+
+use App\Models\User;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+function createUserManagementAdmin(): User
+{
+    Role::findOrCreate('admin', 'web');
+
+    return User::factory()->create()->assignRole('admin');
+}
+
+it('allows an administrator to create users with roles and direct permissions', function () {
+    $admin = createUserManagementAdmin();
+    Role::findOrCreate('advisor', 'web');
+    Permission::findOrCreate('trips.view', 'web');
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'New User',
+            'email' => 'new-user@example.com',
+            'phone' => '0900000000',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'is_active' => true,
+            'mark_verified' => false,
+            'roles' => ['advisor'],
+            'permissions' => ['trips.view'],
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    $user = User::query()->where('email', 'new-user@example.com')->firstOrFail();
+
+    expect($user->phone)->toBe('0900000000')
+        ->and($user->created_by)->toBe($admin->id)
+        ->and($user->hasRole('advisor'))->toBeTrue()
+        ->and($user->hasDirectPermission('trips.view'))->toBeTrue();
+});
+
+it('prevents a manager from assigning roles while creating a user', function () {
+    $managerRole = Role::findOrCreate('manager', 'web');
+    Role::findOrCreate('advisor', 'web');
+    $manager = User::factory()->create()->assignRole($managerRole);
+
+    $this->actingAs($manager)
+        ->post(route('admin.users.store'), [
+            'name' => 'Restricted User',
+            'email' => 'restricted-user@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'roles' => ['advisor'],
+        ])
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('users', ['email' => 'restricted-user@example.com']);
+});
+
+it('allows administrators to update a user and synchronize roles and direct permissions', function () {
+    $admin = createUserManagementAdmin();
+    $editor = Role::findOrCreate('editor', 'web');
+    $oldPermission = Permission::findOrCreate('trips.view', 'web');
+    Permission::findOrCreate('trips.update', 'web');
+    $user = User::factory()->create(['is_active' => false]);
+    $user->assignRole($editor);
+    $user->givePermissionTo($oldPermission);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $user), [
+            'name' => 'Updated User',
+            'email' => 'updated-user@example.com',
+            'phone' => '0911111111',
+            'is_active' => true,
+            'mark_verified' => true,
+            'roles' => ['editor'],
+            'permissions' => ['trips.update'],
+        ])
+        ->assertRedirect();
+
+    $user->refresh();
+
+    expect($user->name)->toBe('Updated User')
+        ->and($user->email)->toBe('updated-user@example.com')
+        ->and($user->phone)->toBe('0911111111')
+        ->and($user->is_active)->toBeTrue()
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and($user->hasRole('editor'))->toBeTrue()
+        ->and($user->hasDirectPermission('trips.view'))->toBeFalse()
+        ->and($user->hasDirectPermission('trips.update'))->toBeTrue();
+});
+
+it('allows administrators to delete other users', function () {
+    $admin = createUserManagementAdmin();
+    $role = Role::findOrCreate('advisor', 'web');
+    $user = User::factory()->create()->assignRole($role);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.users.destroy', $user))
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('users', ['id' => $user->id]);
+});
+
+it('allows only administrators to manage roles and permissions', function () {
+    $admin = createUserManagementAdmin();
+    $permission = Permission::findOrCreate('trips.view', 'web');
+    $adminRole = Role::findByName('admin', 'web');
+
+    $this->actingAs($admin)
+        ->put(route('admin.roles.update', $adminRole), [
+            'name' => 'super-admin',
+            'permissions' => [],
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($admin)
+        ->post(route('admin.roles.store'), [
+            'name' => 'trip-reviewer',
+            'permissions' => ['trips.view'],
+        ])
+        ->assertRedirect();
+
+    expect(Role::findByName('trip-reviewer', 'web')->hasPermissionTo('trips.view'))->toBeTrue();
+
+    $role = Role::findByName('trip-reviewer', 'web');
+    $this->actingAs($admin)
+        ->put(route('admin.roles.update', $role), [
+            'name' => 'trip-manager',
+            'permissions' => [],
+        ])
+        ->assertRedirect();
+
+    expect(Role::findByName('trip-manager', 'web')->permissions()->whereKey($permission->id)->exists())->toBeFalse();
+
+    $this->actingAs($admin)
+        ->post(route('admin.permissions.store'), ['name' => 'users.manage'])
+        ->assertRedirect();
+
+    $permission = Permission::findByName('users.manage', 'web');
+    $this->actingAs($admin)
+        ->put(route('admin.permissions.update', $permission), ['name' => 'users.edit'])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('permissions', ['name' => 'users.edit', 'guard_name' => 'web']);
+
+    $permission = Permission::findByName('users.edit', 'web');
+    $this->actingAs($admin)
+        ->delete(route('admin.permissions.destroy', $permission))
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('permissions', ['id' => $permission->id]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.roles.destroy', $role))
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('roles', ['id' => $role->id]);
+
+    $manager = User::factory()->create()->assignRole(Role::findOrCreate('manager', 'web'));
+
+    $this->actingAs($manager)
+        ->post(route('admin.permissions.store'), ['name' => 'users.manage'])
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('permissions', ['name' => 'users.manage']);
+});
