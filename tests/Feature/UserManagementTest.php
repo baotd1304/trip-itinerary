@@ -36,6 +36,9 @@ it('allows an administrator to create users with roles and direct permissions', 
         ->and($user->created_by)->toBe($admin->id)
         ->and($user->hasRole('advisor'))->toBeTrue()
         ->and($user->hasDirectPermission('trips.view'))->toBeTrue();
+
+    expect($user->notifications()->sole()->data['title_key'])
+        ->toBe('notifications.user.created');
 });
 
 it('prevents a manager from assigning roles while creating a user', function () {
@@ -61,7 +64,10 @@ it('allows administrators to update a user and synchronize roles and direct perm
     $editor = Role::findOrCreate('editor', 'web');
     $oldPermission = Permission::findOrCreate('trips.view', 'web');
     Permission::findOrCreate('trips.update', 'web');
-    $user = User::factory()->create(['is_active' => false]);
+    $user = User::factory()->create([
+        'is_active' => false,
+        'email_verified_at' => null,
+    ]);
     $user->assignRole($editor);
     $user->givePermissionTo($oldPermission);
 
@@ -87,6 +93,13 @@ it('allows administrators to update a user and synchronize roles and direct perm
         ->and($user->hasRole('editor'))->toBeTrue()
         ->and($user->hasDirectPermission('trips.view'))->toBeFalse()
         ->and($user->hasDirectPermission('trips.update'))->toBeTrue();
+
+    expect($user->notifications()->get()->pluck('data.title_key')->sort()->values()->all())
+        ->toBe([
+            'notifications.user.accessUpdated',
+            'notifications.user.activated',
+            'notifications.user.emailVerified',
+        ]);
 });
 
 it('allows administrators to delete other users', function () {

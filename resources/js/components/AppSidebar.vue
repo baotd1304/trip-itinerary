@@ -5,6 +5,7 @@ import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
+import NotificationBell from '@/components/NotificationBell.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -14,10 +15,9 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import admin from '@/routes/admin';
 import { home } from '@/routes/';
+import admin from '@/routes/admin';
 import type { NavItem } from '@/types';
-import LocaleSwitcher from './LocaleSwitcher.vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -81,6 +81,7 @@ const footerNavItems: NavItem[] = [
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <NotificationBell />
         </SidebarHeader>
 
         <SidebarContent>

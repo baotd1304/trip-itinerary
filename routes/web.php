@@ -12,12 +12,19 @@ use App\Http\Controllers\Client\ClientCloudinaryUploadController;
 use App\Http\Controllers\Client\ClientTripController;
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\TripReopenRequestController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TripReopenReviewController;
 use App\Http\Controllers\TripReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(function () {
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->whereUuid('notification')
+        ->name('notifications.read');
+
     Route::get('/', [HomeController::class, 'index'])->name('home');
 
     Route::get('trips', [ClientTripController::class, 'index'])

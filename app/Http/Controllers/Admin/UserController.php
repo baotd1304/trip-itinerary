@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\UserAccountNotification;
 use App\Support\Flash;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -202,6 +203,8 @@ class UserController extends Controller
             return $user;
         });
 
+        $user->notify(new UserAccountNotification('created', $user));
+
         return redirect()
             ->route('admin.users.index')
             ->with('flash', Flash::success('user.flash.created', [
@@ -216,6 +219,10 @@ class UserController extends Controller
 
         $data = $this->validateData($request, $user);
         $authUser = $request->user();
+        $previousIsActive = (bool) $user->is_active;
+        $previousEmailVerified = (bool) $user->email_verified_at;
+        $previousRoles = $user->getRoleNames()->sort()->values()->all();
+        $previousPermissions = $user->getDirectPermissions()->pluck('name')->sort()->values()->all();
 
         if (! is_null($data['is_active']) && $user->is_active !== $data['is_active']) {
             Gate::authorize('toggleActive', $user);
@@ -286,6 +293,26 @@ class UserController extends Controller
             }
         });
 
+        $user->refresh();
+
+        if (! is_null($data['is_active']) && $previousIsActive !== $user->is_active) {
+            $user->notify(new UserAccountNotification(
+                $user->is_active ? 'activated' : 'deactivated',
+                $user,
+            ));
+        }
+
+        if (! is_null($data['mark_verified']) && ! $previousEmailVerified && $user->email_verified_at) {
+            $user->notify(new UserAccountNotification('email_verified', $user));
+        }
+
+        $currentRoles = $user->getRoleNames()->sort()->values()->all();
+        $currentPermissions = $user->getDirectPermissions()->pluck('name')->sort()->values()->all();
+
+        if ($previousRoles !== $currentRoles || $previousPermissions !== $currentPermissions) {
+            $user->notify(new UserAccountNotification('access_updated', $user));
+        }
+
         return back()->with('flash', Flash::success('user.flash.updated', [
             'name' => $user->name,
             'id' => $user->id,
@@ -321,6 +348,10 @@ class UserController extends Controller
         abort_if($user->id === $request->user()->id, 403, 'Không thể tự khoá tài khoản của bạn.');
 
         $user->update(['is_active' => ! $user->is_active]);
+        $user->notify(new UserAccountNotification(
+            $user->is_active ? 'activated' : 'deactivated',
+            $user,
+        ));
 
         return back(303)->with('flash', $user->is_active
             ? Flash::success('user.flash.activated', ['name' => $user->name])
@@ -334,6 +365,7 @@ class UserController extends Controller
 
         if (! $user->email_verified_at) {
             $user->forceFill(['email_verified_at' => now()])->save();
+            $user->notify(new UserAccountNotification('email_verified', $user));
         }
 
         return back(303)->with('flash', Flash::success('user.flash.verified', ['name' => $user->name]));

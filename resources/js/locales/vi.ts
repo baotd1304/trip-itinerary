@@ -245,6 +245,31 @@ export default {
         },
     },
 
+    notifications: {
+        title: 'Thông báo',
+        unreadCount: '{count} chưa đọc',
+        markAllRead: 'Đánh dấu tất cả đã đọc',
+        markRead: 'Đánh dấu đã đọc',
+        empty: 'Bạn chưa có thông báo nào.',
+        generic: 'Bạn có thông báo mới.',
+        trip: {
+            submitted: 'Chuyến #{id} đang chờ bạn duyệt.',
+            confirmed: 'Chuyến #{id} đã được xác nhận.',
+            rejected: 'Chuyến #{id} bị từ chối và cần chỉnh sửa.',
+            reopened: 'Chuyến #{id} đã được mở khóa để chỉnh sửa.',
+            reopenSubmitted: 'Có yêu cầu mở khóa chuyến #{id} đang chờ duyệt.',
+            reopenApproved: 'Yêu cầu mở khóa chuyến #{id} đã được duyệt.',
+            reopenRejected: 'Yêu cầu mở khóa chuyến #{id} đã bị từ chối.',
+        },
+        user: {
+            created: 'Tài khoản của bạn đã được tạo.',
+            activated: 'Tài khoản của bạn đã được kích hoạt.',
+            deactivated: 'Tài khoản của bạn đã bị vô hiệu hóa.',
+            emailVerified: 'Email của bạn đã được xác minh.',
+            accessUpdated: 'Vai trò hoặc quyền truy cập của bạn đã được cập nhật.',
+        },
+    },
+
     trip: {
         pageTitle: 'Quản lý chuyến đi',
         listTitle: 'Danh sách chuyến đi',

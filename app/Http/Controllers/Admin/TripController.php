@@ -10,6 +10,7 @@ use App\Models\TripExpense;
 use App\Models\TripImage;
 use App\Models\TripReopenRequest;
 use App\Models\User;
+use App\Notifications\TripSubmitted;
 use App\Services\CloudinaryService;
 use App\Support\Flash;
 use Closure;
@@ -120,8 +121,7 @@ class TripController extends Controller
                 });
             })
             ->orderByDesc('day')
-            ->orderByDesc('created_at')
-            ;
+            ->orderByDesc('created_at');
 
         $trips = $query->paginate(10)->withQueryString();
 
@@ -201,6 +201,8 @@ class TripController extends Controller
 
             return $trip;
         });
+
+        $trip->load('advisor')->advisor?->notify(new TripSubmitted($trip));
 
         return redirect()
             ->route('admin.trips.index')
@@ -306,7 +308,7 @@ class TripController extends Controller
             'departure_time' => ['required', 'date_format:H:i'],
             'arrival_time' => [
                 'required',
-                'date_format:H:i', 'after:departure_time'
+                'date_format:H:i', 'after:departure_time',
                 // Nghỉ đêm thì giờ đến có thể nhỏ hơn (qua ngày)
                 // Rule::when(! $request->boolean('is_overnight'), ['after:departure_time']),
             ],
@@ -492,6 +494,7 @@ class TripController extends Controller
             default => Flash::success('trip.flash.updated', ['id' => $trip->id, 'day' => $day]),
         };
     }
+
     private function formatDate(?string $date): string
     {
         return $date ? date('Y-m-d', strtotime($date)) : '';

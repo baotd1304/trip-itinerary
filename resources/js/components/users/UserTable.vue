@@ -289,7 +289,7 @@ const fire = (type: UserActionType, user: AppUser) => emit('action', { type, use
                             <div class="flex items-center justify-center gap-1.5">
                                 <MailCheckIcon v-if="user.email_verified_at" class="h-4 w-4 text-emerald-500" />
                                 <MailXIcon v-else class="h-4 w-4 text-amber-500" />
-                                <span class="text-xs text-muted-foreground">
+                                <span class="text-xs">
                                     {{ user.email_verified_at ? formatDateTime(user.email_verified_at) : $t('user.status.unverified') }}
                                 </span>
                             </div>

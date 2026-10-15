@@ -245,6 +245,31 @@ export default {
         },
     },
 
+    notifications: {
+        title: 'Notifications',
+        unreadCount: '{count} unread',
+        markAllRead: 'Mark all as read',
+        markRead: 'Mark as read',
+        empty: 'You have no notifications.',
+        generic: 'You have a new notification.',
+        trip: {
+            submitted: 'Trip #{id} is awaiting your review.',
+            confirmed: 'Trip #{id} was confirmed.',
+            rejected: 'Trip #{id} was rejected and needs changes.',
+            reopened: 'Trip #{id} was unlocked for editing.',
+            reopenSubmitted: 'A reopen request for trip #{id} is awaiting review.',
+            reopenApproved: 'The reopen request for trip #{id} was approved.',
+            reopenRejected: 'The reopen request for trip #{id} was rejected.',
+        },
+        user: {
+            created: 'Your account has been created.',
+            activated: 'Your account has been activated.',
+            deactivated: 'Your account has been deactivated.',
+            emailVerified: 'Your email has been verified.',
+            accessUpdated: 'Your roles or access permissions have been updated.',
+        },
+    },
+
     trip: {
         pageTitle: 'Trip Management',
         listTitle: 'Trip Itinerary',

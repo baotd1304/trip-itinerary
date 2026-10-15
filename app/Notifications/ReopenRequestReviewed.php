@@ -2,11 +2,10 @@
 
 namespace App\Notifications;
 
+use App\Models\TripReopenRequest;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\TripReopenRequest;
 
 class ReopenRequestReviewed extends Notification
 {
@@ -45,15 +44,16 @@ class ReopenRequestReviewed extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $approved = $this->request->status === TripReopenRequest::STATUS_APPROVED;
+
         return [
-            'type'       => 'reopen_request_reviewed',
-            'trip_id'    => $this->request->trip_id,
-            'request_id' => $this->request->id,
-            'title'      => $this->request->status === TripReopenRequest::STATUS_APPROVED
-                ? "Yêu cầu mở khoá chuyến #{$this->request->trip_id} đã được duyệt"
-                : "Yêu cầu mở khoá chuyến #{$this->request->trip_id} bị từ chối",
-            'note'  => $this->request->review_note,
-            'url'        => route('client.trips.index'),
+            'type' => $approved ? 'reopen_request_approved' : 'reopen_request_rejected',
+            'title_key' => $approved
+                ? 'notifications.trip.reopenApproved'
+                : 'notifications.trip.reopenRejected',
+            'title_params' => ['id' => $this->request->trip_id],
+            'details' => $this->request->review_note,
+            'url' => route('client.trips.index'),
         ];
     }
 }
