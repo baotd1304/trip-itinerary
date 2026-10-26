@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -14,43 +14,115 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        Role::firstOrCreate(['name' => 'admin']);
-        Role::firstOrCreate(['name' => 'advisor']);
-        Role::firstOrCreate(['name' => 'driver']);
-        Role::firstOrCreate(['name' => 'editor']);
-        Role::firstOrCreate(['name' => 'manager']);
+        $roles = [
+            'admin',
+            'advisor',
+            'driver',
+            'editor',
+            'manager',
+            'partner',
+        ];
+        foreach ($roles as $role) {
+            Role::findOrCreate($role, 'web');
+        }
 
-        Permission::firstOrCreate(['name' => 'trip.view']);
-        Permission::firstOrCreate(['name' => 'trip.create']);
-        Permission::firstOrCreate(['name' => 'trip.update']);
-        Permission::firstOrCreate(['name' => 'trip.delete']);
-        Permission::firstOrCreate(['name' => 'trip.confirm']);
+        $userPermissions = [
+            'users.view-any',
+            'users.view',
+            'users.create',
+            'users.create-admin',
+            'users.update',
+            'users.update-admin',
+            'users.delete',
+            'users.delete-admin',
+            'users.toggle-active',
+            'users.toggle-admin-active',
+            'users.assign-role',
+            'users.assign-role-admin',
+            'users.verify-email',
+            'users.reset-password',
+            'users.manage-access-control',
+        ];
 
-        //gan permission cho role
-        Role::findByName('admin')->syncPermissions([
-            'trip.view',
-            'trip.create',
-            'trip.update',
-            'trip.delete',
-            'trip.confirm',
+        $tripPermissions = [
+            'trips.view-any',
+            'trips.view',
+            'trips.create',
+            'trips.update',
+            'trips.delete',
+            'trips.request-reopen',
+            'trips.review-reopen',
+            'trips.review',
+        ];
+
+        $viewPermissions = [
+            'dashboard.view',
+            'setting.view',
+            ''
+        ];
+
+        $permissions = array_merge(
+            $userPermissions,
+            $tripPermissions,
+            $viewPermissions
+        );
+        foreach ($permissions as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        // gan permission cho role
+        $admin = Role::findOrCreate('admin', 'web');
+        $admin->syncPermissions($permissions);
+
+        $manager = Role::findOrCreate('manager', 'web');
+        $manager->syncPermissions([
+            'trips.view-any',
+            'trips.view',
+            'trips.create',
+            'trips.update',
+            'trips.delete',
+            'trips.request-reopen',
+            'trips.review-reopen',
+            'trips.review',
+            'users.view-any',
+            'users.view',
+            'users.create',
+            'users.update',
+            'users.delete',
+            'users.toggle-active',
+            'users.assign-role',
+            'users.verify-email',
+            'users.reset-password',
+            'users.manage-access-control',
         ]);
 
-        Role::findByName('advisor')->syncPermissions([
-            'trip.view',
-            'trip.confirm'
+        $advisor = Role::findOrCreate('advisor', 'web');
+        $advisor->syncPermissions([
+            'trips.view',
+            'trips.review-reopen',
+            'trips.review',
         ]);
-        Role::findByName('driver')->syncPermissions([
-            'trip.view',
-            'trip.create',
-            'trip.update',
-        ]);
-        Role::findByName('manager')->syncPermissions([
-            'trip.view',
-            'trip.create',
-            'trip.update',
-            'trip.delete',
+        $driver = Role::findOrCreate('driver', 'web');
+        $driver->syncPermissions([
+            'trips.view',
+            'trips.create',
+            'trips.update',
+            'trips.request-reopen',
         ]);
         
+        $editor = Role::findOrCreate('editor', 'web');
+        $editor->syncPermissions([
+            'trips.view',
+            'trips.create',
+            'trips.update',
+            'trips.request-reopen',
+        ]);
+        $partner = Role::findOrCreate('partner', 'web');
+        $partner->syncPermissions([
+            'trips.view',
+        ]);
 
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
     }
 }

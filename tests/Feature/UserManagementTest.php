@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -10,6 +11,61 @@ function createUserManagementAdmin(): User
 
     return User::factory()->create()->assignRole('admin');
 }
+
+it('prevents users from deleting, deactivating, or changing their own roles', function () {
+    $admin = createUserManagementAdmin();
+
+    expect(Gate::forUser($admin)->allows('delete', $admin))->toBeFalse()
+        ->and(Gate::forUser($admin)->allows('toggleActive', $admin))->toBeFalse()
+        ->and(Gate::forUser($admin)->allows('assignRole', $admin))->toBeFalse();
+});
+
+it('checks the matching permission when managing regular and admin users', function () {
+    $actor = User::factory()->create();
+    $user = User::factory()->create();
+    $admin = createUserManagementAdmin();
+
+    foreach ([
+        'users.update',
+        'users.update-admin',
+        'users.delete',
+        'users.delete-admin',
+        'users.toggle-active',
+        'users.toggle-admin-active',
+        'users.assign-role',
+        'users.assign-role-admin',
+    ] as $permission) {
+        Permission::findOrCreate($permission, 'web');
+    }
+
+    $actor->givePermissionTo([
+        'users.update',
+        'users.delete',
+        'users.toggle-active',
+        'users.assign-role',
+    ]);
+
+    expect(Gate::forUser($actor)->allows('update', $user))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('delete', $user))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('toggleActive', $user))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('assignRole', $user))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('update', $admin))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('delete', $admin))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('toggleActive', $admin))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('assignRole', $admin))->toBeFalse();
+
+    $actor->givePermissionTo([
+        'users.update-admin',
+        'users.delete-admin',
+        'users.toggle-admin-active',
+        'users.assign-role-admin',
+    ]);
+
+    expect(Gate::forUser($actor)->allows('update', $admin))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('delete', $admin))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('toggleActive', $admin))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('assignRole', $admin))->toBeTrue();
+});
 
 it('allows an administrator to create users with roles and direct permissions', function () {
     $admin = createUserManagementAdmin();

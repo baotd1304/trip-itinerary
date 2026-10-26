@@ -23,9 +23,6 @@ class UserController extends Controller
     /** Role chỉ admin mới được gán */
     private const PROTECTED_ROLES = ['admin'];
 
-    /*==================================================================
-    | INDEX
-    |=================================================================*/
     public function index(Request $request)
     {
         $authUser = $request->user();

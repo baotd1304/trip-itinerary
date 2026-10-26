@@ -30,8 +30,14 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'phone', 'is_active', 'created_by', 'email_verified_at', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable([
+    'name', 'email', 'phone', 'is_active',
+    'created_by', 'email_verified_at', 'password'
+    ])]
+#[Hidden([
+    'password', 'two_factor_secret',
+    'two_factor_recovery_codes', 'remember_token'
+    ])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

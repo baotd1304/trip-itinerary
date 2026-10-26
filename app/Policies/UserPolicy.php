@@ -6,6 +6,24 @@ use App\Models\User;
 
 class UserPolicy
 {
+    private const PERMISSIONS = [
+        'viewAny' => 'users.view-any',
+        'view' => 'users.view',
+        'create' => 'users.create',
+        'createAdmin' => 'users.create-admin',
+        'update' => 'users.update',
+        'updateAdmin' => 'users.update-admin',
+        'delete' => 'users.delete',
+        'deleteAdmin' => 'users.delete-admin',
+        'toggleActive' => 'users.toggle-active',
+        'toggleAdminActive' => 'users.toggle-admin-active',
+        'assignRole' => 'users.assign-role',
+        'assignRoleAdmin' => 'users.assign-role-admin',
+        'verifyEmail' => 'users.verify-email',
+        'resetPassword' => 'users.reset-password',
+        'manageAccessControl' => 'users.manage-access-control',
+    ];
+
     /** Admin toàn quyền (trừ các chặn tự thao tác bên dưới). */
     public function before(User $authUser, string $ability): ?bool
     {
@@ -16,33 +34,59 @@ class UserPolicy
         return $authUser->hasRole('admin') ? true : null;
     }
 
+    private function hasPermission(User $authUser, string $ability): bool
+    {
+        $permission = self::PERMISSIONS[$ability] ?? null;
+
+        return $permission !== null
+            && $authUser->can($permission);
+    }
+
+    private function canManageTarget(
+        User $authUser,
+        User $target,
+        string $ability,
+        string $adminAbility,
+    ): bool 
+    {
+        if ($authUser->hasRole('admin')) {
+            return true;
+        }
+
+        return $this->hasPermission(
+            $authUser,
+            $target->hasRole('admin') ? $adminAbility : $ability,
+        );
+    }
+
     public function viewAny(User $authUser): bool
     {
-        return $authUser->hasAnyRole(['admin', 'manager']);
+        return $this->hasPermission($authUser, 'viewAny');
     }
 
     public function view(User $authUser, User $target): bool
     {
-        return $authUser->hasAnyRole(['admin', 'manager']) || $authUser->id === $target->id;
+        return $authUser->id === $target->id
+            || $this->hasPermission($authUser, 'view');
     }
 
     public function create(User $authUser): bool
     {
-        return $authUser->hasAnyRole(['admin', 'manager']);
+        return $this->hasPermission($authUser, 'create');
+    }
+
+    public function createAdmin(User $authUser): bool
+    {
+        return $this->hasPermission($authUser, 'createAdmin');
     }
 
     public function update(User $authUser, User $target): bool
     {
         if ($authUser->id === $target->id) {
-            return true; // tự sửa hồ sơ
+            return true; // tự sửa hồ sơ cá nhân
         }
 
-        // Manager không được sửa admin
-        if ($target->hasRole('admin')) {
-            return $authUser->hasRole('admin');
-        }
-
-        return $authUser->hasAnyRole(['admin', 'manager']);
+        return $this->canManageTarget($authUser, $target, 'update', 'updateAdmin');
     }
 
     public function delete(User $authUser, User $target): bool
@@ -51,11 +95,7 @@ class UserPolicy
             return false; // không tự xoá
         }
 
-        if ($target->hasRole('admin')) {
-            return false; // không xoá admin qua UI
-        }
-
-        return $authUser->hasAnyRole(['admin', 'manager']);
+        return $this->canManageTarget($authUser, $target, 'delete', 'deleteAdmin');
     }
 
     public function toggleActive(User $authUser, User $target): bool
@@ -64,31 +104,31 @@ class UserPolicy
             return false;
         }
 
-        if ($target->hasRole('admin')) {
-            return $authUser->hasRole('admin') && $authUser->id !== $target->id;
-        }
-
-        return $authUser->hasAnyRole(['admin', 'manager']);
+        return $this->canManageTarget($authUser, $target, 'toggleActive', 'toggleAdminActive');
     }
 
-    /** Chỉ admin mới được đổi vai trò. */
     public function assignRole(User $authUser, User $target): bool
     {
-        return $authUser->hasRole('admin') && $authUser->id !== $target->id;
+        if ($authUser->id === $target->id) {
+            return false;
+        }
+
+        return $this->canManageTarget($authUser, $target, 'assignRole', 'assignRoleAdmin');
     }
 
     public function verifyEmail(User $authUser, User $target): bool
     {
-        return $authUser->hasAnyRole(['admin', 'manager']) && ! $target->email_verified_at;
+        return ! $target->email_verified_at
+            && $this->hasPermission($authUser, 'verifyEmail');
     }
 
     public function resetPassword(User $authUser, User $target): bool
     {
-        return $authUser->hasRole('admin');
+        return $this->hasPermission($authUser, 'resetPassword');
     }
 
     public function manageAccessControl(User $authUser): bool
     {
-        return $authUser->hasRole('admin');
+        return $this->hasPermission($authUser, 'manageAccessControl');
     }
 }
