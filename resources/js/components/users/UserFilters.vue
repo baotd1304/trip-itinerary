@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { RoleRef, UserRef } from '@/types/user';
@@ -36,6 +37,17 @@ const state = reactive({
     from: '',
     to: '',
 });
+
+const activeFilterCount = computed(
+    () =>
+        (state.search.trim() ? 1 : 0) +
+        (state.role ? 1 : 0) +
+        (state.is_active ? 1 : 0) +
+        (state.verified ? 1 : 0) +
+        (state.created_by ? 1 : 0) +
+        (state.from ? 1 : 0) +
+        (state.to ? 1 : 0),
+);
 
 watch(
     () => props.initial,
@@ -113,7 +125,18 @@ defineExpose({ applyStatsFilter });
         <Input v-model="state.to" type="date" :aria-label="$t('user.filters.to')" />
         <div class="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
             <Button type="button" variant="outline" size="sm" @click="reset">{{ $t('user.filters.reset') }}</Button>
-            <Button type="submit" size="sm">{{ $t('common.search') }}</Button>
+            <Button type="submit" size="sm" class="relative">
+                {{ $t('common.search') }}
+                <Badge
+                    v-if="activeFilterCount"
+                    variant="destructive"
+                    class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px]"
+                    :aria-label="$t('user.filters.activeCount', { count: activeFilterCount })"
+                    :title="$t('user.filters.activeCount', { count: activeFilterCount })"
+                >
+                    {{ activeFilterCount }}
+                </Badge>
+            </Button>
         </div>
     </form>
 </template>

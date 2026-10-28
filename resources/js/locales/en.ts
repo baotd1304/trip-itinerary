@@ -57,6 +57,17 @@ export default {
             builtWith: 'Built with Laravel, Inertia, and shadcn-vue.',
         },
     },
+    adminSidebar: {
+        group: 'Navigation',
+        dashboard: 'Dashboard',
+        users: 'Users',
+        cars: 'Cars',
+        trips: 'Trips',
+        tripList: 'Trip list',
+        tripExport: 'Export trips',
+        expenses: 'Expenses',
+        clientHome: 'Client home',
+    },
     home: {
         pageTitle: 'Home',
         hero: {
@@ -185,6 +196,7 @@ export default {
             from: 'Created from',
             to: 'Created until',
             reset: 'Clear filters',
+            activeCount: '{count} filters active',
         },
         dialog: {
             createTitle: 'Add user',
@@ -247,6 +259,10 @@ export default {
 
     notifications: {
         title: 'Notifications',
+        viewAll: 'View all notifications',
+        showRecent: 'Show recent notifications',
+        loadingAll: 'Loading notifications…',
+        loadFailed: 'Could not load all notifications. Please try again.',
         unreadCount: '{count} unread',
         markAllRead: 'Mark all as read',
         markRead: 'Mark as read',

@@ -13,9 +13,30 @@ it('shares the authenticated user notification list and unread total', function 
         ->get(route('profile.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
+            ->where('notificationCount', 1)
             ->where('unreadNotificationCount', 1)
             ->has('notifications', 1)
             ->where('notifications.0.data.title_key', 'notifications.user.created'));
+});
+
+it('loads the authenticated user additional notifications in pages', function () {
+    Role::findOrCreate('driver', 'web');
+    $user = User::factory()->create()->assignRole('driver');
+    $otherUser = User::factory()->create(['name' => 'Other notification owner']);
+
+    foreach (range(1, 25) as $index) {
+        $user->notify(new UserAccountNotification('created', $user));
+    }
+
+    $otherUser->notify(new UserAccountNotification('created', $otherUser));
+
+    $this->actingAs($user)
+        ->getJson(route('notifications.more', ['page' => 2]))
+        ->assertSuccessful()
+        ->assertJsonCount(12, 'data')
+        ->assertJsonPath('next_page', 3)
+        ->assertJsonPath('data.0.data.title_key', 'notifications.user.created')
+        ->assertJsonMissing(['name' => $otherUser->name]);
 });
 
 it('allows a user to mark only their own notification as read', function () {

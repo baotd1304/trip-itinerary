@@ -228,8 +228,7 @@ class UserController extends Controller
         if (
             ! is_null($data['mark_verified'])
             && $data['mark_verified'] !== (bool) $user->email_verified_at
-            && ! ($data['mark_verified'] && $authUser->can('verifyEmail', $user))
-            && ! $authUser->hasRole('admin')
+            && ! $authUser->can('verifyEmail', $user)
         ) {
             abort(403);
         }

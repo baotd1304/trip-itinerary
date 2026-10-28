@@ -65,8 +65,9 @@ class HandleInertiaRequests extends Middleware
             ],
             'notifications' => Inertia::always(fn () => $request->user()
                 ? $request->user()->notifications()
-                    ->latest()
-                    ->limit(12)
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->limit(20)
                     ->get(['id', 'type', 'data', 'read_at', 'created_at'])
                     ->map(fn ($notification) => [
                         'id' => $notification->id,
@@ -76,6 +77,9 @@ class HandleInertiaRequests extends Middleware
                         'created_at' => $notification->created_at?->toISOString(),
                     ])
                 : collect()),
+            'notificationCount' => Inertia::always(fn () => $request->user()
+                ? $request->user()->notifications()->count()
+                : 0),
             'unreadNotificationCount' => Inertia::always(fn () => $request->user()
                 ? $request->user()->unreadNotifications()->count()
                 : 0),

@@ -71,12 +71,22 @@ const stickyLeftBody = computed(() => [
     'sticky left-0 z-20 bg-inherit',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
+const stickySecondLeftBody = computed(() => [
+    'sticky z-20 bg-inherit',
+    isVisible('select') ? 'left-10' : 'left-0',
+    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
 const stickyRightBody = computed(() => [
     'sticky right-0 z-20 bg-inherit',
     !atEnd.value ? 'shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyLeftHead = computed(() => [
     'sticky left-0 top-0 z-40 bg-gray-100 dark:bg-gray-800',
+    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
+]);
+const stickySecondLeftHead = computed(() => [
+    'sticky top-0 z-40 bg-gray-100 dark:bg-gray-800',
+    isVisible('select') ? 'left-10' : 'left-0',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyRightHead = computed(() => [
@@ -154,7 +164,9 @@ const fire = (type: UserActionType, user: AppUser) => emit('action', { type, use
                             scope="col"
                             class="whitespace-nowrap border-b border-r border-gray-300 bg-gray-100 px-2 py-2 text-center align-middle text-sm font-semibold dark:border-gray-700 dark:bg-gray-800"
                             :class="[
-                                column.key === 'select' || column.key === 'stt' ? stickyLeftHead : '',
+                                column.key === 'select' ? 'w-10 min-w-10 max-w-10' : '',
+                                column.key === 'select' ? stickyLeftHead : '',
+                                column.key === 'stt' ? stickySecondLeftHead : '',
                                 column.key === 'actions' ? stickyRightHead : '',
                             ]"
                         >
@@ -191,7 +203,7 @@ const fire = (type: UserActionType, user: AppUser) => emit('action', { type, use
                         <!-- Checkbox -->
                         <td
                             v-if="isVisible('select')"
-                            class="px-2 py-2 text-center align-middle"
+                            class="w-10 min-w-10 max-w-10 px-2 py-2 text-center align-middle"
                             :class="[cellBorder, stickyLeftBody]"
                         >
                             <Checkbox
@@ -206,7 +218,7 @@ const fire = (type: UserActionType, user: AppUser) => emit('action', { type, use
                         <td
                             v-if="isVisible('stt')"
                             class="px-2 py-2 text-center align-middle text-sm font-medium"
-                            :class="[cellBorder, isVisible('select') ? '' : stickyLeftBody]"
+                            :class="[cellBorder, stickySecondLeftBody]"
                         >
                             <button
                                 type="button"

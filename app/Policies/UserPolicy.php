@@ -47,8 +47,7 @@ class UserPolicy
         User $target,
         string $ability,
         string $adminAbility,
-    ): bool 
-    {
+    ): bool {
         if ($authUser->hasRole('admin')) {
             return true;
         }
@@ -119,7 +118,7 @@ class UserPolicy
     public function verifyEmail(User $authUser, User $target): bool
     {
         return ! $target->email_verified_at
-            && $this->hasPermission($authUser, 'verifyEmail');
+            && ($authUser->hasRole('admin') || $this->hasPermission($authUser, 'verifyEmail'));
     }
 
     public function resetPassword(User $authUser, User $target): bool

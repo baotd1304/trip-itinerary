@@ -26,6 +26,7 @@ declare module '@inertiajs/core' {
                 read_at: string | null;
                 created_at: string | null;
             }[];
+            notificationCount: number;
             unreadNotificationCount: number;
             [key: string]: unknown;
         };

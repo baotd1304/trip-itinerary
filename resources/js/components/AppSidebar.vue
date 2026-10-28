@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ArrowLeftToLine , LayoutGrid, Users, Car, Tickets, BanknoteArrowDown   } from '@lucide/vue';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -19,54 +21,55 @@ import { home } from '@/routes/';
 import admin from '@/routes/admin';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const { t } = useI18n();
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
-        title: 'Dashboard',
+        title: t('adminSidebar.dashboard'),
         href: admin.dashboard(),
         icon: LayoutGrid,
     },
     {
-        title: 'Users',
+        title: t('adminSidebar.users'),
         href: admin.users.index(),
         icon: Users,
     },
     {
-        title: 'Cars',
+        title: t('adminSidebar.cars'),
         href: admin.cars.index(),
         icon: Car,
     },
     {
-        title: 'Trips',
+        title: t('adminSidebar.trips'),
         href: admin.trips.index(),
         icon: Tickets,
         children: [
             {
-                title: 'List trips',
+                title: t('adminSidebar.tripList'),
                 href: admin.trips.index(),
                 icon: Tickets,
             },
             {
-                title: 'Export trip',
+                title: t('adminSidebar.tripExport'),
                 href: admin.trips.export.index(),
                 icon: Tickets,
             },
-        ]
+        ],
     },
     {
-        title: 'Expenses',
+        title: t('adminSidebar.expenses'),
         href: admin.expenses.index(),
-        icon: BanknoteArrowDown ,
+        icon: BanknoteArrowDown,
     },
-];
+]);
 
-const footerNavItems: NavItem[] = [
+const footerNavItems = computed<NavItem[]>(() => [
     {
-        title: 'Trang Client',
+        title: t('adminSidebar.clientHome'),
         href: home(),
-        icon: ArrowLeftToLine ,
+        icon: ArrowLeftToLine,
     },
-    
-];
+]);
 </script>
 
 <template>

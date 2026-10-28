@@ -19,6 +19,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(function () {
+    Route::get('notifications/more', [NotificationController::class, 'more'])
+        ->name('notifications.more');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])

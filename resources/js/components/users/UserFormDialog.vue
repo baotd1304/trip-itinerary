@@ -40,6 +40,40 @@ const form = useForm({
 
 const isView = computed(() => props.mode === 'view');
 const isCreate = computed(() => props.mode === 'create');
+const sortedRoles = computed(() => {
+    const roleOrder: Record<string, number> = {
+        admin: 0,
+        manager: 1,
+        editor: 2,
+        advisor: 3,
+        driver: 4,
+        partner: 5,
+    };
+
+    return [...props.roles].sort((first, second) => {
+        const orderDifference = (roleOrder[first.name] ?? Number.MAX_SAFE_INTEGER)
+            - (roleOrder[second.name] ?? Number.MAX_SAFE_INTEGER);
+
+        return orderDifference || first.name.localeCompare(second.name);
+    });
+});
+const permissionGroups = computed(() => {
+    const groups = new Map<string, PermissionRef[]>();
+
+    for (const permission of props.permissions) {
+        const [groupName = 'other'] = permission.name.split('.');
+        const groupPermissions = groups.get(groupName) ?? [];
+        groupPermissions.push(permission);
+        groups.set(groupName, groupPermissions);
+    }
+
+    return [...groups.entries()]
+        .sort(([first], [second]) => first.localeCompare(second))
+        .map(([name, groupPermissions]) => ({
+            name,
+            permissions: groupPermissions.sort((first, second) => first.name.localeCompare(second.name)),
+        }));
+});
 const canEditAccess = computed(() =>
     props.canAssignRole === true && (isCreate.value || props.user?.can?.assignRole === true),
 );
@@ -115,7 +149,7 @@ const submit = () => {
 
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
-        <DialogContent class="sm:max-w-xl">
+        <DialogContent class="flex max-h-[90vh] flex-col sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle>
                     {{ isCreate ? $t('user.dialog.createTitle') : isView ? $t('user.dialog.viewTitle') : $t('user.dialog.editTitle') }}
@@ -123,7 +157,7 @@ const submit = () => {
                 <DialogDescription>{{ $t('user.dialog.description') }}</DialogDescription>
             </DialogHeader>
 
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid flex-1 gap-4 overflow-y-auto px-1 sm:grid-cols-2">
                 <div class="space-y-1.5">
                     <Label for="u-name">{{ $t('user.fields.name') }}</Label>
                     <Input id="u-name" v-model="form.name" :disabled="isView" maxlength="255" />
@@ -160,18 +194,19 @@ const submit = () => {
 
                 <div class="space-y-1.5 sm:col-span-2">
                     <Label>{{ $t('user.fields.roles') }}</Label>
-                    <div class="flex flex-wrap gap-3 rounded-md border p-3">
+                    <div class="grid grid-cols-2 gap-1.5 rounded-md border p-2 sm:gap-2 sm:p-3">
                         <label
-                            v-for="role in roles"
+                            v-for="role in sortedRoles"
                             :key="role.id"
-                            class="flex cursor-pointer items-center gap-2 text-sm"
+                            class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md border p-2 text-xs transition-colors hover:bg-muted/50 sm:gap-3 sm:p-3 sm:text-sm"
+                            :class="form.roles.includes(role.name) ? 'border-primary bg-primary/5' : 'border-border'"
                         >
                             <Checkbox
                                 :model-value="form.roles.includes(role.name)"
                                 :disabled="isView || !canEditAccess"
                                 @update:model-value="(v: boolean | 'indeterminate') => toggleRole(role.name, v === true)"
                             />
-                            {{ $t(`role.${role.name}`) }}
+                            <span class="truncate">{{ $t(`role.${role.name}`) }}</span>
                         </label>
                     </div>
                     <p v-if="form.errors.roles" class="text-xs text-destructive">{{ form.errors.roles }}</p>
@@ -179,23 +214,35 @@ const submit = () => {
 
                 <div v-if="canEditAccess" class="space-y-1.5 sm:col-span-2">
                     <Label>{{ $t('user.fields.directPermissions') }}</Label>
-                    <div class="flex max-h-40 flex-wrap gap-3 overflow-y-auto rounded-md border p-3">
-                        <label
-                            v-for="permission in permissions"
-                            :key="permission.id"
-                            class="flex cursor-pointer items-center gap-2 text-sm"
+                    <div class="max-h-[35vh] space-y-3 overflow-y-auto rounded-md border p-2 sm:max-h-64 sm:space-y-4 sm:p-3">
+                        <section
+                            v-for="group in permissionGroups"
+                            :key="group.name"
+                            class="space-y-1.5"
                         >
-                            <Checkbox
-                                :model-value="form.permissions.includes(permission.name)"
-                                :disabled="isView"
-                                @update:model-value="(value: boolean | 'indeterminate') => {
-                                    form.permissions = value === true
-                                        ? [...new Set([...form.permissions, permission.name])]
-                                        : form.permissions.filter((name) => name !== permission.name);
-                                }"
-                            />
-                            {{ permission.name }}
-                        </label>
+                            <h3 class="border-b pb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {{ group.name }}
+                            </h3>
+                            <div class="grid gap-1 sm:grid-cols-2 sm:gap-2">
+                                <label
+                                    v-for="permission in group.permissions"
+                                    :key="permission.id"
+                                    class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md border border-transparent px-1.5 py-1 text-xs transition-colors hover:border-border hover:bg-muted/50 sm:px-2 sm:py-1.5 sm:text-sm"
+                                    :class="form.permissions.includes(permission.name) ? 'bg-primary/5 text-foreground' : ''"
+                                >
+                                    <Checkbox
+                                        :model-value="form.permissions.includes(permission.name)"
+                                        :disabled="isView"
+                                        @update:model-value="(value: boolean | 'indeterminate') => {
+                                            form.permissions = value === true
+                                                ? [...new Set([...form.permissions, permission.name])]
+                                                : form.permissions.filter((name) => name !== permission.name);
+                                        }"
+                                    />
+                                    <span class="truncate">{{ permission.name }}</span>
+                                </label>
+                            </div>
+                        </section>
                         <p v-if="!permissions.length" class="text-sm text-muted-foreground">
                             {{ $t('user.accessControl.noPermissions') }}
                         </p>
@@ -204,12 +251,12 @@ const submit = () => {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <Switch id="u-active" v-model:checked="form.is_active" :disabled="isView || !canSetActive" />
+                    <Switch id="u-active" v-model="form.is_active" :disabled="isView || !canSetActive" />
                     <Label for="u-active">{{ $t('user.fields.isActive') }}</Label>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <Switch id="u-verified" v-model:checked="form.mark_verified" :disabled="isView || !canSetVerified" />
+                    <Switch id="u-verified" v-model="form.mark_verified" :disabled="isView || !canSetVerified" />
                     <Label for="u-verified">{{ $t('user.fields.markVerified') }}</Label>
                 </div>
 

@@ -31,6 +31,40 @@ const pendingDelete = ref<{ type: 'role' | 'permission'; id: number; name: strin
 const editingAdminRole = computed(() =>
     props.roles.find((role) => role.id === editingRoleId.value)?.name === 'admin',
 );
+const sortedRoles = computed(() => {
+    const roleOrder: Record<string, number> = {
+        admin: 0,
+        manager: 1,
+        editor: 2,
+        advisor: 3,
+        driver: 4,
+        partner: 5,
+    };
+
+    return [...props.roles].sort((first, second) => {
+        const orderDifference = (roleOrder[first.name] ?? Number.MAX_SAFE_INTEGER)
+            - (roleOrder[second.name] ?? Number.MAX_SAFE_INTEGER);
+
+        return orderDifference || first.name.localeCompare(second.name);
+    });
+});
+const permissionGroups = computed(() => {
+    const groups = new Map<string, PermissionRef[]>();
+
+    for (const permission of props.permissions) {
+        const [groupName = 'other'] = permission.name.split('.');
+        const groupPermissions = groups.get(groupName) ?? [];
+        groupPermissions.push(permission);
+        groups.set(groupName, groupPermissions);
+    }
+
+    return [...groups.entries()]
+        .sort(([first], [second]) => first.localeCompare(second))
+        .map(([name, groupPermissions]) => ({
+            name,
+            permissions: groupPermissions.sort((first, second) => first.name.localeCompare(second.name)),
+        }));
+});
 
 const resetRoleForm = () => {
     editingRoleId.value = null;
@@ -169,27 +203,27 @@ return;
                 <DialogDescription>{{ $t('user.accessControl.description') }}</DialogDescription>
             </DialogHeader>
 
-            <div class="grid gap-6 lg:grid-cols-2">
-                <section class="space-y-4">
+            <div class="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                <section class="space-y-3 sm:space-y-4">
                     <div class="space-y-1">
                         <h3 class="font-semibold">{{ $t('user.accessControl.roles') }}</h3>
                         <p class="text-sm text-muted-foreground">{{ $t('user.accessControl.roleDescription') }}</p>
                     </div>
 
-                    <div class="space-y-2 rounded-md border p-3">
+                    <div class="max-h-40 space-y-1.5 overflow-y-auto rounded-md border p-2 sm:max-h-56 sm:space-y-2 sm:p-3">
                         <div
-                            v-for="role in roles"
+                            v-for="role in sortedRoles"
                             :key="role.id"
-                            class="flex items-center justify-between gap-2"
+                            class="flex items-center justify-between gap-2 rounded-md border p-2"
                         >
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-medium">{{ role.name }}</p>
+                                <p class="truncate text-xs font-medium sm:text-sm">{{ role.name }}</p>
                                 <p class="text-xs text-muted-foreground">
                                     {{ $t('user.accessControl.permissionCount', { count: role.permissions?.length ?? 0 }) }}
                                 </p>
                             </div>
                             <div class="flex shrink-0 gap-1">
-                                <Button type="button" variant="ghost" size="sm" @click="editRole(role)">
+                                <Button type="button" variant="ghost" size="sm" class="h-8 px-2 text-xs" @click="editRole(role)">
                                     {{ $t('common.edit') }}
                                 </Button>
                                 <Button
@@ -197,7 +231,7 @@ return;
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    class="text-destructive"
+                                    class="h-8 px-2 text-xs text-destructive"
                                     :disabled="deletingId !== null"
                                     @click="deleteRole(role)"
                                 >
@@ -210,7 +244,7 @@ return;
                         </p>
                     </div>
 
-                    <form class="space-y-3 rounded-md border p-3" @submit.prevent="submitRole">
+                    <form class="space-y-3 rounded-md border p-2.5 sm:p-3" @submit.prevent="submitRole">
                         <div class="space-y-1.5">
                             <Label for="access-role-name">{{ $t('user.accessControl.roleName') }}</Label>
                             <Input id="access-role-name" v-model="roleForm.name" maxlength="100" :disabled="editingAdminRole" />
@@ -221,18 +255,30 @@ return;
                         </div>
                         <div class="space-y-1.5">
                             <Label>{{ $t('user.accessControl.permissions') }}</Label>
-                            <div class="flex max-h-44 flex-wrap gap-3 overflow-y-auto rounded-md border p-3">
-                                <label
-                                    v-for="permission in permissions"
-                                    :key="permission.id"
-                                    class="flex cursor-pointer items-center gap-2 text-sm"
+                            <div class="max-h-[35vh] space-y-3 overflow-y-auto rounded-md border p-2 sm:max-h-64 sm:space-y-4 sm:p-3">
+                                <section
+                                    v-for="group in permissionGroups"
+                                    :key="group.name"
+                                    class="space-y-1.5"
                                 >
-                                    <Checkbox
-                                        :model-value="roleForm.permissions.includes(permission.name)"
-                                        @update:model-value="(checked) => togglePermission(permission.name, checked === true)"
-                                    />
-                                    {{ permission.name }}
-                                </label>
+                                    <h4 class="border-b pb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                                        {{ group.name }}
+                                    </h4>
+                                    <div class="grid gap-1 sm:grid-cols-2 sm:gap-2">
+                                        <label
+                                            v-for="permission in group.permissions"
+                                            :key="permission.id"
+                                            class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md border border-transparent px-1.5 py-1 text-xs transition-colors hover:border-border hover:bg-muted/50 sm:px-2 sm:py-1.5 sm:text-sm"
+                                            :class="roleForm.permissions.includes(permission.name) ? 'bg-primary/5 text-foreground' : ''"
+                                        >
+                                            <Checkbox
+                                                :model-value="roleForm.permissions.includes(permission.name)"
+                                                @update:model-value="(checked) => togglePermission(permission.name, checked === true)"
+                                            />
+                                            <span class="truncate">{{ permission.name }}</span>
+                                        </label>
+                                    </div>
+                                </section>
                                 <p v-if="!permissions.length" class="text-sm text-muted-foreground">
                                     {{ $t('user.accessControl.noPermissions') }}
                                 </p>
@@ -250,41 +296,52 @@ return;
                     </form>
                 </section>
 
-                <section class="space-y-4">
+                <section class="space-y-3 sm:space-y-4">
                     <div class="space-y-1">
                         <h3 class="font-semibold">{{ $t('user.accessControl.permissions') }}</h3>
                         <p class="text-sm text-muted-foreground">{{ $t('user.accessControl.permissionDescription') }}</p>
                     </div>
 
-                    <div class="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
-                        <div
-                            v-for="permission in permissions"
-                            :key="permission.id"
-                            class="flex items-center justify-between gap-2"
+                    <div class="max-h-[35vh] space-y-3 overflow-y-auto rounded-md border p-2 sm:max-h-80 sm:space-y-4 sm:p-3">
+                        <section
+                            v-for="group in permissionGroups"
+                            :key="group.name"
+                            class="space-y-1.5"
                         >
-                            <span class="min-w-0 truncate text-sm">{{ permission.name }}</span>
-                            <div class="flex shrink-0 gap-1">
-                                <Button type="button" variant="ghost" size="sm" @click="editPermission(permission)">
-                                    {{ $t('common.edit') }}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="text-destructive"
-                                    :disabled="deletingId !== null"
-                                    @click="deletePermission(permission)"
+                            <h4 class="border-b pb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {{ group.name }}
+                            </h4>
+                            <div class="space-y-0.5">
+                                <div
+                                    v-for="permission in group.permissions"
+                                    :key="permission.id"
+                                    class="flex items-center justify-between gap-1 rounded-md px-1.5 py-1 hover:bg-muted/50 sm:gap-2 sm:px-2 sm:py-1.5"
                                 >
-                                    {{ $t('common.delete') }}
-                                </Button>
+                                    <span class="min-w-0 truncate text-xs sm:text-sm">{{ permission.name }}</span>
+                                    <div class="flex shrink-0 gap-1">
+                                        <Button type="button" variant="ghost" size="sm" class="h-8 px-2 text-xs" @click="editPermission(permission)">
+                                            {{ $t('common.edit') }}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="h-8 px-2 text-xs text-destructive"
+                                            :disabled="deletingId !== null"
+                                            @click="deletePermission(permission)"
+                                        >
+                                            {{ $t('common.delete') }}
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </section>
                         <p v-if="!permissions.length" class="text-sm text-muted-foreground">
                             {{ $t('user.accessControl.noPermissions') }}
                         </p>
                     </div>
 
-                    <form class="space-y-3 rounded-md border p-3" @submit.prevent="submitPermission">
+                    <form class="space-y-3 rounded-md border p-2.5 sm:p-3" @submit.prevent="submitPermission">
                         <div class="space-y-1.5">
                             <Label for="access-permission-name">{{ $t('user.accessControl.permissionName') }}</Label>
                             <Input id="access-permission-name" v-model="permissionForm.name" maxlength="100" />

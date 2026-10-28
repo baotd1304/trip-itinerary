@@ -57,6 +57,17 @@ export default {
             builtWith: 'พัฒนาด้วย Laravel, Inertia และ shadcn-vue',
         },
     },
+    adminSidebar: {
+        group: 'เมนูนำทาง',
+        dashboard: 'ภาพรวม',
+        users: 'ผู้ใช้',
+        cars: 'รถยนต์',
+        trips: 'การเดินทาง',
+        tripList: 'รายการเดินทาง',
+        tripExport: 'ส่งออกการเดินทาง',
+        expenses: 'ค่าใช้จ่าย',
+        clientHome: 'หน้าลูกค้า',
+    },
     home: {
         pageTitle: 'หน้าหลัก',
         hero: {
@@ -185,6 +196,7 @@ export default {
             from: 'สร้างตั้งแต่',
             to: 'สร้างจนถึง',
             reset: 'ล้างตัวกรอง',
+            activeCount: 'ใช้ตัวกรองอยู่ {count} รายการ',
         },
         dialog: {
             createTitle: 'เพิ่มผู้ใช้',
@@ -247,6 +259,10 @@ export default {
 
     notifications: {
         title: 'การแจ้งเตือน',
+        viewAll: 'ดูการแจ้งเตือนทั้งหมด',
+        showRecent: 'แสดงการแจ้งเตือนล่าสุด',
+        loadingAll: 'กำลังโหลดการแจ้งเตือน…',
+        loadFailed: 'โหลดการแจ้งเตือนทั้งหมดไม่สำเร็จ โปรดลองอีกครั้ง',
         unreadCount: 'ยังไม่อ่าน {count} รายการ',
         markAllRead: 'ทำเครื่องหมายว่าอ่านทั้งหมดแล้ว',
         markRead: 'ทำเครื่องหมายว่าอ่านแล้ว',

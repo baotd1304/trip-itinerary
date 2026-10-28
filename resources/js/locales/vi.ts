@@ -57,6 +57,17 @@ export default {
             builtWith: 'Xây dựng với Laravel, Inertia và shadcn-vue.',
         },
     },
+    adminSidebar: {
+        group: 'Điều hướng',
+        dashboard: 'Tổng quan',
+        users: 'Người dùng',
+        cars: 'Xe',
+        trips: 'Chuyến đi',
+        tripList: 'Danh sách chuyến đi',
+        tripExport: 'Xuất chuyến đi',
+        expenses: 'Chi phí',
+        clientHome: 'Trang khách hàng',
+    },
     home: {
         pageTitle: 'Trang chủ',
         hero: {
@@ -185,6 +196,7 @@ export default {
             from: 'Tạo từ ngày',
             to: 'Tạo đến ngày',
             reset: 'Xóa bộ lọc',
+            activeCount: 'Đang áp dụng {count} bộ lọc',
         },
         dialog: {
             createTitle: 'Thêm người dùng',
@@ -247,6 +259,10 @@ export default {
 
     notifications: {
         title: 'Thông báo',
+        viewAll: 'Xem tất cả thông báo',
+        showRecent: 'Hiển thị thông báo gần đây',
+        loadingAll: 'Đang tải thông báo…',
+        loadFailed: 'Không thể tải tất cả thông báo. Vui lòng thử lại.',
         unreadCount: '{count} chưa đọc',
         markAllRead: 'Đánh dấu tất cả đã đọc',
         markRead: 'Đánh dấu đã đọc',

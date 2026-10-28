@@ -188,22 +188,6 @@ return;
                     >
                         {{ $t('user.accessControl.manage') }}
                     </Button>
-                    <!-- Thanh thao tác hàng loạt -->
-                    <template v-if="selected.length">
-                        <span class="text-xs text-muted-foreground">
-                            {{ $t('common.selectedCount', { count: selected.length }) }}
-                        </span>
-                        <Button size="sm" variant="outline" :disabled="bulkProcessing" @click="openBulk('activate')">
-                            {{ $t('user.actions.activate') }}
-                        </Button>
-                        <Button size="sm" variant="outline" :disabled="bulkProcessing" @click="openBulk('deactivate')">
-                            {{ $t('user.actions.deactivate') }}
-                        </Button>
-                        <Button size="sm" variant="destructive" :disabled="bulkProcessing" @click="openBulk('delete')">
-                            {{ $t('common.delete') }}
-                        </Button>
-                    </template>
-
                     <Button v-if="props.can?.create" @click="openCreate">
                         {{ $t('user.create') }}
                     </Button>
@@ -220,15 +204,34 @@ return;
                 :creators="creators"
                 :only="['users', 'usersMeta', 'stats', 'filters']"
             />
-
-            <p class="mb-2 text-xs text-muted-foreground">
-                <template v-if="totalCount">
-                    {{ $t('common.resultRange', { from: rangeFrom, to: rangeTo, total: totalCount }) }}
+            <div class="flex flex-wrap items-center justify-between gap-2 py-2">
+                <p class="mb-2 text-xs text-muted-foreground">
+                    <template v-if="totalCount">
+                        {{ $t('common.resultRange', { from: rangeFrom, to: rangeTo, total: totalCount }) }}
+                    </template>
+                    <template v-else>
+                        {{ $t('common.resultEmpty') }}
+                    </template>
+                    
+                </p>
+                <!-- Thanh thao tác hàng loạt -->
+                <template v-if="selected.length">
+                    <p class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs text-muted-foreground">
+                            {{ $t('common.selectedCount', { count: selected.length }) }}
+                        </span>
+                        <Button size="xs" variant="outline" :disabled="bulkProcessing" @click="openBulk('activate')">
+                            {{ $t('user.actions.activate') }}
+                        </Button>
+                        <Button size="xs" variant="outline" :disabled="bulkProcessing" @click="openBulk('deactivate')">
+                            {{ $t('user.actions.deactivate') }}
+                        </Button>
+                        <Button size="xs" variant="destructive" :disabled="bulkProcessing" @click="openBulk('delete')">
+                            {{ $t('common.delete') }}
+                        </Button>
+                    </p>
                 </template>
-                <template v-else>
-                    {{ $t('common.resultEmpty') }}
-                </template>
-            </p>
+            </div>
 
             <UserTable
                 v-model:selected="selected"

@@ -22,7 +22,7 @@ it('prevents users from deleting, deactivating, or changing their own roles', fu
 
 it('checks the matching permission when managing regular and admin users', function () {
     $actor = User::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->create(['email_verified_at' => null]);
     $admin = createUserManagementAdmin();
 
     foreach ([
@@ -34,6 +34,7 @@ it('checks the matching permission when managing regular and admin users', funct
         'users.toggle-admin-active',
         'users.assign-role',
         'users.assign-role-admin',
+        'users.verify-email',
     ] as $permission) {
         Permission::findOrCreate($permission, 'web');
     }
@@ -43,11 +44,13 @@ it('checks the matching permission when managing regular and admin users', funct
         'users.delete',
         'users.toggle-active',
         'users.assign-role',
+        'users.verify-email',
     ]);
 
     expect(Gate::forUser($actor)->allows('update', $user))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('delete', $user))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('toggleActive', $user))->toBeTrue()
+        ->and(Gate::forUser($actor)->allows('verifyEmail', $user))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('assignRole', $user))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('update', $admin))->toBeFalse()
         ->and(Gate::forUser($actor)->allows('delete', $admin))->toBeFalse()
@@ -65,6 +68,56 @@ it('checks the matching permission when managing regular and admin users', funct
         ->and(Gate::forUser($actor)->allows('delete', $admin))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('toggleActive', $admin))->toBeTrue()
         ->and(Gate::forUser($actor)->allows('assignRole', $admin))->toBeTrue();
+});
+
+it('allows authorized users to verify only accounts with an unverified email', function () {
+    $manager = User::factory()->create()->assignRole(
+        Role::findOrCreate('manager', 'web'),
+    );
+    $manager->givePermissionTo([
+        Permission::findOrCreate('users.update', 'web'),
+        Permission::findOrCreate('users.toggle-active', 'web'),
+        Permission::findOrCreate('users.verify-email', 'web'),
+    ]);
+    $user = User::factory()->create([
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+
+    expect(Gate::forUser($manager)->allows('verifyEmail', $user))->toBeTrue();
+
+    $this->actingAs($manager)
+        ->put(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'is_active' => false,
+            'mark_verified' => true,
+        ])
+        ->assertRedirect();
+
+    $user->refresh();
+
+    expect($user->is_active)->toBeFalse()
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and(Gate::forUser($manager)->allows('verifyEmail', $user))->toBeFalse();
+
+    $this->put(route('admin.users.update', $user), [
+        'name' => $user->name,
+        'email' => $user->email,
+        'phone' => $user->phone,
+        'is_active' => true,
+        'mark_verified' => false,
+    ])->assertForbidden();
+
+    $user->refresh();
+
+    expect($user->is_active)->toBeFalse()
+        ->and($user->email_verified_at)->not->toBeNull();
+
+    $admin = createUserManagementAdmin();
+
+    expect(Gate::forUser($admin)->allows('verifyEmail', $user))->toBeFalse();
 });
 
 it('allows an administrator to create users with roles and direct permissions', function () {
