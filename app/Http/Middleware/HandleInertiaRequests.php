@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Inertia\Middleware;
 use Inertia\Inertia;
+use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -39,12 +39,13 @@ class HandleInertiaRequests extends Middleware
     {
         $flash = [
             'success' => $request->session()->get('success'),
-            'error'   => $request->session()->get('error'),
+            'error' => $request->session()->get('error'),
             'warning' => $request->session()->get('warning'),
-            'info'    => $request->session()->get('info'),
+            'info' => $request->session()->get('info'),
         ];
 
-        $hasMessage = collect($flash)->filter()->isNotEmpty();  
+        $hasMessage = collect($flash)->filter()->isNotEmpty();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -54,16 +55,36 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     // Ép về array để đảm bảo bên Vue nhận được mảng thuần
-                    'roles'       => $request->user()->getRoleNames()->values()->toArray(),
+                    'roles' => $request->user()->getRoleNames()->values()->toArray(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name')->values()->toArray(),
                     // Hoặc share cả hai dạng
                     'can' => $request->user()->getAllPermissions()->pluck('name')
-                        ->mapWithKeys(fn($permission) => [$permission => true])
+                        ->mapWithKeys(fn ($permission) => [$permission => true])
                         ->toArray(),
                 ] : null,
             ],
+            'notifications' => Inertia::always(fn () => $request->user()
+                ? $request->user()->notifications()
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->limit(20)
+                    ->get(['id', 'type', 'data', 'read_at', 'created_at'])
+                    ->map(fn ($notification) => [
+                        'id' => $notification->id,
+                        'type' => class_basename($notification->type),
+                        'data' => $notification->data,
+                        'read_at' => $notification->read_at?->toISOString(),
+                        'created_at' => $notification->created_at?->toISOString(),
+                    ])
+                : collect()),
+            'notificationCount' => Inertia::always(fn () => $request->user()
+                ? $request->user()->notifications()->count()
+                : 0),
+            'unreadNotificationCount' => Inertia::always(fn () => $request->user()
+                ? $request->user()->unreadNotifications()->count()
+                : 0),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-             // always() => LUÔN có mặt trong mọi response, kể cả partial reload.
+            // always() => LUÔN có mặt trong mọi response, kể cả partial reload.
             // Khi không có message, flash.id = null => FE bỏ qua hoàn toàn.
             // 'flash' => Inertia::always([
             //     'id'      => $hasMessage ? (string) Str::uuid() : null,
@@ -76,7 +97,7 @@ class HandleInertiaRequests extends Middleware
             //     'key' => fn () => session('flash.key'),
             //     'params' => fn () => session('flash.params', []),
             // ])
-            
+
             // LUÔN gửi (kể cả partial reload) nhưng sẽ là null nếu không có gì
             'flash' => Inertia::always(fn () => $this->flashPayload($request)),
         ];
@@ -92,7 +113,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $session  = $request->session();
+        $session = $request->session();
         $messages = [];
 
         /* ----- 1) Dạng chuẩn mới: ->with('flash', Flash::success('key', [...])) ----- */
@@ -102,12 +123,12 @@ class HandleInertiaRequests extends Middleware
             }
 
             $messages[] = [
-                'type'    => in_array($item['type'] ?? '', ['success', 'error', 'warning', 'info'], true)
+                'type' => in_array($item['type'] ?? '', ['success', 'error', 'warning', 'info'], true)
                     ? $item['type']
                     : 'success',
-                'key'     => $item['key']     ?? null,
+                'key' => $item['key'] ?? null,
                 'message' => $item['message'] ?? null,   // text thô (nếu có)
-                'params'  => (object) ($item['params'] ?? []),
+                'params' => (object) ($item['params'] ?? []),
             ];
         }
 
@@ -117,10 +138,10 @@ class HandleInertiaRequests extends Middleware
 
             if (filled($raw) && is_string($raw)) {
                 $messages[] = [
-                    'type'    => $type,
-                    'key'     => null,
+                    'type' => $type,
+                    'key' => null,
                     'message' => $raw,
-                    'params'  => (object) [],
+                    'params' => (object) [],
                 ];
             }
         }
@@ -133,9 +154,8 @@ class HandleInertiaRequests extends Middleware
         $session->forget(['flash', 'success', 'error', 'warning', 'info']);
 
         return [
-            'id'       => (string) Str::uuid(),
+            'id' => (string) Str::uuid(),
             'messages' => array_values($messages),
         ];
     }
-
 }

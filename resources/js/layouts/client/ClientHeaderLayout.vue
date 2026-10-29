@@ -6,6 +6,7 @@ import type { FunctionalComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppLogo from '@/components/AppLogo.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
+import NotificationBell from '@/components/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -200,6 +201,7 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
             </nav>
         
             <div class="ml-auto flex items-center gap-2">
+                <NotificationBell v-if="auth.user" placement="header" />
                 <LocaleSwitcher />
                 <Button variant="ghost" size="icon" @click="toggleAppearance">
                     <Sun v-if="appearance === 'dark'" class="size-5" />
@@ -211,7 +213,6 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                     <Button as-child variant="ghost" class="hidden md:inline-flex">
                         <Link :href="admin.dashboard()">{{ $t('clientLayout.adminDashboard') }}</Link>
                     </Button>
-
                     <DropdownMenu>
                         <DropdownMenuTrigger as-child>
                             <Button variant="ghost" size="icon" class="rounded-full">

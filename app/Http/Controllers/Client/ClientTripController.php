@@ -9,6 +9,7 @@ use App\Models\Trip;
 use App\Models\TripExpense;
 use App\Models\TripImage;
 use App\Models\User;
+use App\Notifications\TripSubmitted;
 use App\Services\CloudinaryService;
 use App\Support\Flash;
 use Closure;
@@ -229,6 +230,8 @@ class ClientTripController extends Controller
             return $trip;
         });
 
+        $trip->load('advisor')->advisor?->notify(new TripSubmitted($trip));
+
         return redirect()
             ->route('client.trips.index')
             ->with('flash', Flash::success('trip.flash.created', [
@@ -284,6 +287,8 @@ class ClientTripController extends Controller
         foreach ($orphans as $publicId) {
             $this->cloudinary->destroy($publicId);
         }
+
+        $trip->refresh()->load('advisor')->advisor?->notify(new TripSubmitted($trip));
 
         return redirect()->back()
             ->with('flash', $this->updateMessage($trip, $previousStatus, $isAdmin));

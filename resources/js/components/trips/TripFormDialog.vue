@@ -115,7 +115,7 @@ const backToView = () => {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="flex max-h-[92vh] flex-col sm:max-w-[760px]">
+        <DialogContent class="flex max-h-[90vh] flex-col sm:max-w-[760px]">
             <DialogHeader>
                 <DialogTitle class="flex flex-wrap items-center gap-2">
                     <span>{{ title }}</span>

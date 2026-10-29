@@ -2,11 +2,10 @@
 
 namespace App\Notifications;
 
+use App\Models\Trip;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Trip;
 
 class TripReviewed extends Notification
 {
@@ -45,14 +44,16 @@ class TripReviewed extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $confirmed = $this->trip->status === Trip::STATUS_CONFIRMED;
+
         return [
-            'type'       => 'trip_reviewed',
-            'trip_id'    => $this->trip->id,
-            'title'      => $this->trip->status === Trip::STATUS_CONFIRMED
-                ? "Chuyến #{$this->trip->id} đã được xác nhận"
-                : "Chuyến #{$this->trip->id} bị từ chối — cần chỉnh sửa lại",
-            'reason' => $this->trip->reject_reason,
-            'url'        => route('client.trips.index'),
+            'type' => $confirmed ? 'trip_confirmed' : 'trip_rejected',
+            'title_key' => $confirmed
+                ? 'notifications.trip.confirmed'
+                : 'notifications.trip.rejected',
+            'title_params' => ['id' => $this->trip->id],
+            'details' => $this->trip->reject_reason,
+            'url' => route('client.trips.index'),
         ];
     }
 }

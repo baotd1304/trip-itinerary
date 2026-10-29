@@ -2,11 +2,10 @@
 
 namespace App\Notifications;
 
+use App\Models\TripReopenRequest;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\TripReopenRequest;
 
 class ReopenRequestSubmitted extends Notification
 {
@@ -46,12 +45,11 @@ class ReopenRequestSubmitted extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'type'       => 'reopen_request_submitted',
-            'trip_id'    => $this->request->trip_id,
-            'request_id' => $this->request->id,
-            'title'      => "Tài xế xin mở khoá chuyến #{$this->request->trip_id}",
-            'reason'     => $this->request->reason,
-            'url'        => route('client.trips.index'),
+            'type' => 'reopen_request_submitted',
+            'title_key' => 'notifications.trip.reopenSubmitted',
+            'title_params' => ['id' => $this->request->trip_id],
+            'details' => $this->request->reason,
+            'url' => route('client.trips.index'),
         ];
     }
 }

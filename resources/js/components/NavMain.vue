@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronRight } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
 import {
     Collapsible,
     CollapsibleContent,
@@ -23,11 +24,12 @@ defineProps<{
 }>();
 
 const page = usePage();
+const { t } = useI18n();
 </script>
 
 <template>
     <SidebarGroup>
-        <SidebarGroupLabel>Platform</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('adminSidebar.group') }}</SidebarGroupLabel>
         <SidebarMenu>
             <template v-for="item in items" :key="item.title">
                 <!-- Item có children -> Collapsible -->

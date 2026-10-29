@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccessControlController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\CloudinaryUploadController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -11,12 +12,21 @@ use App\Http\Controllers\Client\ClientCloudinaryUploadController;
 use App\Http\Controllers\Client\ClientTripController;
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\TripReopenRequestController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TripReopenReviewController;
 use App\Http\Controllers\TripReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(function () {
+    Route::get('notifications/more', [NotificationController::class, 'more'])
+        ->name('notifications.more');
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->whereUuid('notification')
+        ->name('notifications.read');
+
     Route::get('/', [HomeController::class, 'index'])->name('home');
 
     Route::get('trips', [ClientTripController::class, 'index'])
@@ -67,50 +77,92 @@ Route::middleware(['auth', 'role:driver|advisor|admin|editor|manager'])->group(f
 
 });
 
-Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('admin.dashboard');
+Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    // user routes
-    Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
-    Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
-    Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
-    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        /* ---------- Users CRUD ---------- */
+        Route::get('users', [UserController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\User')
+            ->name('users.index');
+        Route::post('users', [UserController::class, 'store'])
+            ->middleware('can:create,App\Models\User')
+            ->name('users.store');
+        Route::put('users/{user}', [UserController::class, 'update'])
+            ->middleware('can:update,user')
+            ->name('users.update');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])
+            ->middleware('can:delete,user')
+            ->name('users.destroy');
+        /* ---------- Hành động nhanh ---------- */
+        // ĐẶT TRƯỚC route có {user} nếu có thêm segment tĩnh sau này
+        Route::post('users/bulk', [UserController::class, 'bulk'])
+            ->middleware('throttle:20,1')
+            ->name('users.bulk');
 
-    // car routes
-    Route::get('/cars', [CarController::class, 'index'])->name('admin.cars.index');
-    Route::post('/cars', [CarController::class, 'store'])->name('admin.cars.store');
-    Route::put('/cars/{id}', [CarController::class, 'update'])->name('admin.cars.update');
-    Route::delete('/cars/{id}', [CarController::class, 'destroy'])->name('admin.cars.destroy');
+        Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])
+            ->middleware('can:toggleActive,user')
+            ->name('users.toggle-active');
 
-    // expense routes
-    Route::get('/expenses', [ExpenseController::class, 'index'])->name('admin.expenses.index');
-    Route::post('/expenses', [ExpenseController::class, 'store'])->name('admin.expenses.store');
-    Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('admin.expenses.update');
-    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
+        Route::patch('users/{user}/verify-email', [UserController::class, 'verifyEmail'])
+            ->middleware('can:verifyEmail,user')
+            ->name('users.verify-email');
 
-    // trip routes
-    Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
-        ->name('admin.trips.cloudinary-signature');
-    Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
-        ->name('admin.trips.uploaded-image.discard');
+        Route::post('roles', [AccessControlController::class, 'storeRole'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('roles.store');
+        Route::put('roles/{role}', [AccessControlController::class, 'updateRole'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('roles.update');
+        Route::delete('roles/{role}', [AccessControlController::class, 'destroyRole'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('roles.destroy');
 
-    Route::get('/trips', [TripController::class, 'index'])->name('admin.trips.index');
-    Route::post('/trips', [TripController::class, 'store'])->name('admin.trips.store');
-    Route::put('/trips/{trip}', [TripController::class, 'update'])->name('admin.trips.update');
-    Route::delete('/trips/{trip}', [TripController::class, 'destroy'])->name('admin.trips.destroy');
-    Route::get('/trips/export', [TripExportController::class, 'index'])->name('admin.trips.export.index');
-    Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('admin.trips.export.download');
+        Route::post('permissions', [AccessControlController::class, 'storePermission'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('permissions.store');
+        Route::put('permissions/{permission}', [AccessControlController::class, 'updatePermission'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('permissions.update');
+        Route::delete('permissions/{permission}', [AccessControlController::class, 'destroyPermission'])
+            ->middleware('can:manageAccessControl,App\Models\User')
+            ->name('permissions.destroy');
 
-    Route::patch('/trips/{trip}/confirm', [TripReviewController::class, 'confirm'])->name('admin.trips.confirm');
-    Route::patch('/trips/{trip}/reject', [TripReviewController::class, 'reject'])->name('admin.trips.reject');
-    Route::post('/trips/bulk-review', [TripReviewController::class, 'bulkReview'])->name('admin.trips.bulk-review');
+        // car routes
+        Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
+        Route::post('/cars', [CarController::class, 'store'])->name('cars.store');
+        Route::put('/cars/{id}', [CarController::class, 'update'])->name('cars.update');
+        Route::delete('/cars/{id}', [CarController::class, 'destroy'])->name('cars.destroy');
 
-    Route::patch('/reopen-requests/{reopenRequest}/approve', [TripReopenReviewController::class, 'approve'])
-        ->name('admin.reopen-requests.approve');
-    Route::patch('/reopen-requests/{reopenRequest}/reject', [TripReopenReviewController::class, 'reject'])
-        ->name('admin.reopen-requests.reject');
+        // expense routes
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
-});
+        // trip routes
+        Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
+            ->name('trips.cloudinary-signature');
+        Route::delete('trips/uploaded-image', [CloudinaryUploadController::class, 'discard'])
+            ->name('trips.uploaded-image.discard');
+
+        Route::get('/trips', [TripController::class, 'index'])->name('trips.index');
+        Route::post('/trips', [TripController::class, 'store'])->name('trips.store');
+        Route::put('/trips/{trip}', [TripController::class, 'update'])->name('trips.update');
+        Route::delete('/trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
+        Route::get('/trips/export', [TripExportController::class, 'index'])->name('trips.export.index');
+        Route::get('/trips/export/download', [TripExportController::class, 'export'])->name('trips.export.download');
+
+        Route::patch('/trips/{trip}/confirm', [TripReviewController::class, 'confirm'])->name('trips.confirm');
+        Route::patch('/trips/{trip}/reject', [TripReviewController::class, 'reject'])->name('trips.reject');
+        Route::post('/trips/bulk-review', [TripReviewController::class, 'bulkReview'])->name('trips.bulk-review');
+
+        Route::patch('/reopen-requests/{reopenRequest}/approve', [TripReopenReviewController::class, 'approve'])
+            ->name('reopen-requests.approve');
+        Route::patch('/reopen-requests/{reopenRequest}/reject', [TripReopenReviewController::class, 'reject'])
+            ->name('reopen-requests.reject');
+
+    });
 
 Route::post('/locale', function (Request $request) {
     $locale = $request->input('locale');

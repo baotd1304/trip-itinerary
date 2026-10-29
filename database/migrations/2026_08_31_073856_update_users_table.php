@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('phone', 20)->after('email')->nullable();
             $table->tinyInteger('is_active')->after('phone')->default(1);
-            $table->string('created_by')->after('is_active')->nullable();
+            $table->bigInteger('created_by')->after('is_active')->nullable();
         });
     }
 

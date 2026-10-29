@@ -19,6 +19,15 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            notifications: {
+                id: string;
+                type: string;
+                data: Record<string, unknown>;
+                read_at: string | null;
+                created_at: string | null;
+            }[];
+            notificationCount: number;
+            unreadNotificationCount: number;
             [key: string]: unknown;
         };
     }
