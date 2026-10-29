@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Policies\CarPolicy;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Validation\ValidationException;
 
 #[Fillable(['name', 'brand', 'model', 'year', 'license_plate', 'owner', 'is_active'])]
-
+#[UsePolicy(CarPolicy::class)]
 class Car extends Model
 {
     use HasFactory, Notifiable;
@@ -17,28 +20,28 @@ class Car extends Model
     protected $attributes = [
         'is_active' => 1,
     ];
-    protected static function boot()
-    {
-        parent::boot();
-        
-        // static::deleting(function ($car) {
-        //     if ($car->trips()->exists()) {
-        //         throw new \Exception('Không thể xóa xe này vì còn dữ liệu chuyến đi liên quan. 
-        //                     Vui lòng chuyển giao hoặc xóa chuyến đi trước.');
-        //     }
-        // });
 
-        static::deleting(function ($car) {
+    protected function casts(): array
+    {
+        return [
+            'year' => 'integer',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Car $car): void {
             if ($car->trips()->exists()) {
                 throw ValidationException::withMessages([
-                    'car' => 'Không thể xóa xe này vì còn dữ liệu chuyến đi liên quan.'
+                    'car' => 'Không thể xóa xe này vì còn dữ liệu chuyến đi liên quan.',
                 ]);
             }
         });
     }
-    public function trips()
+
+    public function trips(): HasMany
     {
         return $this->hasMany(Trip::class);
     }
-
 }
