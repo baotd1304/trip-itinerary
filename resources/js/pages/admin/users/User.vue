@@ -57,8 +57,6 @@ const props = defineProps<{
         is_active?: '1' | '0' | null;
         verified?: '1' | '0' | null;
         created_by?: number | null;
-        from?: string | null;
-        to?: string | null;
         sort?: string | null;
         dir?: 'asc' | 'desc' | null;
     };

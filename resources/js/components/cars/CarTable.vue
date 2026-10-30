@@ -13,6 +13,7 @@ import CarColumnPicker from './CarColumnPicker.vue';
 
 const props = withDefaults(defineProps<{
     cars: AppCar[];
+    startIndex?: number;
     processingId?: number | null;
     storageKey?: string;
     defaultColumns?: CarColumnKey[];
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
     selected?: number[];
     bulkProcessing?: boolean;
 }>(), {
+    startIndex: 1,
     processingId: null,
     storageKey: 'admin-car-columns',
     defaultColumns: () => DEFAULT_CAR_TABLE_COLUMNS,
@@ -55,22 +57,12 @@ const stickyLeftBody = computed(() => [
     'sticky left-0 z-20 bg-inherit',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
-const stickySecondLeftBody = computed(() => [
-    'sticky z-20 bg-inherit',
-    isVisible('select') ? 'left-10' : 'left-0',
-    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
-]);
 const stickyRightBody = computed(() => [
     'sticky right-0 z-20 bg-inherit',
     !atEnd.value ? 'shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyLeftHead = computed(() => [
     'sticky left-0 top-0 z-40 bg-gray-100 dark:bg-gray-800',
-    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
-]);
-const stickySecondLeftHead = computed(() => [
-    'sticky top-0 z-40 bg-gray-100 dark:bg-gray-800',
-    isVisible('select') ? 'left-10' : 'left-0',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyRightHead = computed(() => [
@@ -130,14 +122,13 @@ const toggleAllRows = (checked: boolean) => {
                                 cellBorder,
                                 column.key === 'select' ? 'w-10 min-w-10 max-w-10' : '',
                                 column.key === 'select' ? stickyLeftHead : '',
-                                column.key === 'id' ? stickySecondLeftHead : '',
+                                column.key === 'actions' ? 'w-24 min-w-24 max-w-24 !px-0' : '',
                                 column.key === 'actions' ? stickyRightHead : '',
                             ]"
                         >
                             <Checkbox
                                 v-if="column.key === 'select'"
-                                :model-value="allSelected"
-                                :indeterminate="someSelected"
+                                :model-value="allSelected ? true : someSelected ? 'indeterminate' : false"
                                 :disabled="!selectableIds.length || bulkProcessing"
                                 :aria-label="$t('car.actions.selectAll')"
                                 @update:model-value="(value) => toggleAllRows(value === true)"
@@ -153,7 +144,7 @@ const toggleAllRows = (checked: boolean) => {
                         </td>
                     </tr>
                     <tr
-                        v-for="car in cars"
+                        v-for="(car, index) in cars"
                         :key="car.id"
                         class="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900"
                         :class="selected.includes(car.id) ? 'bg-primary/5 dark:bg-primary/10' : ''"
@@ -173,7 +164,7 @@ const toggleAllRows = (checked: boolean) => {
                         <td
                             v-if="isVisible('id')"
                             class="px-2 py-2 text-center align-middle text-sm font-medium"
-                            :class="[cellBorder, stickySecondLeftBody]"
+                            :class="cellBorder"
                         >
                             <button
                                 type="button"
@@ -182,7 +173,7 @@ const toggleAllRows = (checked: boolean) => {
                                 :aria-label="$t('car.actions.viewNumber', { id: car.id })"
                                 @click="emit('action', { type: 'view', car })"
                             >
-                                {{ car.id }}
+                                {{ startIndex + index }}
                             </button>
                         </td>
                         <td v-if="isVisible('name')" class="max-w-[220px] truncate px-2 py-2 text-left align-middle font-medium" :class="cellBorder" :title="car.name ?? ''">
@@ -219,7 +210,7 @@ const toggleAllRows = (checked: boolean) => {
                         <td v-if="isVisible('updated_at')" class="whitespace-nowrap px-2 py-2 text-center align-middle" :class="cellBorder">
                             {{ formatDateTime(car.updated_at) }}
                         </td>
-                        <td v-if="isVisible('actions')" class="px-2 py-2 align-middle" :class="[cellBorder, stickyRightBody]">
+                        <td v-if="isVisible('actions')" class="w-24 min-w-24 max-w-24 px-0 py-2 align-middle" :class="[cellBorder, stickyRightBody]">
                             <CarActions
                                 :car="car"
                                 :only="tableActions"

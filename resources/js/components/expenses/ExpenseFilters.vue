@@ -4,14 +4,13 @@ import { computed, reactive, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { ExpenseCreator } from '@/types/expense';
 
 interface ExpenseFiltersState {
     search?: string | null;
     is_active?: '1' | '0' | null;
     created_by?: number | null;
-    from?: string | null;
-    to?: string | null;
 }
 
 const props = withDefaults(defineProps<{
@@ -27,16 +26,12 @@ const state = reactive({
     search: '',
     is_active: '',
     created_by: '',
-    from: '',
-    to: '',
 });
 
 const activeFilterCount = computed(() =>
     (state.search.trim() ? 1 : 0)
     + (state.is_active ? 1 : 0)
-    + (state.created_by ? 1 : 0)
-    + (state.from ? 1 : 0)
-    + (state.to ? 1 : 0),
+    + (state.created_by ? 1 : 0),
 );
 
 watch(
@@ -45,8 +40,6 @@ watch(
         state.search = filters?.search ?? '';
         state.is_active = filters?.is_active ?? '';
         state.created_by = filters?.created_by ? String(filters.created_by) : '';
-        state.from = filters?.from ?? '';
-        state.to = filters?.to ?? '';
     },
     { immediate: true, deep: true },
 );
@@ -69,8 +62,6 @@ const reset = () => {
         search: '',
         is_active: '',
         created_by: '',
-        from: '',
-        to: '',
     });
     apply();
 };
@@ -85,28 +76,27 @@ defineExpose({ applyStatsFilter });
 
 <template>
     <form class="mb-4 grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="apply">
-        <Input v-model="state.search" :placeholder="$t('expense.filters.searchPlaceholder')" />
-        <select
-            v-model="state.is_active"
-            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-            :aria-label="$t('expense.filters.allStatuses')"
-        >
-            <option value="">{{ $t('expense.filters.allStatuses') }}</option>
-            <option value="1">{{ $t('expense.status.active') }}</option>
-            <option value="0">{{ $t('expense.status.inactive') }}</option>
-        </select>
-        <select
-            v-model="state.created_by"
-            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-            :aria-label="$t('expense.filters.allCreators')"
-        >
-            <option value="">{{ $t('expense.filters.allCreators') }}</option>
-            <option v-for="creator in creators" :key="creator.id" :value="String(creator.id)">
-                {{ creator.name }}
-            </option>
-        </select>
-        <Input v-model="state.from" type="date" :aria-label="$t('expense.filters.from')" />
-        <Input v-model="state.to" type="date" :aria-label="$t('expense.filters.to')" />
+        <div class="grid gap-1.5">
+            <Label for="expense-filter-search" class="text-xs text-muted-foreground">{{ $t('common.search') }}</Label>
+            <Input id="expense-filter-search" v-model="state.search" :placeholder="$t('expense.filters.searchPlaceholder')" />
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="expense-filter-status" class="text-xs text-muted-foreground">{{ $t('expense.filters.status') }}</Label>
+            <select id="expense-filter-status" v-model="state.is_active" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('expense.filters.allStatuses') }}</option>
+                <option value="1">{{ $t('expense.status.active') }}</option>
+                <option value="0">{{ $t('expense.status.inactive') }}</option>
+            </select>
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="expense-filter-creator" class="text-xs text-muted-foreground">{{ $t('expense.filters.creator') }}</Label>
+            <select id="expense-filter-creator" v-model="state.created_by" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('expense.filters.allCreators') }}</option>
+                <option v-for="creator in creators" :key="creator.id" :value="String(creator.id)">
+                    {{ creator.name }}
+                </option>
+            </select>
+        </div>
         <div class="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
             <Button type="button" variant="outline" size="sm" @click="reset">
                 {{ $t('expense.filters.reset') }}

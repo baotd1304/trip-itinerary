@@ -39,8 +39,6 @@ interface ExpenseFiltersState {
     search?: string | null;
     is_active?: '1' | '0' | null;
     created_by?: number | null;
-    from?: string | null;
-    to?: string | null;
     sort?: string | null;
     dir?: 'asc' | 'desc' | null;
 }
@@ -71,7 +69,7 @@ const hasStats = computed(
 const links = computed<PaginationLink[]>(() =>
     Array.isArray(props.expenses) ? [] : props.expenses.links ?? props.expenses.meta?.links ?? [],
 );
-const { total: totalCount, rangeFrom, rangeTo } = usePagination(
+const { total: totalCount, startIndex, rangeFrom, rangeTo } = usePagination(
     computed(() => props.expenses),
     computed(() => props.expensesMeta),
     computed(() => items.value.length),
@@ -231,6 +229,7 @@ const setMode = (nextMode: ExpenseDialogMode) => {
                 <ExpenseTable
                     v-model:selected="selected"
                     :expenses="items"
+                    :start-index="startIndex"
                     :processing-id="processingId"
                     :bulk-processing="bulkProcessing"
                     @action="handleAction"

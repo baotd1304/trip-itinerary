@@ -3,6 +3,9 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
 import LocaleSwitcher from './LocaleSwitcher.vue';
+import { ChevronDown, Menu, Moon, Sun } from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { useAppearance } from '@/composables/useAppearance';
 
 withDefaults(
     defineProps<{
@@ -12,6 +15,9 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
+const { appearance, updateAppearance } = useAppearance();
+const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'light' : 'dark');
 </script>
 
 <template>
@@ -25,7 +31,14 @@ withDefaults(
                     <Breadcrumbs :breadcrumbs="breadcrumbs" />
                 </template>
             </div>
-            <LocaleSwitcher class="ml-auto" />
+            <div class="flex items-center gap-2 flex-row justify-between">
+                <LocaleSwitcher class="ml-auto" />
+                <Button variant="ghost" size="icon" @click="toggleAppearance">
+                    <Sun v-if="appearance === 'dark'" class="size-5" />
+                    <Moon v-else class="size-5" />
+                    <span class="sr-only">{{ $t('clientLayout.toggleAppearance') }}</span>
+                </Button>
+            </div>
         </div>
     </header>
 </template>

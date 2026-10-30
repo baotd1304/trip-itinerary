@@ -43,7 +43,12 @@ it('lists expenses with filters, creator, statistics, and pagination metadata', 
     ]);
 
     $this->actingAs($admin)
-        ->get(route('admin.expenses.index', ['search' => 'Holiday', 'is_active' => '1']))
+        ->get(route('admin.expenses.index', [
+            'search' => 'Holiday',
+            'is_active' => '1',
+            'from' => '2999-01-01',
+            'to' => '2999-01-02',
+        ]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('admin/Expense')
@@ -53,7 +58,9 @@ it('lists expenses with filters, creator, statistics, and pagination metadata', 
             ->where('expenses.data.0.creator.name', $admin->name)
             ->where('stats.total', 2)
             ->where('stats.active', 1)
-            ->where('filters.is_active', '1'));
+            ->where('filters.is_active', '1')
+            ->missing('filters.from')
+            ->missing('filters.to'));
 });
 
 it('allows administrators to create and update expenses', function () {

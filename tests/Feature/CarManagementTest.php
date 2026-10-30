@@ -26,7 +26,12 @@ it('lists cars with filters, statistics, and pagination metadata', function () {
     ]);
 
     $this->actingAs($admin)
-        ->get(route('admin.cars.index', ['search' => 'Honda', 'is_active' => '1']))
+        ->get(route('admin.cars.index', [
+            'search' => 'Honda',
+            'is_active' => '1',
+            'from' => '2999-01-01',
+            'to' => '2999-01-02',
+        ]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('admin/Car')
@@ -35,7 +40,9 @@ it('lists cars with filters, statistics, and pagination metadata', function () {
             ->where('cars.data.0.name', 'Family Sedan')
             ->where('stats.total', 2)
             ->where('stats.active', 1)
-            ->where('filters.is_active', '1'));
+            ->where('filters.is_active', '1')
+            ->missing('filters.from')
+            ->missing('filters.to'));
 });
 
 it('allows an administrator to create and update a car', function () {

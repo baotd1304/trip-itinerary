@@ -185,10 +185,10 @@ export default {
         },
         filters: {
             searchPlaceholder: 'Tìm theo ID, tên, thương hiệu, mẫu xe, biển số hoặc chủ sở hữu...',
+            brand: 'Thương hiệu',
             allBrands: 'Tất cả thương hiệu',
+            status: 'Trạng thái',
             allStatuses: 'Tất cả trạng thái',
-            from: 'Tạo từ ngày',
-            to: 'Tạo đến ngày',
             reset: 'Xóa bộ lọc',
             activeCount: 'Đang áp dụng {count} bộ lọc',
             resultRange: 'Hiển thị {from}–{to} trên tổng {total} xe',
@@ -261,10 +261,10 @@ export default {
         },
         filters: {
             searchPlaceholder: 'Tìm theo ID, tên hoặc ghi chú...',
+            status: 'Trạng thái',
             allStatuses: 'Tất cả trạng thái',
+            creator: 'Người tạo',
             allCreators: 'Tất cả người tạo',
-            from: 'Tạo từ ngày',
-            to: 'Tạo đến ngày',
             reset: 'Xóa bộ lọc',
             activeCount: 'Đang áp dụng {count} bộ lọc',
             resultRange: 'Hiển thị {from}–{to} trên tổng {total} khoản chi phí',
@@ -275,6 +275,7 @@ export default {
             deactivate: 'Ngừng hoạt động',
             selectRow: 'Chọn khoản chi phí {name}',
             selectAll: 'Chọn tất cả khoản chi phí',
+            viewNumber: 'Xem chi tiết khoản chi phí #{id}',
         },
         dialog: {
             createTitle: 'Thêm khoản chi phí',
@@ -349,12 +350,14 @@ export default {
         },
         filters: {
             searchPlaceholder: 'Tìm theo tên, email, số điện thoại hoặc ID...',
+            role: 'Vai trò',
             allRoles: 'Tất cả vai trò',
+            status: 'Trạng thái',
             allStatuses: 'Tất cả trạng thái',
+            verification: 'Xác minh email',
             allVerification: 'Tất cả trạng thái email',
+            creator: 'Người tạo',
             allCreators: 'Tất cả người tạo',
-            from: 'Tạo từ ngày',
-            to: 'Tạo đến ngày',
             reset: 'Xóa bộ lọc',
             activeCount: 'Đang áp dụng {count} bộ lọc',
         },
@@ -449,7 +452,7 @@ export default {
     trip: {
         pageTitle: 'Quản lý chuyến đi',
         listTitle: 'Danh sách chuyến đi',
-        create: 'Tạo chuyến đi',
+        create: 'Thêm chuyến',
 
         status: {
             pending: 'Chờ duyệt',
@@ -492,6 +495,7 @@ export default {
             fromDate: 'Từ ngày',
             toDate: 'Đến ngày',
             reset: 'Xoá bộ lọc',
+            activeCount: 'Đang áp dụng {count} bộ lọc',
             searching: 'Đang tìm...',
             resultCount: 'Tìm thấy {count} chuyến đi',
             resultRange: 'Hiển thị {from} – {to} trên tổng {total} chuyến đi',

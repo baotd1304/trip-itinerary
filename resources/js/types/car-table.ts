@@ -20,7 +20,7 @@ export interface CarColumn {
 
 export const CAR_TABLE_COLUMNS: CarColumn[] = [
     { key: 'select', labelKey: 'common.select', required: true },
-    { key: 'id', labelKey: 'car.table.id', required: true },
+    { key: 'id', labelKey: 'common.number', required: true },
     { key: 'name', labelKey: 'car.fields.name', required: true },
     { key: 'brand', labelKey: 'car.fields.brand' },
     { key: 'model', labelKey: 'car.fields.model' },

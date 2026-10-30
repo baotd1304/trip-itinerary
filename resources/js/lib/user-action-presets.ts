@@ -2,7 +2,7 @@ import type { UserActionType } from '@/types/user';
 
 /** Bảng danh sách phía admin */
 export const ADMIN_USER_TABLE_ACTIONS: UserActionType[] = [
-    'view', 'edit', 'assignRole', 'toggleActive', 'verifyEmail', 'delete',
+    'view', 'assignRole', 'toggleActive', 'verifyEmail', 'delete',
 ];
 
 /** Trong dialog xem chi tiết */

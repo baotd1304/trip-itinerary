@@ -4,13 +4,12 @@ import { computed, reactive, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface CarFiltersState {
     search?: string | null;
     brand?: string | null;
     is_active?: '1' | '0' | null;
-    from?: string | null;
-    to?: string | null;
 }
 
 const props = withDefaults(defineProps<{
@@ -26,16 +25,12 @@ const state = reactive({
     search: '',
     brand: '',
     is_active: '',
-    from: '',
-    to: '',
 });
 
 const activeFilterCount = computed(() =>
     (state.search.trim() ? 1 : 0)
     + (state.brand ? 1 : 0)
-    + (state.is_active ? 1 : 0)
-    + (state.from ? 1 : 0)
-    + (state.to ? 1 : 0),
+    + (state.is_active ? 1 : 0),
 );
 
 watch(
@@ -44,8 +39,6 @@ watch(
         state.search = filters?.search ?? '';
         state.brand = filters?.brand ?? '';
         state.is_active = filters?.is_active ?? '';
-        state.from = filters?.from ?? '';
-        state.to = filters?.to ?? '';
     },
     { immediate: true, deep: true },
 );
@@ -68,8 +61,6 @@ const reset = () => {
         search: '',
         brand: '',
         is_active: '',
-        from: '',
-        to: '',
     });
     apply();
 };
@@ -84,26 +75,30 @@ defineExpose({ applyStatsFilter });
 
 <template>
     <form class="mb-4 grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="apply">
-        <Input v-model="state.search" :placeholder="$t('car.filters.searchPlaceholder')" />
-        <select
-            v-model="state.brand"
-            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-            :aria-label="$t('car.filters.allBrands')"
-        >
-            <option value="">{{ $t('car.filters.allBrands') }}</option>
-            <option v-for="brand in brands" :key="brand" :value="brand">{{ brand }}</option>
-        </select>
-        <select
-            v-model="state.is_active"
-            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-            :aria-label="$t('car.filters.allStatuses')"
-        >
-            <option value="">{{ $t('car.filters.allStatuses') }}</option>
-            <option value="1">{{ $t('car.status.active') }}</option>
-            <option value="0">{{ $t('car.status.inactive') }}</option>
-        </select>
-        <Input v-model="state.from" type="date" :aria-label="$t('car.filters.from')" />
-        <Input v-model="state.to" type="date" :aria-label="$t('car.filters.to')" />
+        <div class="grid gap-1.5">
+            <Label for="car-filter-search" class="text-xs text-muted-foreground">{{ $t('common.search') }}</Label>
+            <Input id="car-filter-search" v-model="state.search" :placeholder="$t('car.filters.searchPlaceholder')" />
+        </div>
+        <div class="grid min-w-0 gap-1.5">
+            <Label for="car-filter-brand" class="text-xs text-muted-foreground">{{ $t('car.filters.brand') }}</Label>
+            <select
+                id="car-filter-brand"
+                v-model="state.brand"
+                class="h-9 w-full min-w-0 truncate rounded-md border border-input bg-transparent px-3 text-sm"
+                :title="state.brand || $t('car.filters.allBrands')"
+            >
+                <option value="">{{ $t('car.filters.allBrands') }}</option>
+                <option v-for="brand in brands" :key="brand" :value="brand">{{ brand }}</option>
+            </select>
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="car-filter-status" class="text-xs text-muted-foreground">{{ $t('car.filters.status') }}</Label>
+            <select id="car-filter-status" v-model="state.is_active" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('car.filters.allStatuses') }}</option>
+                <option value="1">{{ $t('car.status.active') }}</option>
+                <option value="0">{{ $t('car.status.inactive') }}</option>
+            </select>
+        </div>
         <div class="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
             <Button type="button" variant="outline" size="sm" @click="reset">
                 {{ $t('car.filters.reset') }}

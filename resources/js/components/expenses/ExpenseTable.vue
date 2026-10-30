@@ -14,6 +14,7 @@ import ExpenseColumnPicker from './ExpenseColumnPicker.vue';
 
 const props = withDefaults(defineProps<{
     expenses: AppExpense[];
+    startIndex?: number;
     processingId?: number | null;
     storageKey?: string;
     defaultColumns?: ExpenseColumnKey[];
@@ -21,6 +22,7 @@ const props = withDefaults(defineProps<{
     selected?: number[];
     bulkProcessing?: boolean;
 }>(), {
+    startIndex: 1,
     processingId: null,
     storageKey: 'admin-expense-columns',
     defaultColumns: () => DEFAULT_EXPENSE_TABLE_COLUMNS,
@@ -56,22 +58,12 @@ const stickyLeftBody = computed(() => [
     'sticky left-0 z-20 bg-inherit',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
-const stickySecondLeftBody = computed(() => [
-    'sticky z-20 bg-inherit',
-    isVisible('select') ? 'left-10' : 'left-0',
-    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
-]);
 const stickyRightBody = computed(() => [
     'sticky right-0 z-20 bg-inherit',
     !atEnd.value ? 'shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyLeftHead = computed(() => [
     'sticky left-0 top-0 z-40 bg-gray-100 dark:bg-gray-800',
-    !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
-]);
-const stickySecondLeftHead = computed(() => [
-    'sticky top-0 z-40 bg-gray-100 dark:bg-gray-800',
-    isVisible('select') ? 'left-10' : 'left-0',
     !atStart.value ? 'shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]' : '',
 ]);
 const stickyRightHead = computed(() => [
@@ -131,14 +123,13 @@ const toggleAllRows = (checked: boolean) => {
                                 cellBorder,
                                 column.key === 'select' ? 'w-10 min-w-10 max-w-10' : '',
                                 column.key === 'select' ? stickyLeftHead : '',
-                                column.key === 'id' ? stickySecondLeftHead : '',
+                                column.key === 'actions' ? 'w-24 min-w-24 max-w-24 !px-0' : '',
                                 column.key === 'actions' ? stickyRightHead : '',
                             ]"
                         >
                             <Checkbox
                                 v-if="column.key === 'select'"
-                                :model-value="allSelected"
-                                :indeterminate="someSelected"
+                                :model-value="allSelected ? true : someSelected ? 'indeterminate' : false"
                                 :disabled="!selectableIds.length || bulkProcessing"
                                 :aria-label="$t('expense.actions.selectAll')"
                                 @update:model-value="(value) => toggleAllRows(value === true)"
@@ -154,7 +145,7 @@ const toggleAllRows = (checked: boolean) => {
                         </td>
                     </tr>
                     <tr
-                        v-for="expense in expenses"
+                        v-for="(expense, index) in expenses"
                         :key="expense.id"
                         class="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900"
                         :class="selected.includes(expense.id) ? 'bg-primary/5 dark:bg-primary/10' : ''"
@@ -174,9 +165,17 @@ const toggleAllRows = (checked: boolean) => {
                         <td
                             v-if="isVisible('id')"
                             class="px-2 py-2 text-center align-middle text-sm font-medium"
-                            :class="[cellBorder, stickySecondLeftBody]"
+                            :class="cellBorder"
                         >
-                            {{ expense.id }}
+                            <button
+                                type="button"
+                                class="inline-flex min-w-8 items-center justify-center rounded-md px-2 py-1 text-primary underline-offset-4 transition-colors hover:bg-primary/10 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                                :title="$t('expense.actions.viewNumber', { id: expense.id })"
+                                :aria-label="$t('expense.actions.viewNumber', { id: expense.id })"
+                                @click="emit('action', { type: 'view', expense })"
+                            >
+                                {{ startIndex + index }}
+                            </button>
                         </td>
                         <td v-if="isVisible('name')" class="max-w-56 truncate px-3 py-2 text-sm" :class="cellBorder">
                             {{ expense.name }}
@@ -210,7 +209,7 @@ const toggleAllRows = (checked: boolean) => {
                         <td v-if="isVisible('note')" class="max-w-[150px] truncate px-3 py-2 text-sm" :class="cellBorder" :title="expense.note??'' ">
                             {{ expense.note || '—' }}
                         </td>
-                        <td v-if="isVisible('actions')" class="px-2 py-1" :class="[cellBorder, stickyRightBody]">
+                        <td v-if="isVisible('actions')" class="w-24 min-w-24 max-w-24 px-0 py-1" :class="[cellBorder, stickyRightBody]">
                             <ExpenseActions
                                 :expense="expense"
                                 :only="tableActions"

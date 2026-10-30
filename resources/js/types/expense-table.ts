@@ -21,7 +21,7 @@ export interface ExpenseColumn {
 
 export const EXPENSE_TABLE_COLUMNS: ExpenseColumn[] = [
     { key: 'select', labelKey: 'common.select', required: true },
-    { key: 'id', labelKey: 'expense.fields.id', required: true },
+    { key: 'id', labelKey: 'common.number', required: true },
     { key: 'name', labelKey: 'expense.fields.name', required: true },
     { key: 'overkm_rate', labelKey: 'expense.fields.overkmRate' },
     { key: 'overtime_rate', labelKey: 'expense.fields.overtimeRate' },
@@ -40,7 +40,6 @@ export const DEFAULT_EXPENSE_TABLE_COLUMNS: ExpenseColumnKey[] =
 
 export const ADMIN_EXPENSE_TABLE_ACTIONS = [
     'view',
-    'edit',
     'toggleActive',
     'delete',
 ] as const;

@@ -27,8 +27,6 @@ class CarController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'brand' => ['nullable', 'string', 'max:255'],
             'is_active' => ['nullable', 'in:0,1'],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
             'sort' => ['nullable', Rule::in(['name', 'brand', 'model', 'year', 'license_plate', 'owner', 'created_at', 'updated_at'])],
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
@@ -69,8 +67,6 @@ class CarController extends Controller
             })
             ->when($filters['brand'] ?? null, fn (Builder $query, string $brand) => $query->where('brand', $brand))
             ->when(! is_null($isActive), fn (Builder $query) => $query->where('is_active', $isActive))
-            ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->whereDate('created_at', '>=', $from))
-            ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->whereDate('created_at', '<=', $to))
             ->orderBy($sort, $direction)
             ->orderByDesc('id')
             ->paginate(10)
@@ -112,8 +108,6 @@ class CarController extends Controller
                 'search' => $search ?: null,
                 'brand' => $filters['brand'] ?? null,
                 'is_active' => is_null($isActive) ? null : (string) $isActive,
-                'from' => $filters['from'] ?? null,
-                'to' => $filters['to'] ?? null,
                 'sort' => $sort,
                 'dir' => $direction,
             ],

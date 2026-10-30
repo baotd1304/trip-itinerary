@@ -37,8 +37,6 @@ interface CarFiltersState {
     search?: string | null;
     brand?: string | null;
     is_active?: '1' | '0' | null;
-    from?: string | null;
-    to?: string | null;
     sort?: string | null;
     dir?: 'asc' | 'desc' | null;
 }
@@ -66,7 +64,7 @@ const brands = computed(() => props.brands ?? []);
 const links = computed<PaginationLink[]>(() =>
     Array.isArray(props.cars) ? [] : props.cars.links ?? props.cars.meta?.links ?? [],
 );
-const { total: totalCount, rangeFrom, rangeTo } = usePagination(
+const { total: totalCount, startIndex, rangeFrom, rangeTo } = usePagination(
     computed(() => props.cars),
     computed(() => props.carsMeta),
     computed(() => items.value.length),
@@ -222,6 +220,7 @@ const setMode = (nextMode: CarDialogMode) => {
             <CarTable
                 v-model:selected="selected"
                 :cars="items"
+                :start-index="startIndex"
                 :processing-id="processingId"
                 :bulk-processing="bulkProcessing"
                 @action="handleAction"

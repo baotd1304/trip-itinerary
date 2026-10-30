@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Loader2, Search } from 'lucide-vue-next';
+import { ref, computed, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, X } from 'lucide-vue-next';
-import TripSurchargeFilter, { type TriState } from './TripSurchargeFilter.vue';
 import { statusKey } from '@/lib/trip-status';
 import type { TripStatus } from '@/types/trip';
+import TripSurchargeFilter from './TripSurchargeFilter.vue';
+import type { TriState } from './TripSurchargeFilter.vue';
 
 const props = withDefaults(
     defineProps<{
@@ -35,14 +36,25 @@ const STATUSES: TripStatus[] = ['pending', 'editing', 'confirmed', 'rejected'];
 
 /** Chuẩn hoá mọi kiểu về '' | '1' | '0' */
 const toTri = (v: unknown): TriState => {
-    if (v === null || v === undefined || v === '') return '';
-    if (v === 1 || v === '1' || v === true) return '1';
-    if (v === 0 || v === '0' || v === false) return '0';
+    if (v === null || v === undefined || v === '') {
+        return '';
+    }
+
+    if (v === 1 || v === '1' || v === true) {
+        return '1';
+    }
+
+    if (v === 0 || v === '0' || v === false) {
+        return '0';
+    }
+
     return '';
 };
 
 const search = ref<string>(props.initial?.search ?? '');
-const status = ref<TripStatus | ''>((props.initial?.status as TripStatus) ?? '');
+const status = ref<TripStatus | ''>(
+    (props.initial?.status as TripStatus) ?? '',
+);
 const pendingReopen = ref<TriState>(toTri(props.initial?.pending_reopen));
 const from = ref<string>(props.initial?.from ?? '');
 const to = ref<string>(props.initial?.to ?? '');
@@ -50,53 +62,47 @@ const isOvernight = ref<TriState>(toTri(props.initial?.is_overnight));
 const isHoliday = ref<TriState>(toTri(props.initial?.is_holiday));
 const loading = ref(false);
 
-let timer: ReturnType<typeof setTimeout> | undefined;
 /** Chặn watcher props.initial ghi đè ngay sau khi user vừa đổi filter */
 let selfUpdating = false;
 
-const apply = (delay = 0) => {
-    clearTimeout(timer);
+const apply = () => {
+    selfUpdating = true;
 
-    timer = setTimeout(() => {
-        selfUpdating = true;
-
-        router.get(
-            props.url,
-            {
-                search: search.value || undefined,
-                status: status.value || undefined,
-                pending_reopen: pendingReopen.value === '1' ? '1' : undefined,
-                from: from.value || undefined,
-                to: to.value || undefined,
-                // Không dùng `|| undefined`: chuỗi '0' phải được gửi đi
-                is_overnight: isOvernight.value !== '' ? isOvernight.value : undefined,
-                is_holiday: isHoliday.value !== '' ? isHoliday.value : undefined,
+    router.get(
+        props.url,
+        {
+            search: search.value || undefined,
+            status: status.value || undefined,
+            pending_reopen: pendingReopen.value === '1' ? '1' : undefined,
+            from: from.value || undefined,
+            to: to.value || undefined,
+            // Không dùng `|| undefined`: chuỗi '0' phải được gửi đi
+            is_overnight:
+                isOvernight.value !== '' ? isOvernight.value : undefined,
+            is_holiday: isHoliday.value !== '' ? isHoliday.value : undefined,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: props.only,
+            onStart: () => (loading.value = true),
+            onFinish: () => {
+                loading.value = false;
+                selfUpdating = false;
             },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-                only: props.only,
-                onStart: () => (loading.value = true),
-                onFinish: () => {
-                    loading.value = false;
-                    selfUpdating = false;
-                },
-            },
-        );
-    }, delay);
+        },
+    );
 };
-
-// Gõ phím: debounce 350ms
-watch(search, () => apply(350));
-// Select và date: lọc ngay khi giá trị thay đổi
-watch([status, pendingReopen, from, to, isOvernight, isHoliday], () => apply(0));
 
 // Đồng bộ khi server đẩy filters mới (Back/Forward)
 watch(
     () => props.initial,
     (v) => {
-        if (selfUpdating) return;
+        if (selfUpdating) {
+            return;
+        }
+
         search.value = v?.search ?? '';
         status.value = (v?.status as TripStatus) ?? '';
         pendingReopen.value = toTri(v?.pending_reopen);
@@ -108,10 +114,10 @@ watch(
     { deep: true },
 );
 
-/** Tổng số filter đang bật (hiện trên badge cạnh nút Xoá lọc) */
+/** Tổng số filter đang bật (hiển thị trên nút Tìm kiếm) */
 const activeCount = computed(
     () =>
-        (search.value ? 1 : 0) +
+        (search.value.trim() ? 1 : 0) +
         (status.value ? 1 : 0) +
         (pendingReopen.value === '1' ? 1 : 0) +
         (from.value ? 1 : 0) +
@@ -128,7 +134,7 @@ const reset = () => {
     to.value = '';
     isOvernight.value = '';
     isHoliday.value = '';
-    apply(0);
+    apply();
 };
 
 const applyStatsFilter = (filter: TripStatus | 'pendingReopen') => {
@@ -136,20 +142,24 @@ const applyStatsFilter = (filter: TripStatus | 'pendingReopen') => {
         pendingReopen.value = pendingReopen.value === '1' ? '' : '1';
         status.value = '';
 
+        apply();
+
         return;
     }
 
     status.value = status.value === filter ? '' : filter;
     pendingReopen.value = '';
+    apply();
 };
 
 defineExpose({ applyStatsFilter });
-
-onBeforeUnmount(() => clearTimeout(timer));
 </script>
 
 <template>
-    <div class="mb-4 grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-6">
+    <form
+        class="mb-4 grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-6"
+        @submit.prevent="apply"
+    >
         <!-- Tìm kiếm -->
         <div class="grid gap-1.5 sm:col-span-2">
             <Label for="trip-search" class="text-xs text-muted-foreground">
@@ -158,18 +168,18 @@ onBeforeUnmount(() => clearTimeout(timer));
 
             <div class="relative">
                 <Search
-                    class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                    class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 />
                 <Input
                     id="trip-search"
                     v-model="search"
                     type="search"
-                    class="pl-8 pr-8"
+                    class="pr-8 pl-8"
                     :placeholder="$t('trip.filters.searchPlaceholder')"
                 />
                 <Loader2
                     v-if="loading"
-                    class="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                    class="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
                 />
             </div>
         </div>
@@ -202,15 +212,17 @@ onBeforeUnmount(() => clearTimeout(timer));
             <Label for="trip-from" class="text-xs text-muted-foreground">
                 {{ $t('trip.filters.fromDate') }}
             </Label>
-            <Input id="trip-from" v-model="from" type="date" :max="to || undefined" />
+            <Input
+                id="trip-from"
+                v-model="from"
+                type="date"
+                :max="to || undefined"
+            />
         </div>
 
         <!-- Đến ngày + Reset -->
         <div class="grid min-w-0 gap-1.5">
-            <Label
-                for="trip-to"
-                class="text-xs text-muted-foreground"
-            >
+            <Label for="trip-to" class="text-xs text-muted-foreground">
                 {{ $t('trip.filters.toDate') }}
             </Label>
 
@@ -222,27 +234,28 @@ onBeforeUnmount(() => clearTimeout(timer));
                     :min="from || undefined"
                     class="min-w-0 flex-1"
                 />
-
-                <Button
-                    v-if="activeCount"
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    class="relative h-9 w-9 shrink-0"
-                    :title="$t('trip.filters.reset')"
-                    :aria-label="$t('trip.filters.reset')"
-                    @click="reset"
-                >
-                    <X class="h-4 w-4" />
-
-                    <Badge
-                        class="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px]"
-                        variant="destructive"
-                    >
-                        {{ activeCount }}
-                    </Badge>
-                </Button>
             </div>
         </div>
-    </div>
+        <div class="flex justify-end gap-2 sm:col-span-2 lg:col-span-6">
+            <Button type="button" variant="outline" size="sm" @click="reset">
+                {{ $t('trip.filters.reset') }}
+            </Button>
+            <Button type="submit" size="sm" class="relative">
+                {{ $t('common.search') }}
+                <Badge
+                    v-if="activeCount"
+                    variant="destructive"
+                    class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px]"
+                    :aria-label="
+                        $t('trip.filters.activeCount', { count: activeCount })
+                    "
+                    :title="
+                        $t('trip.filters.activeCount', { count: activeCount })
+                    "
+                >
+                    {{ activeCount }}
+                </Badge>
+            </Button>
+        </div>
+    </form>
 </template>

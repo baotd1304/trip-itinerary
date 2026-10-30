@@ -28,8 +28,6 @@ class ExpenseController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'in:0,1'],
             'created_by' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
             'sort' => ['nullable', Rule::in([
                 'name',
                 'overkm_rate',
@@ -78,8 +76,6 @@ class ExpenseController extends Controller
             })
             ->when($filters['created_by'] ?? null, fn (Builder $query, int $creatorId) => $query->where('created_by', $creatorId))
             ->when(! is_null($isActive), fn (Builder $query) => $query->where('is_active', $isActive))
-            ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->whereDate('created_at', '>=', $from))
-            ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->whereDate('created_at', '<=', $to))
             ->orderBy($sort, $direction)
             ->orderByDesc('id')
             ->paginate(10)
@@ -119,8 +115,6 @@ class ExpenseController extends Controller
                 'search' => $search ?: null,
                 'is_active' => is_null($isActive) ? null : (string) $isActive,
                 'created_by' => $filters['created_by'] ?? null,
-                'from' => $filters['from'] ?? null,
-                'to' => $filters['to'] ?? null,
                 'sort' => $sort,
                 'dir' => $direction,
             ],
