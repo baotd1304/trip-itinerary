@@ -4,6 +4,7 @@ import { computed, reactive, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { RoleRef, UserRef } from '@/types/user';
 
 interface UserFiltersState {
@@ -12,8 +13,6 @@ interface UserFiltersState {
     is_active?: '1' | '0' | null;
     verified?: '1' | '0' | null;
     created_by?: number | null;
-    from?: string | null;
-    to?: string | null;
     sort?: string | null;
     dir?: 'asc' | 'desc' | null;
 }
@@ -34,8 +33,6 @@ const state = reactive({
     is_active: '',
     verified: '',
     created_by: '',
-    from: '',
-    to: '',
 });
 
 const activeFilterCount = computed(
@@ -44,9 +41,7 @@ const activeFilterCount = computed(
         (state.role ? 1 : 0) +
         (state.is_active ? 1 : 0) +
         (state.verified ? 1 : 0) +
-        (state.created_by ? 1 : 0) +
-        (state.from ? 1 : 0) +
-        (state.to ? 1 : 0),
+        (state.created_by ? 1 : 0),
 );
 
 watch(
@@ -57,8 +52,6 @@ watch(
         state.is_active = filters?.is_active ?? '';
         state.verified = filters?.verified ?? '';
         state.created_by = filters?.created_by ? String(filters.created_by) : '';
-        state.from = filters?.from ?? '';
-        state.to = filters?.to ?? '';
     },
     { immediate: true, deep: true },
 );
@@ -83,8 +76,6 @@ const reset = () => {
         is_active: '',
         verified: '',
         created_by: '',
-        from: '',
-        to: '',
     });
     apply();
 };
@@ -100,29 +91,42 @@ defineExpose({ applyStatsFilter });
 
 <template>
     <form class="mb-4 grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="apply">
-        <Input v-model="state.search" :placeholder="$t('user.filters.searchPlaceholder')" />
-        <select v-model="state.role" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="">{{ $t('user.filters.allRoles') }}</option>
-            <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name }}</option>
-        </select>
-        <select v-model="state.is_active" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="">{{ $t('user.filters.allStatuses') }}</option>
-            <option value="1">{{ $t('user.status.active') }}</option>
-            <option value="0">{{ $t('user.status.inactive') }}</option>
-        </select>
-        <select v-model="state.verified" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="">{{ $t('user.filters.allVerification') }}</option>
-            <option value="1">{{ $t('user.status.verified') }}</option>
-            <option value="0">{{ $t('user.status.unverified') }}</option>
-        </select>
-        <select v-model="state.created_by" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="">{{ $t('user.filters.allCreators') }}</option>
-            <option v-for="creator in creators" :key="creator.id" :value="String(creator.id)">
-                {{ creator.name }}
-            </option>
-        </select>
-        <Input v-model="state.from" type="date" :aria-label="$t('user.filters.from')" />
-        <Input v-model="state.to" type="date" :aria-label="$t('user.filters.to')" />
+        <div class="grid gap-1.5">
+            <Label for="user-filter-search" class="text-xs text-muted-foreground">{{ $t('common.search') }}</Label>
+            <Input id="user-filter-search" v-model="state.search" :placeholder="$t('user.filters.searchPlaceholder')" />
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="user-filter-role" class="text-xs text-muted-foreground">{{ $t('user.filters.role') }}</Label>
+            <select id="user-filter-role" v-model="state.role" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('user.filters.allRoles') }}</option>
+                <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name }}</option>
+            </select>
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="user-filter-status" class="text-xs text-muted-foreground">{{ $t('user.filters.status') }}</Label>
+            <select id="user-filter-status" v-model="state.is_active" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('user.filters.allStatuses') }}</option>
+                <option value="1">{{ $t('user.status.active') }}</option>
+                <option value="0">{{ $t('user.status.inactive') }}</option>
+            </select>
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="user-filter-verification" class="text-xs text-muted-foreground">{{ $t('user.filters.verification') }}</Label>
+            <select id="user-filter-verification" v-model="state.verified" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('user.filters.allVerification') }}</option>
+                <option value="1">{{ $t('user.status.verified') }}</option>
+                <option value="0">{{ $t('user.status.unverified') }}</option>
+            </select>
+        </div>
+        <div class="grid gap-1.5">
+            <Label for="user-filter-creator" class="text-xs text-muted-foreground">{{ $t('user.filters.creator') }}</Label>
+            <select id="user-filter-creator" v-model="state.created_by" class="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+                <option value="">{{ $t('user.filters.allCreators') }}</option>
+                <option v-for="creator in creators" :key="creator.id" :value="String(creator.id)">
+                    {{ creator.name }}
+                </option>
+            </select>
+        </div>
         <div class="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
             <Button type="button" variant="outline" size="sm" @click="reset">{{ $t('user.filters.reset') }}</Button>
             <Button type="submit" size="sm" class="relative">

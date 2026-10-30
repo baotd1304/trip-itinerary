@@ -24,10 +24,20 @@ import { adminUserRoutes } from '@/lib/user-routes-admin';
 import type { PaginationLink } from '@/types/trip';
 import type { AppUser, PermissionRef, RoleRef, UserRef } from '@/types/user';
 import { ADMIN_DEFAULT_USER_TABLE_COLUMNS } from '@/types/user-table';
+import admin from '@/routes/admin';
 
 const { t } = useI18n();
 
-defineOptions({ layout: undefined }); // layout mặc định khai báo ở app.ts
+defineOptions({
+    layout: {
+        breadcrumbs: [
+            {
+                title: 'adminLayout.breadcrumbs.users',
+                href: admin.users.index(),
+            },
+        ],
+    },
+});
 
 const props = defineProps<{
     users: { data?: AppUser[]; links?: PaginationLink[]; meta?: { links?: PaginationLink[] } } | AppUser[];
@@ -47,8 +57,6 @@ const props = defineProps<{
         is_active?: '1' | '0' | null;
         verified?: '1' | '0' | null;
         created_by?: number | null;
-        from?: string | null;
-        to?: string | null;
         sort?: string | null;
         dir?: 'asc' | 'desc' | null;
     };

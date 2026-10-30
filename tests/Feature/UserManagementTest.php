@@ -12,6 +12,25 @@ function createUserManagementAdmin(): User
     return User::factory()->create()->assignRole('admin');
 }
 
+it('does not filter users by creation date', function () {
+    $admin = createUserManagementAdmin();
+    $user = User::factory()->create(['name' => 'Visible despite date filter']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.users.index', [
+            'search' => 'Visible despite date filter',
+            'from' => '2999-01-01',
+            'to' => '2999-01-02',
+        ]))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/users/User')
+            ->has('users.data', 1)
+            ->where('users.data.0.id', $user->id)
+            ->missing('filters.from')
+            ->missing('filters.to'));
+});
+
 it('prevents users from deleting, deactivating, or changing their own roles', function () {
     $admin = createUserManagementAdmin();
 

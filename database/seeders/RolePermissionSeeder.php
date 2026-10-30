@@ -44,6 +44,24 @@ class RolePermissionSeeder extends Seeder
             'users.manage-access-control',
         ];
 
+        $carPermissions = [
+            'cars.view-any',
+            'cars.view',
+            'cars.create',
+            'cars.update',
+            'cars.delete',
+            'cars.toggle-active',
+        ];
+
+        $expensePermissions = [
+            'expenses.view-any',
+            'expenses.view',
+            'expenses.create',
+            'expenses.update',
+            'expenses.delete',
+            'expenses.toggle-active',
+        ];
+
         $tripPermissions = [
             'trips.view-any',
             'trips.view',
@@ -58,11 +76,13 @@ class RolePermissionSeeder extends Seeder
         $viewPermissions = [
             'dashboard.view',
             'setting.view',
-            ''
+            '',
         ];
 
         $permissions = array_merge(
             $userPermissions,
+            $carPermissions,
+            $expensePermissions,
             $tripPermissions,
             $viewPermissions
         );
@@ -94,6 +114,8 @@ class RolePermissionSeeder extends Seeder
             'users.verify-email',
             'users.reset-password',
             'users.manage-access-control',
+            ...$carPermissions,
+            ...$expensePermissions,
         ]);
 
         $advisor = Role::findOrCreate('advisor', 'web');
@@ -109,9 +131,11 @@ class RolePermissionSeeder extends Seeder
             'trips.update',
             'trips.request-reopen',
         ]);
-        
+
         $editor = Role::findOrCreate('editor', 'web');
         $editor->syncPermissions([
+            ...$carPermissions,
+            ...$expensePermissions,
             'trips.view',
             'trips.create',
             'trips.update',

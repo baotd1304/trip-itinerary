@@ -59,8 +59,11 @@ const mainNavItems: NavItemWithIcon[] = [
     //     ]
     // },
     { title: 'clientLayout.nav.trips', href: '/trips' },
-    { title: 'clientLayout.nav.expenses', href: '/expenses' },
-    { title: 'clientLayout.nav.contact', href: '/contact' },
+    // { title: 'clientLayout.nav.expenses', href: '/expenses' },
+    // { title: 'clientLayout.nav.contact', href: '/contact' },
+    { title: 'clientLayout.adminDashboard', href: admin.dashboard() },
+
+
 ];
 
 const toUrl = (href: NavItem['href']): string => (typeof href === 'string' ? href : href.url);
@@ -210,9 +213,9 @@ const toggleAppearance = () => updateAppearance(appearance.value === 'dark' ? 'l
                 </Button>
 
                 <template v-if="auth.user">
-                    <Button as-child variant="ghost" class="hidden md:inline-flex">
+                    <!-- <Button as-child variant="ghost" class="hidden md:inline-flex">
                         <Link :href="admin.dashboard()">{{ $t('clientLayout.adminDashboard') }}</Link>
-                    </Button>
+                    </Button> -->
                     <DropdownMenu>
                         <DropdownMenuTrigger as-child>
                             <Button variant="ghost" size="icon" class="rounded-full">
