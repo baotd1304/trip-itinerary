@@ -39,8 +39,6 @@ class UserController extends Controller
             'is_active' => ['nullable', 'in:0,1'],
             'verified' => ['nullable', 'in:0,1'],
             'created_by' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
             'sort' => ['nullable', 'in:name,email,created_at,updated_at'],
             'dir' => ['nullable', 'in:asc,desc'],
         ]);
@@ -48,8 +46,6 @@ class UserController extends Controller
         $search = trim($filters['search'] ?? '');
         $role = $filters['role'] ?? null;
         $createdBy = $filters['created_by'] ?? null;
-        $from = $filters['from'] ?? null;
-        $to = $filters['to'] ?? null;
         $sort = $filters['sort'] ?? 'created_at';
         $dir = $filters['dir'] ?? 'desc';
 
@@ -92,9 +88,6 @@ class UserController extends Controller
             })
             // ----- Người tạo -----
             ->when($createdBy, fn ($q, $value) => $q->where('created_by', $value))
-            // ----- Khoảng ngày tạo -----
-            ->when($from, fn ($q, $value) => $q->whereDate('created_at', '>=', $value))
-            ->when($to, fn ($q, $value) => $q->whereDate('created_at', '<=', $value))
             ->orderBy($sort, $dir)
             ->orderByDesc('id');
 
@@ -155,8 +148,6 @@ class UserController extends Controller
                 'is_active' => is_null($isActive) ? null : (string) $isActive,
                 'verified' => is_null($verified) ? null : (string) $verified,
                 'created_by' => $createdBy,
-                'from' => $from,
-                'to' => $to,
                 'sort' => $sort,
                 'dir' => $dir,
             ],

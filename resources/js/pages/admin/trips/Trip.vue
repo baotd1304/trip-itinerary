@@ -36,11 +36,19 @@ import type {
     TripStatus,
 } from '@/types/trip';
 import { ADMIN_DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
+import admin from '@/routes/admin';
 
 const { t } = useI18n();
 
 defineOptions({
-    layout: undefined, // giữ layout hiện tại
+    layout: {
+        breadcrumbs: [
+            {
+                title: 'adminLayout.breadcrumbs.trips',
+                href: admin.trips.index(),
+            },
+        ],
+    },
 });
 
 const props = defineProps<{

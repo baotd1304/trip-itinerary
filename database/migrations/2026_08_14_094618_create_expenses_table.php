@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('holiday_rate', 15, 0)->unsigned()->nullable();
             $table->string('note')->nullable();
             $table->boolean('is_active')->default(1);
+            $table->foreignId('created_by')->nullable()->constrained('users');
             $table->timestamps();
         });
     }

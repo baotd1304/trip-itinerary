@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { CircleCheckBigIcon, CircleX } from 'lucide-vue-next';
-import TripActions from './TripActions.vue';
-import TripStatusCell from './TripStatusCell.vue';
-import TripColumnPicker from './TripColumnPicker.vue';
+import { computed, ref } from 'vue';
 import { useFormat } from '@/composables/useFormat';
-import { useTableColumns } from '@/composables/useTableColumns';
 import { useStickyShadow } from '@/composables/useStickyShadow';
+import { useTableColumns } from '@/composables/useTableColumns';
 import { TABLE_ONLY_VIEW } from '@/lib/trip-action-presets';
+import type { Trip, TripActionType } from '@/types/trip';
 import { TRIP_TABLE_COLUMNS, DEFAULT_TRIP_TABLE_COLUMNS } from '@/types/trip-table';
 import type { ColumnKey } from '@/types/trip-table';
-import type { Trip, TripActionType } from '@/types/trip';
+import TripActions from './TripActions.vue';
+import TripColumnPicker from './TripColumnPicker.vue';
+import TripStatusCell from './TripStatusCell.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -62,8 +62,6 @@ const {
 const scroller = ref<HTMLElement | null>(null);
 const { atStart, atEnd } = useStickyShadow(scroller);
 
-/** Chỉ ghim khi cột đó thực sự đang hiển thị */
-const pinLeft = computed(() => isVisible('stt'));
 const pinRight = computed(() => isVisible('actions'));
 
 /* ---- Lớp dùng lại cho ô ghim ---- */
@@ -105,7 +103,11 @@ const hhmm = (v?: string | null): string => (v ? String(v).slice(0, 5) : '');
 const timeRange = (trip: Trip): string => {
   const a = hhmm(trip.departure_time);
   const b = hhmm(trip.arrival_time);
-  if (a && b) return `${a} → ${b}`;
+
+  if (a && b) {
+return `${a} → ${b}`;
+}
+
   return a || b || '—';
 };
 
@@ -147,6 +149,20 @@ const tableSecondaryActions = computed(() =>
                 <thead class="sticky top-0 z-30">
                     <tr class="bg-gray-100 dark:bg-gray-800">
                         <th
+                            v-if="bulkReview"
+                            scope="col"
+                            class="w-10 min-w-10 max-w-10 border-b border-r border-gray-300 bg-gray-100 px-2 py-2 text-center align-middle dark:border-gray-700 dark:bg-gray-800"
+                            :class="[cellBorder, stickyLeftHead]"
+                        >
+                            <TripActions
+                                variant="bulk-checkbox"
+                                :checkbox-value="allReviewableSelected ? true : selectedTrips.length ? 'indeterminate' : false"
+                                :checkbox-label="$t('trip.bulkReview.selectAll')"
+                                :checkbox-disabled="!reviewableTripIds.size || bulkProcessing"
+                                @select="setAllTripsSelected"
+                            />
+                        </th>
+                        <th
                             v-for="column in renderedColumns"
                             :key="column.key"
                             scope="col"
@@ -154,32 +170,19 @@ const tableSecondaryActions = computed(() =>
                             :class="[
                                 cellBorder,
                                 column.key === 'actions' ? 'w-px min-w-max whitespace-nowrap' : '',
-                                column.key === 'stt' && pinLeft
-                                    ? stickyLeftHead
-                                    : '',
                                 column.key === 'actions' && pinRight
                                     ? stickyRightHead
                                     : '',
                             ]"
                         >
-                            <div v-if="bulkReview && column.key === 'actions'" class="flex min-w-max items-center justify-center gap-2 whitespace-nowrap">
-                                <span>{{ $t(column.labelKey) }}</span>
-                                <TripActions
-                                    variant="bulk-checkbox"
-                                    :checkbox-value="allReviewableSelected ? true : selectedTrips.length ? 'indeterminate' : false"
-                                    :checkbox-label="$t('trip.bulkReview.selectAll')"
-                                    :checkbox-disabled="!reviewableTripIds.size"
-                                    @select="setAllTripsSelected"
-                                />
-                            </div>
-                            <template v-else>{{ $t(column.labelKey) }}</template>
+                            {{ $t(column.labelKey) }}
                         </th>
                     </tr>
                 </thead>
 
                 <tbody>
                     <tr v-if="!trips.length">
-                        <td :colspan="visibleColumnCount"
+                        <td :colspan="visibleColumnCount + (bulkReview ? 1 : 0)"
                             class="px-4 py-8 text-center text-muted-foreground"
                         >
                             {{ $t('common.noData') }}
@@ -188,9 +191,23 @@ const tableSecondaryActions = computed(() =>
 
                     <tr v-for="(trip, index) in trips" :key="trip.id" class="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900">
                         <td
-                            v-if="isVisible('stt')"
-                            class="sticky left-0 bg-inherit border px-2 py-2 text-center align-middle text-sm font-medium dark:border-gray-700"
+                            v-if="bulkReview"
+                            class="w-10 min-w-10 max-w-10 px-2 py-2 text-center align-middle"
                             :class="[cellBorder, stickyLeftCell]"
+                        >
+                            <TripActions
+                                v-if="reviewableTripIds.has(trip.id)"
+                                variant="bulk-checkbox"
+                                :checkbox-value="selectedTripIds.has(trip.id)"
+                                :checkbox-label="$t('trip.bulkReview.selectTrip', { id: trip.id })"
+                                :checkbox-disabled="bulkProcessing"
+                                @select="setTripSelected(trip.id, $event)"
+                            />
+                        </td>
+                        <td
+                            v-if="isVisible('stt')"
+                            class="border px-2 py-2 text-center align-middle text-sm font-medium dark:border-gray-700"
+                            :class="cellBorder"
                         >
                             <button
                                 type="button"
@@ -280,8 +297,16 @@ const tableSecondaryActions = computed(() =>
                             class="sticky right-0 bg-inherit border pl-2 py-2 align-middle dark:border-gray-700"
                             :class="[cellBorder, stickyRightCell, 'w-px min-w-max whitespace-nowrap']"
                         >
-                            <div class="grid w-full min-w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 whitespace-nowrap">
-                                <div class="flex min-w-0 justify-end">
+                            <div class="flex w-full min-w-full items-center justify-center gap-2 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <TripActions
+                                        :trip="trip"
+                                        variant="table"
+                                        :only="['view']"
+                                        @action="emit('action', $event)"
+                                    />
+                                </div>
+                                <div class="flex min-w-0 items-center">
                                     <TripActions
                                         :trip="trip"
                                         variant="table"
@@ -290,26 +315,6 @@ const tableSecondaryActions = computed(() =>
                                         @action="emit('action', $event)"
                                     />
                                 </div>
-                                <div class="flex justify-center">
-                                    <TripActions
-                                        :trip="trip"
-                                        variant="table"
-                                        :only="['view']"
-                                        @action="emit('action', $event)"
-                                    />
-                                </div>
-                                <template v-if="bulkReview">
-                                    <div class="flex min-w-0 justify-start">
-                                        <TripActions
-                                            v-if="reviewableTripIds.has(trip.id)"
-                                            variant="bulk-checkbox"
-                                            :checkbox-value="selectedTripIds.has(trip.id)"
-                                            :checkbox-label="$t('trip.bulkReview.selectTrip', { id: trip.id })"
-                                            @select="setTripSelected(trip.id, $event)"
-                                        />
-                                    </div>
-                                </template>
-                                <div v-else />
                             </div>
                         </td>
                     </tr>

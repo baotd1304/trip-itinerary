@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('brand')->nullable();
             $table->string('model')->nullable();
-            $table->integer('year')->unsigned()->nullable();
+            $table->year('year')->unsigned()->nullable();
             $table->string('license_plate', 20)->unique();
             $table->string('owner')->nullable();
             $table->tinyInteger('is_active')->default(1); // 1 = active, 0 = inactive

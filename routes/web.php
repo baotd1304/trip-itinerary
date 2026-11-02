@@ -128,17 +128,36 @@ Route::prefix('/admin')->middleware(['auth', 'role:admin|manager|editor'])->name
             ->middleware('can:manageAccessControl,App\Models\User')
             ->name('permissions.destroy');
 
-        // car routes
-        Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
-        Route::post('/cars', [CarController::class, 'store'])->name('cars.store');
-        Route::put('/cars/{id}', [CarController::class, 'update'])->name('cars.update');
-        Route::delete('/cars/{id}', [CarController::class, 'destroy'])->name('cars.destroy');
+        /* ---------- Cars CRUD ---------- */
+        Route::get('cars', [CarController::class, 'index'])->name('cars.index');
+        Route::post('cars', [CarController::class, 'store'])->name('cars.store');
+        Route::put('cars/{car}', [CarController::class, 'update'])->name('cars.update');
+        Route::delete('cars/{car}', [CarController::class, 'destroy'])->name('cars.destroy');
+        Route::post('cars/bulk', [CarController::class, 'bulk'])
+            ->middleware('throttle:20,1')
+            ->name('cars.bulk');
+        Route::patch('cars/{car}/toggle-active', [CarController::class, 'toggleActive'])
+            ->name('cars.toggle-active');
 
-        // expense routes
-        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
-        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
-        Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('expenses.update');
-        Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+        /* ---------- Expenses CRUD ---------- */
+        Route::get('expenses', [ExpenseController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\Expense')
+            ->name('expenses.index');
+        Route::post('expenses', [ExpenseController::class, 'store'])
+            ->middleware('can:create,App\Models\Expense')
+            ->name('expenses.store');
+        Route::put('expenses/{expense}', [ExpenseController::class, 'update'])
+            ->middleware('can:update,expense')
+            ->name('expenses.update');
+        Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])
+            ->middleware('can:delete,expense')
+            ->name('expenses.destroy');
+        Route::post('expenses/bulk', [ExpenseController::class, 'bulk'])
+            ->middleware('throttle:20,1')
+            ->name('expenses.bulk');
+        Route::patch('expenses/{expense}/toggle-active', [ExpenseController::class, 'toggleActive'])
+            ->middleware('can:toggleActive,expense')
+            ->name('expenses.toggle-active');
 
         // trip routes
         Route::get('trips/cloudinary-signature', [CloudinaryUploadController::class, 'signature'])
