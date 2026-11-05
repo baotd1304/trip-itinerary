@@ -1,28 +1,39 @@
 export default {
     dashboard: {
         title: 'Dashboard',
-        subtitle: 'Statistics for confirmed trips over the last 12 months.',
+        subtitle: 'Track trips, expenses, and distance by month or year.',
         summary: 'Statistics summary',
         summaryTrips: 'Total trips',
         summaryExpenses: 'Total expenses',
         summaryDistance: 'Total distance',
         summaryAlerts: 'Vehicle alerts',
         last12Months: 'Over the last 12 months',
+        period: 'Time period',
+        periodMenuLabel: 'Select time period',
+        monthsGroup: 'By month (last 12 months)',
+        yearsGroup: 'By year (last 5 years)',
         alertThreshold: 'Over {distance} km/month',
         tripChartTitle: 'Trips by month',
         expenseChartTitle: 'Expenses by month',
         monthlyChartDescription: 'Confirmed trips over the last 12 months.',
+        vehicleCharts: 'Vehicle statistics',
+        tripsByVehicle: 'Trips by vehicle',
+        expensesByVehicle: 'Expenses by vehicle',
+        noVehiclePeriodData: 'No vehicle data for this period.',
         distanceChartTitle: 'Distance by vehicle',
-        distanceChartDescription: 'Monthly distance for each vehicle. Confirmed trips only.',
+        distanceChartDescription:
+            'Monthly distance for each vehicle. Confirmed trips only.',
         toggleVehicleSeries: 'Click to show or hide {vehicle} on the chart',
         warningThresholdLegend: 'Warning threshold: {distance} km',
         distanceWarningsTitle: 'Vehicle distance warnings',
-        distanceWarningsDescription: 'Vehicles with monthly distance greater than {distance} km.',
+        distanceWarningsDescription:
+            'Vehicles with monthly distance greater than {distance} km.',
         vehicleColumn: 'Vehicle',
         monthColumn: 'Month',
         distanceColumn: 'Distance',
         noDistanceData: 'No distance data in the last 12 months.',
-        noDistanceWarnings: 'No vehicles exceeded the monthly distance threshold.',
+        noDistanceWarnings:
+            'No vehicles exceeded the monthly distance threshold.',
     },
     adminLayout: {
         breadcrumbs: {
@@ -31,7 +42,7 @@ export default {
             cars: 'Cars Management',
             trips: 'Trips Management',
             expenses: 'Expenses Management',
-        }
+        },
     },
     clientLayout: {
         nav: {
@@ -51,7 +62,8 @@ export default {
         languageSelection: 'Choose language',
         backHome: 'Back to home',
         footer: {
-            description: 'Plan itineraries and manage vehicles and expenses for all your trips.',
+            description:
+                'Plan itineraries and manage vehicles and expenses for all your trips.',
             product: 'Product',
             support: 'Support',
             legal: 'Legal',
@@ -81,7 +93,8 @@ export default {
         pageTitle: 'Home',
         hero: {
             title: 'Manage trips, vehicles, and expenses',
-            description: 'Manage trips, vehicles, and expenses easily and efficiently in one place.',
+            description:
+                'Manage trips, vehicles, and expenses easily and efficiently in one place.',
         },
         stats: {
             trips: 'Trips',
@@ -93,15 +106,18 @@ export default {
             description: 'Everything you need to organize a complete trip.',
             itinerary: {
                 title: 'Itinerary management',
-                description: 'Create and track each trip itinerary with clearly organized destinations and times.',
+                description:
+                    'Create and track each trip itinerary with clearly organized destinations and times.',
             },
             vehicles: {
                 title: 'Vehicle management',
-                description: 'Track vehicles, license plates, and usage status for each trip.',
+                description:
+                    'Track vehicles, license plates, and usage status for each trip.',
             },
             expenses: {
                 title: 'Expense management',
-                description: 'Record expenses, review totals, and export reports for each trip.',
+                description:
+                    'Record expenses, review totals, and export reports for each trip.',
             },
         },
         latestTrips: {
@@ -131,9 +147,9 @@ export default {
         sentAt: 'Sent at',
         language: 'Language',
         search: 'Search',
-        checkAll: "Check all",
-        clearAll: "Clear all",
-        required: "Required",
+        checkAll: 'Check all',
+        clearAll: 'Clear all',
+        required: 'Required',
         forbidden: 'You do not have permission to perform this action.',
         select: 'Select',
         selectAll: 'Select all users',
@@ -184,7 +200,8 @@ export default {
             resetColumns: 'Reset to default',
         },
         filters: {
-            searchPlaceholder: 'Search by ID, name, brand, model, license plate, or owner...',
+            searchPlaceholder:
+                'Search by ID, name, brand, model, license plate, or owner...',
             brand: 'Brand',
             allBrands: 'All brands',
             status: 'Status',
@@ -209,7 +226,8 @@ export default {
         },
         delete: {
             title: 'Delete car?',
-            description: 'Are you sure you want to delete {name}? This cannot be undone.',
+            description:
+                'Are you sure you want to delete {name}? This cannot be undone.',
         },
         bulk: {
             activateTitle: 'Activate selected cars?',
@@ -217,7 +235,8 @@ export default {
             deactivateTitle: 'Deactivate selected cars?',
             deactivateDescription: '{count} selected cars will be deactivated.',
             deleteTitle: 'Delete selected cars?',
-            deleteDescription: '{count} selected cars will be deleted. Cars used by trips will be kept.',
+            deleteDescription:
+                '{count} selected cars will be deleted. Cars used by trips will be kept.',
             confirm: 'Confirm',
         },
         flash: {
@@ -227,8 +246,10 @@ export default {
             activated: 'Car {name} was activated.',
             deactivated: 'Car {name} was deactivated.',
             bulkCompleted: 'Action completed for {count} cars.',
-            bulkNoChanges: 'No cars were changed. You may lack permission or the cars may be used by trips.',
-            bulkSkipped: 'Skipped {count} cars due to missing permissions or trip usage.',
+            bulkNoChanges:
+                'No cars were changed. You may lack permission or the cars may be used by trips.',
+            bulkSkipped:
+                'Skipped {count} cars due to missing permissions or trip usage.',
         },
     },
 
@@ -285,15 +306,18 @@ export default {
         },
         delete: {
             title: 'Delete expense?',
-            description: 'Are you sure you want to delete {name}? Expenses used by trips cannot be deleted.',
+            description:
+                'Are you sure you want to delete {name}? Expenses used by trips cannot be deleted.',
         },
         bulk: {
             activateTitle: 'Activate selected expenses?',
             activateDescription: '{count} selected expenses will be activated.',
             deactivateTitle: 'Deactivate selected expenses?',
-            deactivateDescription: '{count} selected expenses will be deactivated.',
+            deactivateDescription:
+                '{count} selected expenses will be deactivated.',
             deleteTitle: 'Delete selected expenses?',
-            deleteDescription: '{count} selected expenses will be deleted. Expenses used by trips will be kept.',
+            deleteDescription:
+                '{count} selected expenses will be deleted. Expenses used by trips will be kept.',
             confirm: 'Confirm',
         },
         flash: {
@@ -303,8 +327,10 @@ export default {
             activated: 'Expense {name} was activated.',
             deactivated: 'Expense {name} was deactivated.',
             bulkCompleted: 'Action completed for {count} expenses.',
-            bulkNoChanges: 'No expenses were changed. You may lack permission or the expenses may be used by trips.',
-            bulkSkipped: 'Skipped {count} expenses due to missing permissions or trip usage.',
+            bulkNoChanges:
+                'No expenses were changed. You may lack permission or the expenses may be used by trips.',
+            bulkSkipped:
+                'Skipped {count} expenses due to missing permissions or trip usage.',
         },
     },
 
@@ -365,12 +391,14 @@ export default {
             createTitle: 'Add user',
             viewTitle: 'User details',
             editTitle: 'Edit user',
-            description: 'Manage account information, roles, and access permissions.',
+            description:
+                'Manage account information, roles, and access permissions.',
             passwordHint: 'Leave blank to keep the current password',
         },
         delete: {
             title: 'Delete user?',
-            description: 'Are you sure you want to delete {name}? This cannot be undone.',
+            description:
+                'Are you sure you want to delete {name}? This cannot be undone.',
         },
         bulk: {
             activateTitle: 'Activate selected users?',
@@ -378,13 +406,15 @@ export default {
             deactivateTitle: 'Deactivate selected users?',
             deactivateDescription: 'The selected accounts will be deactivated.',
             deleteTitle: 'Delete selected users?',
-            deleteDescription: 'The selected accounts will be deleted. This cannot be undone.',
+            deleteDescription:
+                'The selected accounts will be deleted. This cannot be undone.',
             confirm: 'Confirm',
         },
         accessControl: {
             manage: 'Manage roles & permissions',
             title: 'Manage roles and permissions',
-            description: 'Create and update roles and permissions available throughout the system.',
+            description:
+                'Create and update roles and permissions available throughout the system.',
             roles: 'Roles',
             roleDescription: 'Choose permissions inherited by each role.',
             permissionCount: '{count} permissions',
@@ -393,11 +423,14 @@ export default {
             permissions: 'Permissions',
             noPermissions: 'No permissions yet.',
             createRole: 'Create role',
-            permissionDescription: 'Permissions can be assigned to roles or directly to users.',
+            permissionDescription:
+                'Permissions can be assigned to roles or directly to users.',
             permissionName: 'Permission name',
             createPermission: 'Create permission',
-            deleteConfirmation: 'Delete “{name}”? Related access assignments will be removed.',
-            reservedAdminRole: 'The admin role is a system role and cannot be renamed.',
+            deleteConfirmation:
+                'Delete “{name}”? Related access assignments will be removed.',
+            reservedAdminRole:
+                'The admin role is a system role and cannot be renamed.',
         },
         flash: {
             created: 'User {name} was created.',
@@ -410,7 +443,8 @@ export default {
             bulkActivated: '{count} users were activated.',
             bulkDeactivated: '{count} users were deactivated.',
             bulkDeleted: '{count} users were deleted.',
-            bulkNoPermission: 'You are not allowed to act on the selected users.',
+            bulkNoPermission:
+                'You are not allowed to act on the selected users.',
             roleCreated: 'Role {name} was created.',
             roleUpdated: 'Role {name} was updated.',
             roleDeleted: 'Role {name} was deleted.',
@@ -436,7 +470,8 @@ export default {
             confirmed: 'Trip #{id} was confirmed.',
             rejected: 'Trip #{id} was rejected and needs changes.',
             reopened: 'Trip #{id} was unlocked for editing.',
-            reopenSubmitted: 'A reopen request for trip #{id} is awaiting review.',
+            reopenSubmitted:
+                'A reopen request for trip #{id} is awaiting review.',
             reopenApproved: 'The reopen request for trip #{id} was approved.',
             reopenRejected: 'The reopen request for trip #{id} was rejected.',
         },
@@ -445,7 +480,8 @@ export default {
             activated: 'Your account has been activated.',
             deactivated: 'Your account has been deactivated.',
             emailVerified: 'Your email has been verified.',
-            accessUpdated: 'Your roles or access permissions have been updated.',
+            accessUpdated:
+                'Your roles or access permissions have been updated.',
         },
     },
 
@@ -489,7 +525,8 @@ export default {
         },
 
         filters: {
-            searchPlaceholder: 'Search by ID, advisor, driver, origin/destination...',
+            searchPlaceholder:
+                'Search by ID, advisor, driver, origin/destination...',
             status: 'Status',
             allStatus: 'All statuses',
             fromDate: 'From date',
@@ -500,7 +537,7 @@ export default {
             resultCount: 'Found {count} trips',
             resultRange: 'Showing {from} – {to} of {total} trips',
             resultEmpty: 'No trips match the current filters',
-            surcharge:    'Surcharges',
+            surcharge: 'Surcharges',
             overnight: 'Overnight',
             holiday: 'Holiday',
             anyValue: 'All',
@@ -526,7 +563,8 @@ export default {
         },
 
         hints: {
-            updateConfirmed: 'Trip already confirmed — request an unlock to edit.',
+            updateConfirmed:
+                'Trip already confirmed — request an unlock to edit.',
             updateNoPermission: 'You are not allowed to edit this trip.',
             updatePending: 'Trip is pending — you can still edit it.',
             updateEditing: 'Unlocked — edit and save to resubmit.',
@@ -544,7 +582,8 @@ export default {
             createTitle: 'Create a new trip',
             viewTitle: 'Trip details',
             editTitle: 'Edit trip',
-            viewDescription: 'Read-only view. Use the buttons below to take action.',
+            viewDescription:
+                'Read-only view. Use the buttons below to take action.',
         },
 
         form: {
@@ -570,25 +609,36 @@ export default {
             note: 'Note',
         },
         validation: {
-            reopen_request_reason_required: 'Please enter a reason for editing this trip.',
-            reopen_request_reason_min: 'The reason must be at least 10 characters so the advisor can understand it.',
-            reopen_request_reason_max: 'The reason may not exceed 500 characters.',
-            reopen_reason_required: 'Please enter a reason for asking the driver to make changes.',
+            reopen_request_reason_required:
+                'Please enter a reason for editing this trip.',
+            reopen_request_reason_min:
+                'The reason must be at least 10 characters so the advisor can understand it.',
+            reopen_request_reason_max:
+                'The reason may not exceed 500 characters.',
+            reopen_reason_required:
+                'Please enter a reason for asking the driver to make changes.',
             reopen_reason_min: 'The reason must be at least 5 characters.',
             reopen_reason_max: 'The reason may not exceed 500 characters.',
-            review_note_required: 'Please explain why you are rejecting the request.',
+            review_note_required:
+                'Please explain why you are rejecting the request.',
             review_note_min: 'The review note must be at least 5 characters.',
             review_note_max: 'The review note may not exceed 500 characters.',
-            trip_reject_reason_required: 'Please explain why the trip is rejected so the driver knows what to fix.',
-            trip_reject_reason_min: 'The rejection reason must be at least 5 characters.',
-            trip_reject_reason_max: 'The rejection reason may not exceed 500 characters.',
+            trip_reject_reason_required:
+                'Please explain why the trip is rejected so the driver knows what to fix.',
+            trip_reject_reason_min:
+                'The rejection reason must be at least 5 characters.',
+            trip_reject_reason_max:
+                'The rejection reason may not exceed 500 characters.',
         },
         conflicts: {
-            trip_state_changed: 'The trip status has changed. Please reload the page.',
-            duplicate_reopen_request: 'There is already a pending unlock request for this trip.',
+            trip_state_changed:
+                'The trip status has changed. Please reload the page.',
+            duplicate_reopen_request:
+                'There is already a pending unlock request for this trip.',
             trip_not_reviewable: 'This trip is no longer awaiting review.',
             trips_missing: 'One or more trips no longer exist.',
-            trips_not_reviewable: 'One or more trips are no longer awaiting review.',
+            trips_not_reviewable:
+                'One or more trips are no longer awaiting review.',
         },
 
         detail: {
@@ -599,8 +649,9 @@ export default {
             overtimeHours: '{count} h',
             distanceKm: '{value} km',
             title: {
-                total_fee: 'Includes fees overtime, tolls, airport/terminal access, overnight, holiday',
-            }
+                total_fee:
+                    'Includes fees overtime, tolls, airport/terminal access, overnight, holiday',
+            },
         },
 
         images: {
@@ -622,7 +673,8 @@ export default {
             reviewNote: 'Note',
             noReviewNote: 'No note provided.',
             requestReason: 'Submitted reason',
-            defaultApproveNote: 'Unlock request approved. Please update the information.',
+            defaultApproveNote:
+                'Unlock request approved. Please update the information.',
         },
 
         cell: {
@@ -634,7 +686,8 @@ export default {
         },
 
         warnings: {
-            pending: 'This trip is awaiting advisor review. You can still edit it before confirmation.',
+            pending:
+                'This trip is awaiting advisor review. You can still edit it before confirmation.',
             editing: 'After saving, the trip returns to "Pending" status.',
             rejected: 'After saving, the trip will be resubmitted for review.',
         },
@@ -647,20 +700,24 @@ export default {
 
         reopenRequest: {
             title: 'Request edit unlock',
-            description: 'The request goes to the assigned advisor. Once approved, the trip becomes "Editing" and you can update it.',
+            description:
+                'The request goes to the assigned advisor. Once approved, the trip becomes "Editing" and you can update it.',
             reasonLabel: 'Reason for editing',
-            reasonPlaceholder: 'E.g. Wrong ending odometer, should be 45,320. Missing toll receipt.',
+            reasonPlaceholder:
+                'E.g. Wrong ending odometer, should be 45,320. Missing toll receipt.',
             submit: 'Send request',
         },
 
         reopenReview: {
             approveTitle: 'Approve unlock request',
             rejectTitle: 'Reject unlock request',
-            approveDescription: 'The trip moves to "Editing" so the driver can update it.',
+            approveDescription:
+                'The trip moves to "Editing" so the driver can update it.',
             rejectDescription: 'The trip stays "Confirmed".',
             requesterSaid: '{name} requested to edit:',
             noteLabel: 'Review note',
-            approvePlaceholder: 'E.g. Approved, please attach the receipt photo.',
+            approvePlaceholder:
+                'E.g. Approved, please attach the receipt photo.',
             rejectPlaceholder: 'E.g. Explain the rejection reason.',
             approveSubmit: 'Approve unlock',
             rejectSubmit: 'Reject',
@@ -668,9 +725,11 @@ export default {
 
         rejectTrip: {
             title: 'Reject trip',
-            description: 'The trip becomes "Rejected". The driver can edit and resubmit.',
+            description:
+                'The trip becomes "Rejected". The driver can edit and resubmit.',
             reasonLabel: 'Rejection reason',
-            reasonPlaceholder: 'E.g. Odometer mismatch, please re-take the dashboard photo.',
+            reasonPlaceholder:
+                'E.g. Odometer mismatch, please re-take the dashboard photo.',
             submit: 'Reject trip',
         },
 
@@ -681,7 +740,8 @@ export default {
             confirm: 'Confirm selected',
             reject: 'Reject selected',
             rejectTitle: 'Reject multiple trips',
-            rejectDescription: 'You are about to reject {count} trips. This reason will apply to all selected trips.',
+            rejectDescription:
+                'You are about to reject {count} trips. This reason will apply to all selected trips.',
         },
 
         admin: {
@@ -690,20 +750,29 @@ export default {
             pendingReopen: 'Pending unlock',
         },
         flash: {
-            created:         'Trip created (#{id}, date: {day}). Awaiting approval.',
-            updated:         'Trip updated (#{id}, date: {day}).',
-            updatedByAdmin:  'Trip updated (#{id}, date: {day}).',
-            updatedPending:  'Trip #{id} updated (date: {day}). Still awaiting approval.',
-            updatedRejected: 'Rejected trip #{id} (date: {day}) has been updated and resubmitted for approval.',
-            updatedEditing:  'Trip #{id} (date: {day}) updated and moved back to "awaiting approval".',
-            deleted:         'Trip #{id} (date: {day}) deleted.',
-            reopenRequested: 'Unlock request sent for trip #{id} - day: {day}. Please wait for the advisor.',
-            reopenCancelled: 'Unlock request cancelled for trip #{id} - day: {day}.',
-            tripReopened: 'Trip #{id} - day: {day} has been unlocked for editing. The driver can update it.',
-            reopenApproved: 'Trip #{id} - day: {day} has been unlocked. The driver can edit it.',
-            reopenRejected: 'Unlock request rejected for trip #{id} - day: {day}.',
+            created: 'Trip created (#{id}, date: {day}). Awaiting approval.',
+            updated: 'Trip updated (#{id}, date: {day}).',
+            updatedByAdmin: 'Trip updated (#{id}, date: {day}).',
+            updatedPending:
+                'Trip #{id} updated (date: {day}). Still awaiting approval.',
+            updatedRejected:
+                'Rejected trip #{id} (date: {day}) has been updated and resubmitted for approval.',
+            updatedEditing:
+                'Trip #{id} (date: {day}) updated and moved back to "awaiting approval".',
+            deleted: 'Trip #{id} (date: {day}) deleted.',
+            reopenRequested:
+                'Unlock request sent for trip #{id} - day: {day}. Please wait for the advisor.',
+            reopenCancelled:
+                'Unlock request cancelled for trip #{id} - day: {day}.',
+            tripReopened:
+                'Trip #{id} - day: {day} has been unlocked for editing. The driver can update it.',
+            reopenApproved:
+                'Trip #{id} - day: {day} has been unlocked. The driver can edit it.',
+            reopenRejected:
+                'Unlock request rejected for trip #{id} - day: {day}.',
             reviewConfirmed: 'Trip #{id} - day: {day} confirmed.',
-            reviewRejected: 'Trip #{id} - day: {day} rejected. The driver can edit it and resubmit.',
+            reviewRejected:
+                'Trip #{id} - day: {day} rejected. The driver can edit it and resubmit.',
             bulkReviewConfirmed: '{count} trips confirmed.',
             bulkReviewRejected: '{count} trips rejected.',
         },

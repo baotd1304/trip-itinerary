@@ -1,28 +1,41 @@
 export default {
     dashboard: {
         title: 'Tổng quan',
-        subtitle: 'Thống kê các chuyến đã xác nhận trong 12 tháng gần nhất.',
+        subtitle:
+            'Theo dõi chuyến đi, chi phí và quãng đường theo tháng hoặc năm.',
         summary: 'Tóm tắt thống kê',
         summaryTrips: 'Tổng số chuyến',
         summaryExpenses: 'Tổng chi phí',
         summaryDistance: 'Tổng quãng đường',
         summaryAlerts: 'Cảnh báo xe',
         last12Months: 'Trong 12 tháng gần nhất',
+        period: 'Thời gian',
+        periodMenuLabel: 'Chọn khoảng thời gian',
+        monthsGroup: 'Theo tháng (12 tháng gần nhất)',
+        yearsGroup: 'Theo năm (5 năm gần nhất)',
         alertThreshold: 'Vượt ngưỡng {distance} km/tháng',
         tripChartTitle: 'Số chuyến theo tháng',
         expenseChartTitle: 'Chi phí theo tháng',
-        monthlyChartDescription: 'Các chuyến đã xác nhận trong 12 tháng gần nhất.',
+        monthlyChartDescription:
+            'Các chuyến đã xác nhận trong 12 tháng gần nhất.',
+        vehicleCharts: 'Thống kê theo xe',
+        tripsByVehicle: 'Số chuyến theo xe',
+        expensesByVehicle: 'Chi phí theo xe',
+        noVehiclePeriodData: 'Không có dữ liệu xe trong khoảng thời gian này.',
         distanceChartTitle: 'Quãng đường theo xe',
-        distanceChartDescription: 'Tổng km đã chạy theo tháng cho từng xe. Chỉ tính chuyến đã xác nhận.',
+        distanceChartDescription:
+            'Tổng km đã chạy theo tháng cho từng xe. Chỉ tính chuyến đã xác nhận.',
         toggleVehicleSeries: 'Nhấn để ẩn hoặc hiện {vehicle} trên biểu đồ',
         warningThresholdLegend: 'Ngưỡng cảnh báo {distance} km',
         distanceWarningsTitle: 'Cảnh báo xe vượt ngưỡng',
-        distanceWarningsDescription: 'Xe có tổng quãng đường trong tháng vượt quá {distance} km.',
+        distanceWarningsDescription:
+            'Xe có tổng quãng đường trong tháng vượt quá {distance} km.',
         vehicleColumn: 'Xe',
         monthColumn: 'Tháng',
         distanceColumn: 'Quãng đường',
         noDistanceData: 'Chưa có dữ liệu quãng đường trong 12 tháng gần nhất.',
-        noDistanceWarnings: 'Không có xe nào vượt quá ngưỡng quãng đường trong tháng.',
+        noDistanceWarnings:
+            'Không có xe nào vượt quá ngưỡng quãng đường trong tháng.',
     },
     adminLayout: {
         breadcrumbs: {
@@ -31,7 +44,7 @@ export default {
             cars: 'QL Xe',
             trips: 'QL Chuyến đi',
             expenses: 'QL Chi phí',
-        }
+        },
     },
     clientLayout: {
         nav: {
@@ -51,7 +64,8 @@ export default {
         languageSelection: 'Chọn ngôn ngữ',
         backHome: 'Quay lại trang chủ',
         footer: {
-            description: 'Lên kế hoạch lịch trình, quản lý xe và chi phí cho mọi chuyến đi của bạn.',
+            description:
+                'Lên kế hoạch lịch trình, quản lý xe và chi phí cho mọi chuyến đi của bạn.',
             product: 'Sản phẩm',
             support: 'Hỗ trợ',
             legal: 'Pháp lý',
@@ -81,7 +95,8 @@ export default {
         pageTitle: 'Trang chủ',
         hero: {
             title: 'Quản lý hành trình chuyến đi, xe và chi phí',
-            description: 'Quản lý toàn diện các chuyến đi, phương tiện và chi phí một cách dễ dàng và hiệu quả.',
+            description:
+                'Quản lý toàn diện các chuyến đi, phương tiện và chi phí một cách dễ dàng và hiệu quả.',
         },
         stats: {
             trips: 'Chuyến đi',
@@ -93,15 +108,18 @@ export default {
             description: 'Mọi thứ bạn cần để tổ chức một chuyến đi trọn vẹn.',
             itinerary: {
                 title: 'Quản lý lịch trình',
-                description: 'Tạo và theo dõi lịch trình từng chuyến đi, phân chia điểm đến và thời gian rõ ràng.',
+                description:
+                    'Tạo và theo dõi lịch trình từng chuyến đi, phân chia điểm đến và thời gian rõ ràng.',
             },
             vehicles: {
                 title: 'Quản lý xe',
-                description: 'Theo dõi danh sách xe, biển số và tình trạng sử dụng cho từng chuyến.',
+                description:
+                    'Theo dõi danh sách xe, biển số và tình trạng sử dụng cho từng chuyến.',
             },
             expenses: {
                 title: 'Quản lý chi phí',
-                description: 'Ghi nhận chi phí phát sinh, tổng hợp và xuất báo cáo theo từng chuyến đi.',
+                description:
+                    'Ghi nhận chi phí phát sinh, tổng hợp và xuất báo cáo theo từng chuyến đi.',
             },
         },
         latestTrips: {
@@ -131,9 +149,9 @@ export default {
         sentAt: 'Gửi lúc',
         language: 'Ngôn ngữ',
         search: 'Tìm kiếm',
-        checkAll: "Chọn tất cả",
-        clearAll: "Bỏ chọn tất cả",
-        required: "Bắt buộc",
+        checkAll: 'Chọn tất cả',
+        clearAll: 'Bỏ chọn tất cả',
+        required: 'Bắt buộc',
         forbidden: 'Bạn không có quyền thực hiện thao tác này.',
         select: 'Chọn',
         selectAll: 'Chọn tất cả người dùng',
@@ -184,7 +202,8 @@ export default {
             resetColumns: 'Khôi phục mặc định',
         },
         filters: {
-            searchPlaceholder: 'Tìm theo ID, tên, thương hiệu, mẫu xe, biển số hoặc chủ sở hữu...',
+            searchPlaceholder:
+                'Tìm theo ID, tên, thương hiệu, mẫu xe, biển số hoặc chủ sở hữu...',
             brand: 'Thương hiệu',
             allBrands: 'Tất cả thương hiệu',
             status: 'Trạng thái',
@@ -205,11 +224,13 @@ export default {
             createTitle: 'Thêm xe',
             viewTitle: 'Thông tin xe',
             editTitle: 'Chỉnh sửa xe',
-            description: 'Quản lý thông tin xe, chủ sở hữu và trạng thái hoạt động.',
+            description:
+                'Quản lý thông tin xe, chủ sở hữu và trạng thái hoạt động.',
         },
         delete: {
             title: 'Xóa xe?',
-            description: 'Bạn có chắc muốn xóa xe {name}? Hành động này không thể hoàn tác.',
+            description:
+                'Bạn có chắc muốn xóa xe {name}? Hành động này không thể hoàn tác.',
         },
         bulk: {
             activateTitle: 'Kích hoạt các xe đã chọn?',
@@ -217,7 +238,8 @@ export default {
             deactivateTitle: 'Ngừng hoạt động các xe đã chọn?',
             deactivateDescription: 'Sẽ ngừng hoạt động {count} xe đã chọn.',
             deleteTitle: 'Xóa các xe đã chọn?',
-            deleteDescription: 'Sẽ xóa {count} xe đã chọn. Xe đang được dùng trong chuyến đi sẽ được giữ lại.',
+            deleteDescription:
+                'Sẽ xóa {count} xe đã chọn. Xe đang được dùng trong chuyến đi sẽ được giữ lại.',
             confirm: 'Xác nhận',
         },
         flash: {
@@ -227,8 +249,10 @@ export default {
             activated: 'Đã kích hoạt xe {name}.',
             deactivated: 'Đã ngừng hoạt động xe {name}.',
             bulkCompleted: 'Đã hoàn tất thao tác với {count} xe.',
-            bulkNoChanges: 'Không có xe nào được cập nhật. Có thể bạn không có quyền hoặc xe đang được dùng trong chuyến đi.',
-            bulkSkipped: 'Đã bỏ qua {count} xe do thiếu quyền hoặc đang được dùng trong chuyến đi.',
+            bulkNoChanges:
+                'Không có xe nào được cập nhật. Có thể bạn không có quyền hoặc xe đang được dùng trong chuyến đi.',
+            bulkSkipped:
+                'Đã bỏ qua {count} xe do thiếu quyền hoặc đang được dùng trong chuyến đi.',
         },
     },
 
@@ -281,19 +305,23 @@ export default {
             createTitle: 'Thêm khoản chi phí',
             viewTitle: 'Thông tin khoản chi phí',
             editTitle: 'Chỉnh sửa khoản chi phí',
-            description: 'Quản lý mức phí áp dụng, ghi chú và trạng thái hoạt động.',
+            description:
+                'Quản lý mức phí áp dụng, ghi chú và trạng thái hoạt động.',
         },
         delete: {
             title: 'Xóa khoản chi phí?',
-            description: 'Bạn có chắc muốn xóa khoản chi phí {name}? Khoản đang được dùng trong chuyến đi không thể xóa.',
+            description:
+                'Bạn có chắc muốn xóa khoản chi phí {name}? Khoản đang được dùng trong chuyến đi không thể xóa.',
         },
         bulk: {
             activateTitle: 'Kích hoạt các khoản đã chọn?',
             activateDescription: 'Sẽ kích hoạt {count} khoản chi phí đã chọn.',
             deactivateTitle: 'Ngừng hoạt động các khoản đã chọn?',
-            deactivateDescription: 'Sẽ ngừng hoạt động {count} khoản chi phí đã chọn.',
+            deactivateDescription:
+                'Sẽ ngừng hoạt động {count} khoản chi phí đã chọn.',
             deleteTitle: 'Xóa các khoản đã chọn?',
-            deleteDescription: 'Sẽ xóa {count} khoản chi phí đã chọn. Khoản đang dùng trong chuyến đi sẽ được giữ lại.',
+            deleteDescription:
+                'Sẽ xóa {count} khoản chi phí đã chọn. Khoản đang dùng trong chuyến đi sẽ được giữ lại.',
             confirm: 'Xác nhận',
         },
         flash: {
@@ -303,13 +331,18 @@ export default {
             activated: 'Đã kích hoạt khoản chi phí {name}.',
             deactivated: 'Đã ngừng hoạt động khoản chi phí {name}.',
             bulkCompleted: 'Đã hoàn tất thao tác với {count} khoản chi phí.',
-            bulkNoChanges: 'Không có khoản chi phí nào được cập nhật. Có thể bạn không có quyền hoặc khoản đang được dùng trong chuyến đi.',
-            bulkSkipped: 'Đã bỏ qua {count} khoản do thiếu quyền hoặc đang được dùng trong chuyến đi.',
+            bulkNoChanges:
+                'Không có khoản chi phí nào được cập nhật. Có thể bạn không có quyền hoặc khoản đang được dùng trong chuyến đi.',
+            bulkSkipped:
+                'Đã bỏ qua {count} khoản do thiếu quyền hoặc đang được dùng trong chuyến đi.',
         },
     },
 
     user: {
-        admin: { pageTitle: 'Quản lý người dùng', listTitle: 'Danh sách người dùng' },
+        admin: {
+            pageTitle: 'Quản lý người dùng',
+            listTitle: 'Danh sách người dùng',
+        },
         create: 'Thêm người dùng',
         system: 'Hệ thống',
         stats: { total: 'Tổng người dùng' },
@@ -365,12 +398,14 @@ export default {
             createTitle: 'Thêm người dùng',
             viewTitle: 'Thông tin người dùng',
             editTitle: 'Chỉnh sửa người dùng',
-            description: 'Quản lý thông tin tài khoản, vai trò và quyền truy cập.',
+            description:
+                'Quản lý thông tin tài khoản, vai trò và quyền truy cập.',
             passwordHint: 'Để trống nếu không đổi mật khẩu',
         },
         delete: {
             title: 'Xóa người dùng?',
-            description: 'Bạn có chắc muốn xóa {name}? Hành động này không thể hoàn tác.',
+            description:
+                'Bạn có chắc muốn xóa {name}? Hành động này không thể hoàn tác.',
         },
         bulk: {
             activateTitle: 'Mở khóa người dùng đã chọn?',
@@ -378,13 +413,15 @@ export default {
             deactivateTitle: 'Khóa người dùng đã chọn?',
             deactivateDescription: 'Các tài khoản được chọn sẽ bị vô hiệu hóa.',
             deleteTitle: 'Xóa người dùng đã chọn?',
-            deleteDescription: 'Các tài khoản được chọn sẽ bị xóa. Hành động này không thể hoàn tác.',
+            deleteDescription:
+                'Các tài khoản được chọn sẽ bị xóa. Hành động này không thể hoàn tác.',
             confirm: 'Xác nhận',
         },
         accessControl: {
             manage: 'Quản lý vai trò & quyền',
             title: 'Quản lý vai trò và quyền',
-            description: 'Tạo và cập nhật vai trò, quyền truy cập dùng trên toàn hệ thống.',
+            description:
+                'Tạo và cập nhật vai trò, quyền truy cập dùng trên toàn hệ thống.',
             roles: 'Vai trò',
             roleDescription: 'Chọn các quyền được kế thừa bởi vai trò.',
             permissionCount: '{count} quyền',
@@ -393,11 +430,14 @@ export default {
             permissions: 'Quyền',
             noPermissions: 'Chưa có quyền nào.',
             createRole: 'Tạo vai trò',
-            permissionDescription: 'Quyền có thể được gán cho vai trò hoặc trực tiếp cho người dùng.',
+            permissionDescription:
+                'Quyền có thể được gán cho vai trò hoặc trực tiếp cho người dùng.',
             permissionName: 'Tên quyền',
             createPermission: 'Tạo quyền',
-            deleteConfirmation: 'Xác nhận xóa “{name}”? Quyền truy cập liên quan sẽ bị gỡ.',
-            reservedAdminRole: 'Vai trò admin là vai trò hệ thống và không thể đổi tên.',
+            deleteConfirmation:
+                'Xác nhận xóa “{name}”? Quyền truy cập liên quan sẽ bị gỡ.',
+            reservedAdminRole:
+                'Vai trò admin là vai trò hệ thống và không thể đổi tên.',
         },
         flash: {
             created: 'Đã tạo người dùng {name}.',
@@ -410,7 +450,8 @@ export default {
             bulkActivated: 'Đã mở khóa {count} người dùng.',
             bulkDeactivated: 'Đã khóa {count} người dùng.',
             bulkDeleted: 'Đã xóa {count} người dùng.',
-            bulkNoPermission: 'Bạn không có quyền thao tác trên các người dùng đã chọn.',
+            bulkNoPermission:
+                'Bạn không có quyền thao tác trên các người dùng đã chọn.',
             roleCreated: 'Đã tạo vai trò {name}.',
             roleUpdated: 'Đã cập nhật vai trò {name}.',
             roleDeleted: 'Đã xóa vai trò {name}.',
@@ -445,7 +486,8 @@ export default {
             activated: 'Tài khoản của bạn đã được kích hoạt.',
             deactivated: 'Tài khoản của bạn đã bị vô hiệu hóa.',
             emailVerified: 'Email của bạn đã được xác minh.',
-            accessUpdated: 'Vai trò hoặc quyền truy cập của bạn đã được cập nhật.',
+            accessUpdated:
+                'Vai trò hoặc quyền truy cập của bạn đã được cập nhật.',
         },
     },
 
@@ -500,7 +542,7 @@ export default {
             resultCount: 'Tìm thấy {count} chuyến đi',
             resultRange: 'Hiển thị {from} – {to} trên tổng {total} chuyến đi',
             resultEmpty: 'Không có chuyến đi nào khớp với điều kiện lọc',
-            surcharge:    'Phụ phí',
+            surcharge: 'Phụ phí',
             overnight: 'Nghỉ đêm',
             holiday: 'Ngày lễ',
             anyValue: 'Tất cả',
@@ -526,10 +568,12 @@ export default {
         },
 
         hints: {
-            updateConfirmed: 'Chuyến đã được xác nhận — hãy gửi yêu cầu mở khoá để chỉnh sửa.',
+            updateConfirmed:
+                'Chuyến đã được xác nhận — hãy gửi yêu cầu mở khoá để chỉnh sửa.',
             updateNoPermission: 'Bạn không có quyền chỉnh sửa chuyến này.',
             updatePending: 'Chuyến đang chờ duyệt — vẫn có thể chỉnh sửa.',
-            updateEditing: 'Đã được mở khoá — chỉnh sửa rồi lưu để gửi duyệt lại.',
+            updateEditing:
+                'Đã được mở khoá — chỉnh sửa rồi lưu để gửi duyệt lại.',
             updateRejected: 'Chuyến bị từ chối — sửa lại rồi gửi duyệt.',
             deleteAllowed: 'Xoá chuyến đi',
             deleteDenied: 'Chỉ xoá được khi chuyến chưa được xác nhận.',
@@ -544,7 +588,8 @@ export default {
             createTitle: 'Tạo chuyến đi mới',
             viewTitle: 'Chi tiết chuyến đi',
             editTitle: 'Chỉnh sửa chuyến đi',
-            viewDescription: 'Chế độ xem dữ liệu, chỉ đọc. Dùng các nút bên dưới để thao tác.',
+            viewDescription:
+                'Chế độ xem dữ liệu, chỉ đọc. Dùng các nút bên dưới để thao tác.',
         },
 
         form: {
@@ -570,25 +615,32 @@ export default {
             note: 'Ghi chú',
         },
         validation: {
-            reopen_request_reason_required: 'Vui lòng nhập lý do cần chỉnh sửa lại chuyến.',
-            reopen_request_reason_min: 'Lý do phải có ít nhất 10 ký tự để cố vấn hiểu rõ.',
+            reopen_request_reason_required:
+                'Vui lòng nhập lý do cần chỉnh sửa lại chuyến.',
+            reopen_request_reason_min:
+                'Lý do phải có ít nhất 10 ký tự để cố vấn hiểu rõ.',
             reopen_request_reason_max: 'Lý do tối đa 500 ký tự.',
-            reopen_reason_required: 'Vui lòng nhập lý do yêu cầu tài xế sửa lại.',
+            reopen_reason_required:
+                'Vui lòng nhập lý do yêu cầu tài xế sửa lại.',
             reopen_reason_min: 'Lý do phải có ít nhất 5 ký tự.',
             reopen_reason_max: 'Lý do tối đa 500 ký tự.',
             review_note_required: 'Vui lòng nêu lý do từ chối yêu cầu.',
             review_note_min: 'Ghi chú phải có ít nhất 5 ký tự.',
             review_note_max: 'Ghi chú tối đa 500 ký tự.',
-            trip_reject_reason_required: 'Vui lòng nêu lý do từ chối để tài xế biết cần sửa gì.',
+            trip_reject_reason_required:
+                'Vui lòng nêu lý do từ chối để tài xế biết cần sửa gì.',
             trip_reject_reason_min: 'Lý do từ chối phải có ít nhất 5 ký tự.',
             trip_reject_reason_max: 'Lý do từ chối tối đa 500 ký tự.',
         },
         conflicts: {
-            trip_state_changed: 'Trạng thái chuyến vừa thay đổi, vui lòng tải lại trang.',
-            duplicate_reopen_request: 'Đã có yêu cầu mở khoá đang chờ duyệt cho chuyến này.',
+            trip_state_changed:
+                'Trạng thái chuyến vừa thay đổi, vui lòng tải lại trang.',
+            duplicate_reopen_request:
+                'Đã có yêu cầu mở khoá đang chờ duyệt cho chuyến này.',
             trip_not_reviewable: 'Chuyến không còn ở trạng thái chờ duyệt.',
             trips_missing: 'Một hoặc nhiều chuyến không còn tồn tại.',
-            trips_not_reviewable: 'Một hoặc nhiều chuyến không còn ở trạng thái chờ duyệt.',
+            trips_not_reviewable:
+                'Một hoặc nhiều chuyến không còn ở trạng thái chờ duyệt.',
         },
 
         detail: {
@@ -599,8 +651,9 @@ export default {
             overtimeHours: '{count} giờ',
             distanceKm: '{value} km',
             title: {
-                total_fee: 'Gồm phí tăng ca, cầu đường, sân bay/bến bãi, qua đêm, ngày lễ',
-            }
+                total_fee:
+                    'Gồm phí tăng ca, cầu đường, sân bay/bến bãi, qua đêm, ngày lễ',
+            },
         },
 
         images: {
@@ -622,7 +675,8 @@ export default {
             reviewNote: 'Ghi chú',
             noReviewNote: 'Không kèm ghi chú.',
             requestReason: 'Lý do đã gửi',
-            defaultApproveNote: 'Đã duyệt yêu cầu mở khoá. Vui lòng cập nhật lại thông tin.',
+            defaultApproveNote:
+                'Đã duyệt yêu cầu mở khoá. Vui lòng cập nhật lại thông tin.',
         },
 
         cell: {
@@ -634,29 +688,35 @@ export default {
         },
 
         warnings: {
-            pending: 'Chuyến đang chờ cố vấn duyệt. Bạn vẫn có thể chỉnh sửa trước khi được xác nhận.',
-            editing: 'Sau khi lưu, chuyến sẽ chuyển lại trạng thái "Chờ duyệt".',
+            pending:
+                'Chuyến đang chờ cố vấn duyệt. Bạn vẫn có thể chỉnh sửa trước khi được xác nhận.',
+            editing:
+                'Sau khi lưu, chuyến sẽ chuyển lại trạng thái "Chờ duyệt".',
             rejected: 'Sau khi lưu, chuyến sẽ được gửi duyệt lại.',
         },
 
         deleteDialog: {
             title: 'Xoá chuyến đi',
             description: 'Hành động này không thể hoàn tác.',
-            confirmText: 'Bạn chắc chắn muốn xoá vĩnh viễn chuyến #{id} ngày {day} ({route})?',
+            confirmText:
+                'Bạn chắc chắn muốn xoá vĩnh viễn chuyến #{id} ngày {day} ({route})?',
         },
 
         reopenRequest: {
             title: 'Yêu cầu mở khoá chỉnh sửa',
-            description: 'Yêu cầu sẽ được gửi tới cố vấn phụ trách. Sau khi được duyệt, chuyến chuyển sang trạng thái "Đang chỉnh sửa" và bạn có thể cập nhật lại.',
+            description:
+                'Yêu cầu sẽ được gửi tới cố vấn phụ trách. Sau khi được duyệt, chuyến chuyển sang trạng thái "Đang chỉnh sửa" và bạn có thể cập nhật lại.',
             reasonLabel: 'Lý do cần chỉnh sửa',
-            reasonPlaceholder: 'VD: Nhập sai odo kết thúc, đúng là 45.320. Thiếu hoá đơn phí cầu đường.',
+            reasonPlaceholder:
+                'VD: Nhập sai odo kết thúc, đúng là 45.320. Thiếu hoá đơn phí cầu đường.',
             submit: 'Gửi yêu cầu',
         },
 
         reopenReview: {
             approveTitle: 'Duyệt yêu cầu mở khoá',
             rejectTitle: 'Từ chối yêu cầu mở khoá',
-            approveDescription: 'Chuyến sẽ chuyển sang trạng thái "Đang chỉnh sửa" để tài xế cập nhật.',
+            approveDescription:
+                'Chuyến sẽ chuyển sang trạng thái "Đang chỉnh sửa" để tài xế cập nhật.',
             rejectDescription: 'Chuyến giữ nguyên trạng thái "Đã xác nhận".',
             requesterSaid: '{name} yêu cầu chỉnh sửa lại:',
             noteLabel: 'Ghi chú phản hồi',
@@ -668,9 +728,11 @@ export default {
 
         rejectTrip: {
             title: 'Từ chối chuyến đi',
-            description: 'Chuyến sẽ chuyển sang trạng thái "Bị từ chối". Tài xế có thể chỉnh sửa và gửi lại.',
+            description:
+                'Chuyến sẽ chuyển sang trạng thái "Bị từ chối". Tài xế có thể chỉnh sửa và gửi lại.',
             reasonLabel: 'Lý do từ chối',
-            reasonPlaceholder: 'VD: Số odo không khớp, vui lòng chụp lại ảnh đồng hồ.',
+            reasonPlaceholder:
+                'VD: Số odo không khớp, vui lòng chụp lại ảnh đồng hồ.',
             submit: 'Từ chối chuyến',
         },
 
@@ -681,7 +743,8 @@ export default {
             confirm: 'Xác nhận đã chọn',
             reject: 'Từ chối đã chọn',
             rejectTitle: 'Từ chối nhiều chuyến',
-            rejectDescription: 'Bạn sắp từ chối {count} chuyến. Lý do này sẽ được áp dụng cho tất cả chuyến đã chọn.',
+            rejectDescription:
+                'Bạn sắp từ chối {count} chuyến. Lý do này sẽ được áp dụng cho tất cả chuyến đã chọn.',
         },
 
         admin: {
@@ -690,23 +753,32 @@ export default {
             pendingReopen: 'Chờ duyệt mở khoá',
         },
         flash: {
-            created:         'Đã tạo chuyến đi (#{id}, ngày: {day}). Chuyến đi đang chờ duyệt.',
-            updated:         'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
-            updatedByAdmin:  'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
-            updatedPending:  'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi vẫn đang chờ duyệt.',
-            updatedRejected: 'Đã cập nhật chuyến đi #{id}, ngày: {day} từng bị từ chối. Chuyến đi được gửi lại để duyệt.',
-            updatedEditing:  'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi chuyển về trạng thái "chờ duyệt".',
-            deleted:         'Đã xoá chuyến đi (ID: {id}, ngày: {day}).',
-            reopenRequested: 'Đã gửi yêu cầu mở khoá chuyến #{id}, ngày: {day}. Vui lòng chờ cố vấn duyệt.',
-            reopenCancelled: 'Đã huỷ yêu cầu mở khoá chuyến #{id}, ngày: {day}.',
-            tripReopened: 'Đã mở khoá chỉnh sửa cho chuyến #{id}, ngày: {day}. Tài xế có thể cập nhật lại.',
-            reopenApproved: 'Đã mở khoá chuyến #{id}, ngày: {day}. Tài xế có thể chỉnh sửa.',
-            reopenRejected: 'Đã từ chối yêu cầu mở khoá chuyến #{id}, ngày: {day}.',
+            created:
+                'Đã tạo chuyến đi (#{id}, ngày: {day}). Chuyến đi đang chờ duyệt.',
+            updated: 'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
+            updatedByAdmin: 'Đã cập nhật chuyến đi (#{id}, ngày: {day}).',
+            updatedPending:
+                'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi vẫn đang chờ duyệt.',
+            updatedRejected:
+                'Đã cập nhật chuyến đi #{id}, ngày: {day} từng bị từ chối. Chuyến đi được gửi lại để duyệt.',
+            updatedEditing:
+                'Đã cập nhật chuyến đi #{id}, ngày: {day}. Chuyến đi chuyển về trạng thái "chờ duyệt".',
+            deleted: 'Đã xoá chuyến đi (ID: {id}, ngày: {day}).',
+            reopenRequested:
+                'Đã gửi yêu cầu mở khoá chuyến #{id}, ngày: {day}. Vui lòng chờ cố vấn duyệt.',
+            reopenCancelled:
+                'Đã huỷ yêu cầu mở khoá chuyến #{id}, ngày: {day}.',
+            tripReopened:
+                'Đã mở khoá chỉnh sửa cho chuyến #{id}, ngày: {day}. Tài xế có thể cập nhật lại.',
+            reopenApproved:
+                'Đã mở khoá chuyến #{id}, ngày: {day}. Tài xế có thể chỉnh sửa.',
+            reopenRejected:
+                'Đã từ chối yêu cầu mở khoá chuyến #{id}, ngày: {day}.',
             reviewConfirmed: 'Đã xác nhận chuyến #{id}, ngày: {day}.',
-            reviewRejected: 'Đã từ chối chuyến #{id}, ngày: {day}. Tài xế có thể chỉnh sửa lại.',
+            reviewRejected:
+                'Đã từ chối chuyến #{id}, ngày: {day}. Tài xế có thể chỉnh sửa lại.',
             bulkReviewConfirmed: 'Đã xác nhận {count} chuyến.',
             bulkReviewRejected: 'Đã từ chối {count} chuyến.',
         },
-
     },
 } as const;

@@ -17,6 +17,7 @@ return new class extends Migration
             // $table->string('type');
             // $table->decimal('unit_price');
             // $table->boolean('is_active')->default(1);
+            $table->integer('monthly_km_limit')->unsigned()->nullable();
             $table->decimal('overkm_rate', 15, 0)->unsigned()->nullable();
             $table->decimal('overtime_rate', 15, 0)->unsigned()->nullable();
             $table->decimal('overnight_rate', 15, 0)->unsigned()->nullable();

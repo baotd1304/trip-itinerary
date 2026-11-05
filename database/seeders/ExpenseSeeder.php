@@ -15,6 +15,7 @@ class ExpenseSeeder extends Seeder
     {
         $listExpenses = [[
             'id' => 1,
+            'monthly_km_limit' => 4300,
             'overkm_rate' => 6500,
             'overtime_rate' => 30000,
             'overnight_rate' => 300000,
